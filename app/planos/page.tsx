@@ -561,7 +561,7 @@ export default function PlanosCheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] overflow-x-hidden">
+    <div className="min-h-screen bg-white text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] overflow-x-hidden">
       
       {/* Script Oficial do Google Identity Services */}
       <Script 
@@ -570,8 +570,8 @@ export default function PlanosCheckoutPage() {
         onLoad={initGsi} 
       />
 
-      {/* Header Minimalista, Sofisticado e com Logo Centralizada */}
-      <header className="relative z-20 w-full border-b border-[#E2E8F0] bg-white px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-2xs">
+      {/* Header 100% Unificado com o Fundo da Tela */}
+      <header className="relative z-20 w-full bg-white px-4 sm:px-8 py-4 flex items-center justify-between border-b border-slate-100">
         {/* Lado Esquerdo: Botão Voltar */}
         <div className="w-1/3 flex items-center justify-start">
           <Link 
@@ -1106,11 +1106,11 @@ export default function PlanosCheckoutPage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Digite aqui..."
+                      placeholder="Digite aqui"
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                       disabled={couponLoading || !!appliedCoupon}
-                      className="flex-1 uppercase font-mono text-xs px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#1A44C8] bg-white"
+                      className={`flex-1 font-sans text-xs px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#1A44C8] bg-white text-[#181B22] placeholder:font-sans placeholder:normal-case placeholder:text-[11px] placeholder:text-slate-400 placeholder:opacity-60 ${couponInput ? 'uppercase font-bold tracking-wider' : ''}`}
                     />
                     {appliedCoupon ? (
                       <button
