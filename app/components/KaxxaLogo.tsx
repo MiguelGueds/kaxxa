@@ -10,23 +10,21 @@ export function KaxxaKLogo({
       width={size} 
       height={size} 
       viewBox="0 0 24 24" 
-      fill="currentColor" 
+      fill="none" 
       xmlns="http://www.w3.org/2000/svg" 
       className={`shrink-0 select-none ${className}`}
       aria-label="Kaxxa Emblem"
     >
-      {/* Barra vertical esquerda do K oficial */}
-      <path d="M10 2 H6 C3.79 2 2 3.79 2 6 V18 C2 20.21 3.79 22 6 22 H10 V2 Z" />
-      {/* Braço superior direito */}
-      <path d="M11 11.5 L16.5 2 H19 C20.66 2 22 3.34 22 5 V8 L11 11.5 Z" />
-      {/* Braço inferior direito */}
-      <path d="M11 12.5 L16.5 22 H19 C20.66 22 22 20.66 22 19 V16 L11 12.5 Z" />
+      {/* Icone Squircle Azul com K Branco */}
+      <rect width="24" height="24" rx="7" fill="#0052FF" />
+      <path d="M7 5 V19" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M16.5 5.5 L9 12 L16.5 18.5" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function KaxxaWordmark({ 
-  size = 17,
+  size = 18,
   className = "",
   textColor = "text-[#181B22]"
 }: { 
@@ -36,80 +34,55 @@ export function KaxxaWordmark({
   fillColor?: string,
   accentColor?: string
 }) {
-  const width = Math.round(size * (74 / 17));
+  // Proporção precisa de largura baseada na altura
+  const width = Math.round(size * (78 / 18));
 
   return (
     <svg 
       width={width} 
       height={size} 
-      viewBox="0 0 74 17" 
+      viewBox="0 0 78 18" 
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
       className={`shrink-0 select-none ${textColor} ${className}`}
       aria-label="Kaxxa"
     >
-      {/* K */}
+      {/* LETRA K (PRETO / TEXTO PRINCIPAL) */}
+      <line x1="2.5" y1="2" x2="2.5" y2="16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M14 2 L4 9 L14 16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+      {/* WEAVE KAXXA - LINHAS PRETAS (1º X descendente & 2º A completo) */}
       <path 
-        d="M2.5 1.5V15.5" 
+        d="M26 2 L42 16" 
         stroke="currentColor" 
-        strokeWidth="2.6" 
-        strokeLinecap="round"
-      />
-      <path 
-        d="M11 2L2.5 8.5L11 15" 
-        stroke="currentColor" 
-        strokeWidth="2.6" 
+        strokeWidth="2.5" 
         strokeLinecap="round" 
-        strokeLinejoin="round"
       />
-      
-      {/* 1º A (AZUL, V invertido sem traço do meio) */}
       <path 
-        d="M16 15L21.5 2L27 15" 
-        stroke="#1A44C8" 
-        strokeWidth="2.6" 
+        d="M58 16 L66 2 L74 16" 
+        stroke="currentColor" 
+        strokeWidth="2.5" 
         strokeLinecap="round" 
-        strokeLinejoin="round"
-        className="dark:stroke-[#60A5FA]"
+        strokeLinejoin="round" 
+        fill="none" 
       />
-      
-      {/* 1º X */}
+
+      {/* WEAVE KAXXA - ONDA AZUL CONTINUA (1º A, 1º X ascendente, 2º X completo) */}
       <path 
-        d="M32 2L40 15" 
-        stroke="currentColor" 
-        strokeWidth="2.6" 
-        strokeLinecap="round"
-      />
-      <path 
-        d="M40 2L32 15" 
-        stroke="currentColor" 
-        strokeWidth="2.6" 
-        strokeLinecap="round"
-      />
-      
-      {/* 2º X (AZUL) */}
-      <path 
-        d="M45 2L53 15" 
-        stroke="#1A44C8" 
-        strokeWidth="2.6" 
-        strokeLinecap="round"
-        className="dark:stroke-[#60A5FA]"
-      />
-      <path 
-        d="M53 2L45 15" 
-        stroke="#1A44C8" 
-        strokeWidth="2.6" 
-        strokeLinecap="round"
-        className="dark:stroke-[#60A5FA]"
-      />
-      
-      {/* 2º A (V invertido sem traço do meio) */}
-      <path 
-        d="M58 15L63.5 2L69 15" 
-        stroke="currentColor" 
-        strokeWidth="2.6" 
+        d="M10 16 L18 2 L26 16 L42 2 L58 16" 
+        stroke="#0052FF" 
+        strokeWidth="2.5" 
         strokeLinecap="round" 
-        strokeLinejoin="round"
+        strokeLinejoin="round" 
+        fill="none" 
+        className="dark:stroke-[#3B82F6]"
+      />
+      <path 
+        d="M42 16 L58 2" 
+        stroke="#0052FF" 
+        strokeWidth="2.5" 
+        strokeLinecap="round" 
+        className="dark:stroke-[#3B82F6]"
       />
     </svg>
   );
@@ -125,11 +98,9 @@ export function KaxxaLogo({
   textColor?: string 
 }) {
   return (
-    <span className={`inline-flex items-center gap-2 select-none shrink-0 ${textColor} ${className}`}>
-      <span className="text-[#1A44C8] shrink-0">
-        <KaxxaKLogo size={size} />
-      </span>
-      <KaxxaWordmark size={Math.round(size * 0.7)} textColor={textColor} />
+    <span className={`inline-flex items-center gap-2.5 select-none shrink-0 ${textColor} ${className}`}>
+      <KaxxaKLogo size={size} />
+      <KaxxaWordmark size={Math.round(size * 0.75)} textColor={textColor} />
     </span>
   );
 }
