@@ -49,3 +49,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message || 'Erro interno ao processar cartão' }, { status: 500 });
   }
 }
+
