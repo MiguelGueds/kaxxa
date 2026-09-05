@@ -284,21 +284,147 @@ export default function MinhasFaturasPage() {
     return 'Compras Pessoais e Outros';
   };
 
-  const handleProcessFile = (file: File) => {
+  const extractTextFromPdf = async (arrayBuffer: ArrayBuffer): Promise<string> => {
+    try {
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js');
+      if (typeof window !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      }
+      const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+      const pdf = await loadingTask.promise;
+      let fullText = '';
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
+      }
+
+      return fullText;
+    } catch (err) {
+      console.error('Erro ao ler PDF via pdfjs:', err);
+      return '';
+    }
+  };
+
+  const parseTextLinesToItems = (text: string, fileName: string): ImportItem[] => {
+    const lines = text.split(/\r?\n/);
+    const items: ImportItem[] = [];
+    let idx = 1;
+
+    const monthMap: Record<string, string> = {
+      jan: '01', fev: '02', mar: '03', abr: '04', mai: '05', jun: '06',
+      jul: '07', ago: '08', set: '09', out: '10', nov: '11', dez: '12'
+    };
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.length < 5) return;
+
+      const lower = trimmed.toLowerCase();
+      if (
+        lower.includes('total da fatura') || 
+        lower.includes('resumo da fatura') || 
+        lower.includes('pagamento efetuado') || 
+        lower.includes('pagamento recebido') || 
+        lower.includes('saldo anterior') || 
+        lower.includes('limite total') ||
+        lower.includes('vencimento')
+      ) {
+        return;
+      }
+
+      // Procura data numéricas (DD/MM, DD/MM/YYYY) ou por extenso (12 JUL)
+      let day = '', month = '', year = selectedYear;
+      let dateMatch = trimmed.match(/^(\d{1,2})[\/\.-](\d{1,2})(?:[\/\.-](\d{2,4}))?/) || trimmed.match(/(\d{1,2})[\/\.-](\d{1,2})(?:[\/\.-](\d{2,4}))?/);
+      let textDateMatch = null;
+
+      if (!dateMatch) {
+        textDateMatch = trimmed.match(/(\d{1,2})\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)/i);
+      }
+
+      if (dateMatch) {
+        day = dateMatch[1].padStart(2, '0');
+        month = dateMatch[2].padStart(2, '0');
+        if (dateMatch[3]) {
+          year = dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3];
+        }
+      } else if (textDateMatch) {
+        day = textDateMatch[1].padStart(2, '0');
+        month = monthMap[textDateMatch[2].toLowerCase()] || '07';
+      } else {
+        return;
+      }
+
+      // Procura valor monetário na linha
+      const amounts = trimmed.match(/(?:R\$\s*)?(-?\d{1,3}(?:\.\d{3})*,\d{2}|-?\d+[\.,]\d{2})/g);
+      if (!amounts) return;
+
+      const lastAmtStr = amounts[amounts.length - 1];
+      const cleanAmt = lastAmtStr.replace(/R\$\s*/g, '').replace(/\./g, '').replace(',', '.');
+      const numAmt = Math.abs(parseFloat(cleanAmt));
+      if (isNaN(numAmt) || numAmt === 0) return;
+
+      // Procura parcela (ex: 1/3)
+      let installmentText: string | undefined;
+      const instMatch = trimmed.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+      if (instMatch) {
+        installmentText = `${instMatch[1]}/${instMatch[2]}`;
+      }
+
+      // Limpa descrição
+      let desc = trimmed;
+      if (dateMatch) desc = desc.replace(dateMatch[0], '');
+      if (textDateMatch) desc = desc.replace(textDateMatch[0], '');
+      desc = desc.replace(lastAmtStr, '').replace(/R\$\s*/g, '');
+      if (instMatch) desc = desc.replace(instMatch[0], '');
+      desc = desc.replace(/\s+/g, ' ').trim();
+
+      if (!desc || desc.length < 2) desc = 'Compra Cartão';
+
+      const formattedDate = `${year}-${month}-${day}`;
+
+      items.push({
+        id: `imp-pdf-${Date.now()}-${idx++}`,
+        checked: true,
+        date: formattedDate,
+        description: desc,
+        amount: numAmt,
+        category: autoCategorize(desc),
+        thirdPartyName: 'Titular (Você)',
+        installmentText,
+      });
+    });
+
+    return items;
+  };
+
+  const handleProcessFile = async (file: File) => {
     setIsParsingFile(true);
     setUploadFileName(file.name);
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string || '';
-      const parsedItems: ImportItem[] = [];
+    try {
+      let rawText = '';
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
-      if (text.includes('<STMTTRN>') || text.includes('<OFX>')) {
+      if (isPdf) {
+        const buffer = await file.arrayBuffer();
+        rawText = await extractTextFromPdf(buffer);
+      } else {
+        rawText = await file.text();
+      }
+
+      let parsedItems: ImportItem[] = [];
+
+      if (rawText.includes('<STMTTRN>') || rawText.includes('<OFX>')) {
         const trnRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
         let match;
         let idx = 1;
 
-        while ((match = trnRegex.exec(text)) !== null) {
+        while ((match = trnRegex.exec(rawText)) !== null) {
           const block = match[1];
           const dtMatch = block.match(/<DTPOSTED>(\d{8})/);
           const amtMatch = block.match(/<TRNAMT>([-\d\.]+)/);
@@ -321,76 +447,25 @@ export default function MinhasFaturasPage() {
             });
           }
         }
+      } else {
+        parsedItems = parseTextLinesToItems(rawText, file.name);
       }
 
-      if (parsedItems.length === 0) {
-        const lines = text.split(/\r?\n/);
-        let idx = 1;
-
-        lines.forEach((line) => {
-          const trimmed = line.trim();
-          if (!trimmed) return;
-
-          const dateMatch = trimmed.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/) || trimmed.match(/(\d{4})[\/\.-](\d{1,2})[\/\.-](\d{1,2})/);
-          const amountMatch = trimmed.match(/R?\$\s*([\d\.\,]+)/) || trimmed.match(/([-\d\.\,]{3,12})/);
-
-          if (dateMatch) {
-            let dateStr = '2026-07-10';
-            if (dateMatch[1].length === 4) {
-              dateStr = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
-            } else {
-              const year = dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3];
-              dateStr = `${year}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`;
-            }
-
-            let descStr = trimmed
-              .replace(dateMatch[0], '')
-              .replace(/R?\$\s*[\d\.\,]+/, '')
-              .replace(/\s+/g, ' ')
-              .trim();
-
-            let amountVal = 0;
-            if (amountMatch) {
-              const cleanVal = amountMatch[1].replace(/\./g, '').replace(',', '.');
-              const num = parseFloat(cleanVal);
-              if (!isNaN(num)) amountVal = Math.abs(num);
-            }
-
-            if (descStr.length > 2 && amountVal > 0) {
-              parsedItems.push({
-                id: `imp-txt-${Date.now()}-${idx++}`,
-                checked: true,
-                date: dateStr,
-                description: descStr,
-                amount: amountVal,
-                category: autoCategorize(descStr),
-                thirdPartyName: 'Titular (Você)',
-              });
-            }
-          }
-        });
-      }
-
-      if (parsedItems.length === 0) {
+      if (parsedItems.length > 0) {
+        setExtractedImports(parsedItems);
+      } else {
         setExtractedImports([
           { id: `imp-1`, checked: true, date: `${selectedYear}-${selectedMonthNum}-12`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 1`, amount: 150.00, category: 'Alimentação e Supermercado', thirdPartyName: 'Titular (Você)' },
           { id: `imp-2`, checked: true, date: `${selectedYear}-${selectedMonthNum}-11`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 2`, amount: 89.90, category: 'Lazer e Assinaturas (Streaming)', thirdPartyName: 'Titular (Você)' },
           { id: `imp-3`, checked: true, date: `${selectedYear}-${selectedMonthNum}-10`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 3`, amount: 230.00, category: 'Transporte e Combustível', thirdPartyName: 'Titular (Você)' },
         ]);
-      } else {
-        setExtractedImports(parsedItems);
       }
-
+    } catch (err) {
+      console.error('Erro ao processar arquivo de fatura:', err);
+    } finally {
       setIsParsingFile(false);
       setImportStep(2);
-    };
-
-    reader.onerror = () => {
-      setIsParsingFile(false);
-      setImportStep(2);
-    };
-
-    reader.readAsText(file);
+    }
   };
 
   const formatCurrency = (val: number) => {
