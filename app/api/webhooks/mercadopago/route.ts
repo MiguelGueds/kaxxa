@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         const planType = payment.metadata?.plan_type || 'MENSAL';
 
         if (payment.status === 'approved' && userId) {
-          const durationDays = planType === 'ANUAL' ? 365 : 30;
+          const durationDays = 30; // Plano único mensal
           const periodEnd = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
 
           await supabase.from('subscriptions').upsert({
@@ -40,6 +40,13 @@ export async function POST(req: Request) {
           }, { onConflict: 'user_id' });
 
           console.log(`[Webhook Mercado Pago] Assinatura ativada com sucesso para usuário: ${userId}`);
+        } else if (['refunded', 'cancelled', 'charged_back'].includes(payment.status) && userId) {
+          await supabase.from('subscriptions').update({
+            status: 'CANCELED',
+            updated_at: new Date().toISOString()
+          }).eq('user_id', userId);
+
+          console.log(`[Webhook Mercado Pago] Assinatura cancelada/estornada para usuário: ${userId} (status: ${payment.status})`);
         }
       }
     }
