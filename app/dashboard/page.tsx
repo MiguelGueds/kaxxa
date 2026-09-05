@@ -240,9 +240,8 @@ export default function DashboardPage() {
               <h3 className="text-xs text-[#64748B] font-semibold">Patrimônio Líquido Total</h3>
             </div>
             
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1A44C8]/10 border border-[#1A44C8]/20 text-[10px] font-bold text-[#1A44C8]">
-              <ArrowUpRight size={12} />
-              +18.4% YTD
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#1A44C8]/10 border border-[#1A44C8]/20 text-[10px] font-bold text-[#1A44C8]">
+              Consolidado
             </div>
           </div>
 
@@ -295,10 +294,9 @@ export default function DashboardPage() {
           <div>
             <div className="flex justify-between items-center mb-1">
               <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider">Investimentos</p>
-              <div className="flex items-center gap-1 text-[10px] font-bold text-[#1A44C8]">
-                <ArrowUpRight size={11} />
-                +9.3%
-              </div>
+              <span className="text-[9px] font-bold text-[#1A44C8] bg-[#1A44C8]/10 border border-[#1A44C8]/20 px-2 py-0.5 rounded-full">
+                Ativos
+              </span>
             </div>
             
             <h3 className="text-xs text-[#64748B] font-semibold mt-1">Ganho de Capital</h3>
@@ -324,10 +322,9 @@ export default function DashboardPage() {
           <div>
             <div className="flex justify-between items-center mb-1">
               <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider">Últimos 7 dias</p>
-              <div className="flex items-center gap-1 text-[10px] font-bold text-[#60A5FA]">
-                <ArrowUpRight size={11} />
-                +12.4%
-              </div>
+              <span className="text-[9px] font-bold text-[#0284C7] bg-[#0284C7]/10 border border-[#0284C7]/20 px-2 py-0.5 rounded-full">
+                Fluxo
+              </span>
             </div>
             
             <h3 className="text-xs text-[#64748B] font-semibold mt-1">Aportes Recentes</h3>
@@ -356,10 +353,9 @@ export default function DashboardPage() {
           <div>
             <div className="flex justify-between items-center mb-1">
               <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider">Despesas</p>
-              <div className="flex items-center gap-1 text-[10px] font-bold text-rose-500">
-                <ArrowDownRight size={11} />
-                -7.7%
-              </div>
+              <span className="text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
+                Mensal
+              </span>
             </div>
             
             <h3 className="text-xs text-[#64748B] font-semibold mt-1">Total Despesas</h3>
@@ -497,7 +493,7 @@ export default function DashboardPage() {
                 <h4 className="text-2xl font-extrabold text-[#181B22] mt-1">R$ {formatCurrency(patrimonioLiquidoTotal)}</h4>
               </div>
               <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20">
-                {patrimonioLiquidoTotal >= 0 ? '+18.4%' : '-18.4%'} YTD
+                Patrimônio
               </span>
             </div>
 
