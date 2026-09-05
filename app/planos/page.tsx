@@ -87,11 +87,16 @@ export default function PlanosCheckoutPage() {
 
     async function checkCurrentSession() {
       try {
-        // Se já possui acesso liberado (por assinatura ou degustação ativa no navegador), redireciona direto
-        const access = await subscriptionService.isAccessGranted();
-        if (access.granted && isMounted) {
-          router.push('/dashboard');
-          return;
+        const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const isChangeMethod = searchParams?.get('change_method') === 'true' || searchParams?.get('mudar_metodo') === 'true';
+
+        // Se já possui acesso liberado e NÃO está trocando método, redireciona direto
+        if (!isChangeMethod) {
+          const access = await subscriptionService.isAccessGranted();
+          if (access.granted && isMounted) {
+            router.push('/dashboard');
+            return;
+          }
         }
 
         const { data: { session } } = await supabase.auth.getSession();
@@ -127,9 +132,13 @@ export default function PlanosCheckoutPage() {
         setAuthLoading(false);
 
         if (event === 'SIGNED_IN') {
-          const access = await subscriptionService.isAccessGranted();
-          if (access.granted && isMounted) {
-            router.push('/dashboard');
+          const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+          const isChangeMethod = searchParams?.get('change_method') === 'true' || searchParams?.get('mudar_metodo') === 'true';
+          if (!isChangeMethod) {
+            const access = await subscriptionService.isAccessGranted();
+            if (access.granted && isMounted) {
+              router.push('/dashboard');
+            }
           }
         }
       } else if (event === 'SIGNED_OUT' && isMounted) {

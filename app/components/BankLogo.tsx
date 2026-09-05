@@ -115,7 +115,7 @@ export function BankLogo({ name, size = 'md', className = '' }: BankLogoProps) {
   if (!imgError && slug) {
     return (
       <div 
-        className={`rounded-full aspect-square shrink-0 flex items-center justify-center bg-[#181B24] border border-white/[0.12] shadow-sm overflow-hidden ${sizeConfig.wrapper} ${className}`}
+        className={`rounded-full aspect-square shrink-0 flex items-center justify-center bg-white border border-[#E5E7EB] shadow-xs overflow-hidden ${sizeConfig.wrapper} ${className}`}
         title={name}
       >
         <img
@@ -131,7 +131,7 @@ export function BankLogo({ name, size = 'md', className = '' }: BankLogoProps) {
   // 2. Fallback: Badge 100% arredondado com as cores e inicial característica do banco
   return (
     <div 
-      className={`rounded-full aspect-square shrink-0 flex items-center justify-center font-black shadow-sm select-none tracking-tight border border-white/[0.08] ${sizeConfig.wrapper} ${sizeConfig.text} ${badgeConfig.bg} ${badgeConfig.text} ${className}`} 
+      className={`rounded-full aspect-square shrink-0 flex items-center justify-center font-black shadow-xs select-none tracking-tight border border-[#E5E7EB] ${sizeConfig.wrapper} ${sizeConfig.text} ${badgeConfig.bg} ${badgeConfig.text} ${className}`} 
       title={name}
     >
       {badgeConfig.label}

@@ -106,6 +106,7 @@ export interface InvestmentItem {
   monthlyEstimatedYield?: number;
   totalDividendsReceived?: number;
   isFgcProtected?: boolean;
+  createdAt?: string;
 }
 
 const INITIAL_INVESTMENTS: InvestmentItem[] = [
@@ -335,7 +336,8 @@ export default function InvestimentosPage() {
             currentBalance: inv.current_value,
             monthlyEstimatedYield: inv.macro_type === 'FIXA' ? inv.current_value * 0.0092 : (inv.category === 'FIIS' ? inv.current_value * 0.0085 : inv.current_value * 0.006),
             totalDividendsReceived: 0,
-            isFgcProtected: inv.category !== 'TESOURO_DIRETO'
+            isFgcProtected: inv.category !== 'TESOURO_DIRETO',
+            createdAt: inv.created_at || new Date().toISOString()
           })));
         } else {
           setInvestments([]);
@@ -417,27 +419,64 @@ export default function InvestimentosPage() {
   // Segmentos por Classe de Ativos
   const classSegments = useMemo(() => [
     { label: 'Renda Fixa', value: totalFixed, pct: pctFixed, color: '#3B6CF0' },
-    { label: 'FIIs (Imobiliário)', value: totalFIIs, pct: pctFIIs, color: '#14B8A6' },
+    { label: 'FIIs', value: totalFIIs, pct: pctFIIs, color: '#14B8A6' },
     { label: 'Ações B3', value: totalAcoes, pct: pctAcoes, color: '#38BDF8' },
     { label: 'Internacional / BDRs', value: totalBDRs, pct: pctBDRs, color: '#818CF8' },
     { label: 'Criptomoedas', value: totalCripto, pct: pctCripto, color: '#F59E0B' }
   ], [totalFixed, totalFIIs, totalAcoes, totalBDRs, totalCripto, pctFixed, pctFIIs, pctAcoes, pctBDRs, pctCripto]);
 
-  // Histórico de Aportes com cálculo dinâmico da média (12 Meses)
-  const historyAportes = [
-    { month: 'Jan', aportes: 1500, total: 58000, h: '35%' },
-    { month: 'Fev', aportes: 1200, total: 60200, h: '28%' },
-    { month: 'Mar', aportes: 1800, total: 64000, h: '42%' },
-    { month: 'Abr', aportes: 2400, total: 67500, h: '56%' },
-    { month: 'Mai', aportes: 2100, total: 71000, h: '49%' },
-    { month: 'Jun', aportes: 3500, total: 75200, h: '82%' },
-    { month: 'Jul', aportes: 2900, total: 79800, h: '68%' },
-    { month: 'Ago', aportes: 4200, total: 84649, h: '98%' },
-    { month: 'Set', aportes: 0, total: 84649, h: '5%' },
-    { month: 'Out', aportes: 0, total: 84649, h: '5%' },
-    { month: 'Nov', aportes: 0, total: 84649, h: '5%' },
-    { month: 'Dez', aportes: 0, total: 84649, h: '5%' }
-  ];
+  // Histórico de Aportes com cálculo dinâmico real dos 12 últimos meses baseado nos lançamentos do usuário
+  const historyAportes = useMemo(() => {
+    const monthsNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const now = new Date();
+    const result: { month: string; monthKey: string; aportes: number; total: number; h: string }[] = [];
+
+    // Gerar os últimos 12 meses cronológicos (do mais antigo para o mês atual)
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const monthIdx = d.getMonth();
+      const monthKey = `${year}-${String(monthIdx + 1).padStart(2, '0')}`;
+      const label = monthsNames[monthIdx];
+
+      // Filtrar todos os aportes e compras de investimentos realizados neste mês
+      const investmentsInMonth = investments.filter(inv => {
+        const itemDateStr = inv.createdAt;
+        if (!itemDateStr) return false;
+        try {
+          const invDate = new Date(itemDateStr);
+          if (isNaN(invDate.getTime())) return false;
+          const invKey = `${invDate.getFullYear()}-${String(invDate.getMonth() + 1).padStart(2, '0')}`;
+          return invKey === monthKey;
+        } catch {
+          return false;
+        }
+      });
+
+      // Total aportado no mês (soma de todas as ações, CDBs, fundos, criptos, etc.)
+      const totalAportadoMes = investmentsInMonth.reduce((acc, inv) => acc + (inv.totalInvested || 0), 0);
+
+      result.push({
+        month: label,
+        monthKey,
+        aportes: totalAportadoMes,
+        total: totalAportadoMes,
+        h: '6px'
+      });
+    }
+
+    // Altura relativa das barras com base no mês de maior aporte
+    const maxAporte = Math.max(...result.map(r => r.aportes), 0);
+
+    return result.map(item => {
+      if (item.aportes <= 0 || maxAporte === 0) {
+        return { ...item, h: '6px' };
+      }
+      const pct = Math.max(14, Math.round((item.aportes / maxAporte) * 100));
+      return { ...item, h: `${pct}%` };
+    });
+  }, [investments]);
+
   const monthsWithAportes = historyAportes.filter(h => h.aportes > 0);
   const avgMonthlyAporte = monthsWithAportes.length > 0 
     ? Math.round(monthsWithAportes.reduce((acc, h) => acc + h.aportes, 0) / monthsWithAportes.length)
@@ -761,6 +800,7 @@ export default function InvestimentosPage() {
         }));
       } else {
         let createdId = 'rf-' + Date.now();
+        let createdAtIso = new Date().toISOString();
         try {
           const created = await investmentsService.createInvestment({
             macro_type: 'FIXA',
@@ -776,7 +816,10 @@ export default function InvestimentosPage() {
             current_value: amt,
             profitability_pct: 0,
           });
-          if (created) createdId = created.id;
+          if (created) {
+            createdId = created.id;
+            if (created.created_at) createdAtIso = created.created_at;
+          }
         } catch (e) {
           console.error('Erro ao cadastrar investimento no Supabase:', e);
         }
@@ -794,7 +837,8 @@ export default function InvestimentosPage() {
           currentBalance: amt,
           monthlyEstimatedYield: monthlyEst,
           totalDividendsReceived: 0,
-          isFgcProtected: rfCategory !== 'TESOURO_DIRETO'
+          isFgcProtected: rfCategory !== 'TESOURO_DIRETO',
+          createdAt: createdAtIso
         };
         setInvestments([newItem, ...investments]);
       }
@@ -853,6 +897,7 @@ export default function InvestimentosPage() {
         }));
       } else {
         let createdId = 'rv-' + Date.now();
+        let createdAtIso = new Date().toISOString();
         try {
           const created = await investmentsService.createInvestment({
             macro_type: 'VARIAVEL',
@@ -867,7 +912,10 @@ export default function InvestimentosPage() {
             current_value: curBal,
             profitability_pct: 2.0,
           });
-          if (created) createdId = created.id;
+          if (created) {
+            createdId = created.id;
+            if (created.created_at) createdAtIso = created.created_at;
+          }
         } catch (e) {
           console.error('Erro ao cadastrar investimento no Supabase:', e);
         }
@@ -886,7 +934,8 @@ export default function InvestimentosPage() {
           totalInvested: totalInv,
           currentBalance: curBal,
           monthlyEstimatedYield: estDividends,
-          totalDividendsReceived: 0
+          totalDividendsReceived: 0,
+          createdAt: createdAtIso
         };
         setInvestments([newItem, ...investments]);
       }
@@ -1273,7 +1322,7 @@ export default function InvestimentosPage() {
               {historyAportes.map((bar, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group h-full justify-end">
                   <span className="text-[9px] font-bold text-[#1A44C8] opacity-0 group-hover:opacity-100 transition-opacity transform -translate-y-1 whitespace-nowrap">
-                    {bar.aportes > 0 ? `R$ ${bar.aportes}` : '-'}
+                    {bar.aportes > 0 ? `R$ ${formatCurrency(bar.aportes)}` : '-'}
                   </span>
                   <div className="w-full bg-[#F1F3F7] rounded-t-md relative flex items-end overflow-hidden" style={{ height: bar.h }}>
                     {bar.aportes > 0 ? (
@@ -1370,7 +1419,7 @@ export default function InvestimentosPage() {
                   }`}
                 >
                   <Building2 size={11} />
-                  FIIs (Imobiliário)
+                  FIIs
                 </button>
 
                 <button 

@@ -98,6 +98,14 @@ function SettingsContent() {
   const [thirdPartyName, setThirdPartyName] = useState('');
   const [thirdPartyType, setThirdPartyType] = useState('CLIENTE');
 
+  // Modal Proprietário Kaxxa de Confirmação de Exclusão
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: 'CATEGORY' | 'ACCOUNT' | 'CARD' | 'THIRD_PARTY';
+    id: string;
+    name: string;
+    subWarning?: string;
+  } | null>(null);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -269,11 +277,12 @@ function SettingsContent() {
 
   // Cálculo de dias desde a contratação para garantia de 7 dias
   const getDaysSinceCreated = () => {
-    if (!subscription?.created_at) return 999;
+    if (!subscription) return 999;
+    if (!subscription.created_at) return 1; // Se existe assinatura ativa sem created_at, considera recente dentro do prazo
     const created = new Date(subscription.created_at).getTime();
-    if (isNaN(created)) return 999;
+    if (isNaN(created)) return 1;
     const now = Date.now();
-    return Math.floor((now - created) / (1000 * 60 * 60 * 24));
+    return Math.max(0, Math.floor((now - created) / (1000 * 60 * 60 * 24)));
   };
   const isWithin7Days = getDaysSinceCreated() <= 7;
   const daysRemainingRefund = Math.max(0, 7 - getDaysSinceCreated());
@@ -322,9 +331,31 @@ function SettingsContent() {
     if (error) setErrorMsg(error.message); else { setSuccessMsg('Salvo!'); setCategoryName(''); fetchData(); setTimeout(() => setIsCategoryModalOpen(false), 800); }
     setIsSubmitting(false);
   };
-  const handleDeleteCategory = async (id: string) => {
-    if (!window.confirm('Tem certeza?')) return;
-    await supabase.from('categories').delete().eq('id', id); fetchData();
+  // --- EXCLUSÃO PROPRIETÁRIA KAXXA ---
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsSubmitting(true);
+    resetMessages();
+    try {
+      if (deleteTarget.type === 'CATEGORY') {
+        // Se for categoria principal, remove também eventuais subcategorias vinculadas
+        await supabase.from('categories').delete().eq('parent_id', deleteTarget.id);
+        await supabase.from('categories').delete().eq('id', deleteTarget.id);
+      } else if (deleteTarget.type === 'ACCOUNT') {
+        await supabase.from('accounts').delete().eq('id', deleteTarget.id);
+      } else if (deleteTarget.type === 'CARD') {
+        await supabase.from('credit_cards').delete().eq('id', deleteTarget.id);
+      } else if (deleteTarget.type === 'THIRD_PARTY') {
+        await supabase.from('third_parties').delete().eq('id', deleteTarget.id);
+      }
+      setSuccessMsg('Item excluído com sucesso!');
+      fetchData();
+      setDeleteTarget(null);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Erro ao excluir item.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // --- CONTAS ---
@@ -342,10 +373,6 @@ function SettingsContent() {
     });
     if (error) setErrorMsg(error.message); else { setSuccessMsg('Conta salva!'); fetchData(); setTimeout(() => setIsAccountModalOpen(false), 800); }
     setIsSubmitting(false);
-  };
-  const handleDeleteAccount = async (id: string) => {
-    if (!window.confirm('Tem certeza?')) return;
-    await supabase.from('accounts').delete().eq('id', id); fetchData();
   };
 
   // --- CARTÕES ---
@@ -365,10 +392,6 @@ function SettingsContent() {
     if (error) setErrorMsg(error.message); else { setSuccessMsg('Cartão salvo!'); fetchData(); setTimeout(() => setIsCardModalOpen(false), 800); }
     setIsSubmitting(false);
   };
-  const handleDeleteCard = async (id: string) => {
-    if (!window.confirm('Tem certeza?')) return;
-    await supabase.from('credit_cards').delete().eq('id', id); fetchData();
-  };
 
   // --- TERCEIROS ---
   const handleOpenThirdPartyModal = () => {
@@ -385,10 +408,6 @@ function SettingsContent() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-  const handleDeleteThirdParty = async (id: string) => {
-    if (!window.confirm('Tem certeza?')) return;
-    await supabase.from('third_parties').delete().eq('id', id); fetchData();
   };
 
   return (
@@ -802,7 +821,7 @@ function SettingsContent() {
                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                       <button
                         type="button"
-                        onClick={() => router.push('/planos')}
+                        onClick={() => router.push('/planos?change_method=true')}
                         className="flex-1 sm:flex-none py-2.5 px-4 bg-white hover:bg-slate-50 border border-[#E5E7EB] hover:border-[#1A44C8] text-[#181B22] rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
                       >
                         <RefreshCw size={13} className="text-[#1A44C8]" />
@@ -824,16 +843,33 @@ function SettingsContent() {
 
                 </div>
 
-                {/* Opção Discreta de Reembolso: Apenas visível nos primeiros 7 dias após contratação */}
-                {isWithin7Days && subscription?.status === 'ACTIVE' && (
-                  <div className="pt-2 text-center">
+                {/* Bloco de Garantia Incondicional de 7 Dias / Reembolso */}
+                {isWithin7Days && subscription?.status === 'ACTIVE' ? (
+                  <div className="p-4 rounded-2xl bg-white border border-[#E5E7EB] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+                    <div className="space-y-1 text-left w-full sm:w-auto">
+                      <div className="flex items-center gap-2 font-bold text-[#181B22]">
+                        <ShieldCheck size={16} className="text-[#059669]" />
+                        <span>Garantia Incondicional de 7 Dias</span>
+                        <span className="text-[10px] bg-emerald-50 text-emerald-800 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                          {daysRemainingRefund > 0 ? `${daysRemainingRefund} dia${daysRemainingRefund > 1 ? 's' : ''} restante${daysRemainingRefund > 1 ? 's' : ''}` : 'Último dia'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#64748B] leading-relaxed">
+                        Você está dentro do prazo de garantia legal e pode solicitar o cancelamento com estorno total do valor pago.
+                      </p>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => setIsRefundModalOpen(true)}
-                      className="text-[11px] text-slate-400 hover:text-slate-600 hover:underline underline-offset-4 transition-colors font-medium"
+                      className="w-full sm:w-auto py-2 px-4 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-rose-600 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 active:scale-95"
                     >
-                      Solicitar estorno da assinatura (garantia incondicional de 7 dias)
+                      Solicitar Reembolso
                     </button>
+                  </div>
+                ) : (
+                  <div className="pt-2 text-center text-[11px] text-slate-400">
+                    Prazo de garantia incondicional de 7 dias encerrado. Para suspender cobranças futuras, utilize a opção &quot;Cancelar Renovação&quot; acima.
                   </div>
                 )}
 
@@ -886,7 +922,8 @@ function SettingsContent() {
                       </div>
 
                       <button 
-                        onClick={() => handleDeleteAccount(acc.id)} 
+                        type="button"
+                        onClick={() => setDeleteTarget({ type: 'ACCOUNT', id: acc.id, name: acc.name })} 
                         className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                         title="Excluir conta"
                       >
@@ -934,7 +971,14 @@ function SettingsContent() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                        <span className="text-xs text-[#181B22] font-bold">Limite: R$ {card.limit.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                       <button onClick={() => handleDeleteCard(card.id)} className="text-[#94A3B8] hover:text-rose-600 transition-colors"><Trash2 size={13}/></button>
+                       <button 
+                         type="button"
+                         onClick={() => setDeleteTarget({ type: 'CARD', id: card.id, name: card.name })} 
+                         className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                         title="Excluir cartão"
+                       >
+                         <Trash2 size={13}/>
+                       </button>
                     </div>
                   </div>
                 ))
@@ -964,37 +1008,90 @@ function SettingsContent() {
                   Nenhuma categoria cadastrada.
                 </div>
               ) : (
-                categories.filter(c => !c.parent_id).map(parent => (
-                  <div key={parent.id} className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl p-5 group/parent">
-                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#E5E7EB]">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-2.5 h-2.5 rounded-full ${parent.type === 'INCOME' ? 'bg-[#1A44C8]' : 'bg-rose-500'}`}></div>
-                        <div>
-                          <span className="text-sm text-[#181B22] font-bold">{parent.name}</span>
-                          <p className="text-[10px] text-[#64748B] uppercase tracking-widest font-semibold mt-0.5">{parent.type === 'INCOME' ? 'Receita' : 'Despesa'}</p>
+                categories.filter(c => !c.parent_id).map(parent => {
+                  const subs = categories.filter(c => c.parent_id === parent.id);
+                  const isIncome = parent.type === 'INCOME';
+
+                  return (
+                    <div key={parent.id} className="bg-white border border-[#E5E7EB] rounded-2xl shadow-xs overflow-hidden">
+                      {/* Linha da Categoria Principal */}
+                      <div className="p-4 sm:p-5 flex items-center justify-between gap-3 bg-white hover:bg-[#FAFBFD] transition-colors">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-3 h-3 rounded-full shrink-0 ${isIncome ? 'bg-[#1A44C8]' : 'bg-rose-500'}`} />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-[#181B22] font-bold truncate">{parent.name}</span>
+                              <span className={`text-[9.5px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                isIncome ? 'bg-blue-50 text-[#1A44C8] border border-blue-200' : 'bg-rose-50 text-rose-600 border border-rose-200'
+                              }`}>
+                                {isIncome ? 'Receita' : 'Despesa'}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-[#94A3B8] font-semibold">
+                              {subs.length === 0 ? 'Nenhuma subcategoria' : `${subs.length} subcategoria${subs.length > 1 ? 's' : ''}`}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button 
+                            type="button"
+                            onClick={() => handleOpenSubCategoryModal(parent)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-blue-50 hover:border-blue-200 border border-[#E5E7EB] text-[11px] font-bold text-[#1A44C8] transition-colors active:scale-95"
+                          >
+                            <Plus size={12} />
+                            <span>Nova Sub</span>
+                          </button>
+
+                          <button 
+                            type="button"
+                            onClick={() => setDeleteTarget({ 
+                              type: 'CATEGORY', 
+                              id: parent.id, 
+                              name: parent.name,
+                              subWarning: subs.length > 0 ? `Atenção: esta categoria possui ${subs.length} subcategoria(s) vinculada(s) que também serão removidas.` : undefined
+                            })} 
+                            className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                            title="Excluir categoria"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                         <button onClick={() => handleDeleteCategory(parent.id)} className="text-[#94A3B8] hover:text-rose-600 transition-colors"><Trash2 size={14} /></button>
-                      </div>
-                    </div>
 
-                    <div>
-                      <p className="text-[10px] text-[#94A3B8] font-bold mb-3 uppercase tracking-wider">Subcategorias:</p>
-                      <div className="flex flex-wrap gap-2 items-center">
-                        {categories.filter(c => c.parent_id === parent.id).map(sub => (
-                          <div key={sub.id} className="flex items-center gap-2 bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm rounded-lg px-3 py-1.5 hover:border-[#1A44C8]/30 transition-colors">
-                            <span className="text-xs text-[#181B22] font-medium">{sub.name}</span>
-                            <button onClick={() => handleDeleteCategory(sub.id)} className="text-[#94A3B8] hover:text-rose-600 transition-colors"><X size={12} /></button>
+                      {/* Lista Estruturada de Subcategorias (Árvore Hierárquica) */}
+                      <div className="bg-[#FAFBFD] border-t border-[#F1F5F9] p-3.5 sm:p-4">
+                        {subs.length === 0 ? (
+                          <div className="py-2 px-3 text-[11px] text-[#94A3B8] font-medium text-center">
+                            Nenhuma subcategoria vinculada. Clique em &quot;+ Nova Sub&quot; para criar.
                           </div>
-                        ))}
-                        <button onClick={() => handleOpenSubCategoryModal(parent)} className="flex items-center gap-1.5 bg-[#1A44C8]/10 border border-[#1A44C8]/20 text-[#1A44C8] hover:bg-[#1A44C8]/20 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors">
-                          <Plus size={12} /> Add Subcategoria
-                        </button>
+                        ) : (
+                          <div className="space-y-1.5 pl-3 border-l-2 border-[#E2E8F0] ml-2">
+                            {subs.map(sub => (
+                              <div 
+                                key={sub.id} 
+                                className="flex items-center justify-between p-2 px-3 bg-white hover:bg-slate-50 border border-[#E5E7EB] rounded-xl shadow-2xs group/sub transition-colors"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover/sub:bg-[#1A44C8] transition-colors" />
+                                  <span className="text-xs text-[#181B22] font-semibold">{sub.name}</span>
+                                </div>
+                                <button 
+                                  type="button"
+                                  onClick={() => setDeleteTarget({ type: 'CATEGORY', id: sub.id, name: sub.name })}
+                                  className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  title="Excluir subcategoria"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -1032,7 +1129,14 @@ function SettingsContent() {
                         <p className="text-[10px] text-[#64748B] uppercase tracking-widest font-semibold">{tp.type}</p>
                       </div>
                     </div>
-                    <button onClick={() => handleDeleteThirdParty(tp.id)} className="text-[#94A3B8] hover:text-rose-600 transition-colors"><Trash2 size={13}/></button>
+                    <button 
+                      type="button"
+                      onClick={() => setDeleteTarget({ type: 'THIRD_PARTY', id: tp.id, name: tp.name })} 
+                      className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      title="Excluir terceiro"
+                    >
+                      <Trash2 size={13}/>
+                    </button>
                   </div>
                 ))
               )}
@@ -1237,6 +1341,52 @@ function SettingsContent() {
             <SubmitButton label="Salvar Terceiro" loading={isSubmitting} />
           </form>
         </ModalWrapper>
+      )}
+
+      {/* Modal Kaxxa Proprietário de Confirmação de Exclusão */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center space-y-4 scale-in-center">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center mx-auto text-rose-600">
+              <Trash2 size={22} />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-base font-bold text-[#181B22]">
+                {deleteTarget.type === 'CATEGORY' ? 'Excluir Categoria' : 
+                 deleteTarget.type === 'ACCOUNT' ? 'Excluir Conta' :
+                 deleteTarget.type === 'CARD' ? 'Excluir Cartão' : 'Excluir Terceiro'}
+              </h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                Tem certeza que deseja excluir <strong>&quot;{deleteTarget.name}&quot;</strong>? Esta ação não poderá ser desfeita.
+              </p>
+              {deleteTarget.subWarning && (
+                <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-2.5 font-medium mt-2">
+                  {deleteTarget.subWarning}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-2.5 px-4 bg-[#F1F3F7] hover:bg-[#E5E7EB] text-[#181B22] text-xs font-bold rounded-xl transition-colors active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm active:scale-95 disabled:opacity-50"
+              >
+                {isSubmitting ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
