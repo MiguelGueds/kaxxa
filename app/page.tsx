@@ -18,9 +18,17 @@ import {
   Lock,
   Flame,
   ArrowUpRight,
-  CheckCircle2
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Star,
+  HelpCircle,
+  Clock,
+  Wallet
 } from 'lucide-react';
 import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
+import { PixIcon } from '@/app/components/PixLogo';
+import { RoiCalculator } from '@/app/components/RoiCalculator';
 
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -28,6 +36,7 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState<'patrimonio' | 'terceiros' | 'dividas' | 'all'>('patrimonio');
   const [isPaused, setIsPaused] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -210,14 +219,16 @@ export default function LandingPage() {
             <KaxxaWordmark className="text-lg" />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-[11px] tracking-[0.14em] uppercase font-semibold text-[#64748B]">
+          <nav className="hidden md:flex items-center gap-7 text-[11px] tracking-[0.14em] uppercase font-semibold text-[#64748B]">
             <a href="#demonstracao" className="hover:text-[#181B22] transition-colors">Demonstração</a>
-            <a href="#arquitetura" className="hover:text-[#181B22] transition-colors">Arquitetura</a>
+            <a href="#economia" className="hover:text-[#181B22] transition-colors">Economia</a>
+            <a href="#arquitetura" className="hover:text-[#181B22] transition-colors">Diferenciais</a>
             <a href="#comparativo" className="hover:text-[#181B22] transition-colors">Comparativo</a>
             <a href="#planos" className="hover:text-[#181B22] transition-colors">Planos</a>
+            <a href="#duvidas" className="hover:text-[#181B22] transition-colors">Dúvidas</a>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link 
               href="/login" 
               className="text-xs font-bold text-[#64748B] hover:text-[#181B22] px-3 py-1.5 transition-colors hidden sm:block"
@@ -225,10 +236,10 @@ export default function LandingPage() {
               Entrar
             </Link>
             <Link 
-              href="/dashboard" 
-              className="relative group overflow-hidden px-5 py-2 rounded-full text-xs font-bold text-white bg-[#1A44C8] hover:bg-[#1538A5] transition-all duration-300 shadow-[0_2px_8px_rgba(5,150,105,0.25)] flex items-center gap-1.5 active:scale-95"
+              href="/planos" 
+              className="relative group overflow-hidden px-5 py-2.5 rounded-full text-xs font-bold text-white bg-[#1A44C8] hover:bg-[#1538A5] transition-all duration-300 shadow-md shadow-[#1A44C8]/20 flex items-center gap-1.5 active:scale-95"
             >
-              <span>Acessar Painel</span>
+              <span>Assinar Agora</span>
               <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
@@ -236,36 +247,58 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 3. HERO SECTION (REFINADO, SÓBRIO & LUXUOSO) */}
+      {/* 3. HERO SECTION DE ALTA CONVERSÃO */}
       <div className="hero-wrapper flex justify-center items-center min-h-screen">
         <section className={`relative z-10 pt-36 pb-14 md:pt-44 md:pb-20 px-6 max-w-5xl mx-auto flex flex-col items-center text-center ${heroVisible ? 'animate-fade-in-up' : ''}`}>
 
-        {/* Título Principal Conciso & Refinado */}
-        <h1 className="text-3xl sm:text-5xl md:text-[54px] font-semibold tracking-[-0.03em] leading-[1.14] text-[#181B22] max-w-3xl">
-          Clareza e controle absoluto sobre o seu <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#1A44C8] via-[#3B6CF0] to-[#1538A5]">caixa.</span>
+        {/* Badge de Destaque Oficial */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-[#1A44C8] text-xs font-bold mb-6 shadow-2xs animate-in fade-in duration-300">
+          <Sparkles size={13} className="text-[#1A44C8]" />
+          <span>O Gerenciador Financeiro Oficial de Alta Performance</span>
+        </div>
+
+        {/* Título Principal de Alto Impacto */}
+        <h1 className="text-3xl sm:text-5xl md:text-[54px] font-black tracking-[-0.03em] leading-[1.12] text-[#181B22] max-w-3xl">
+          Controle absoluto do seu dinheiro e <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A44C8] via-[#00A3FF] to-[#059669]">fim das faturas surpresa.</span>
         </h1>
 
-        {/* Subtítulo Natural, Simples e Sofisticado */}
-        <p className="mt-5 text-sm sm:text-base text-[#64748B] max-w-xl font-normal leading-relaxed tracking-normal">
-          Organize suas contas, faturas e despesas compartilhadas com total clareza, simplicidade e discrição.
+        {/* Subtítulo Claro, Específico e Persuasivo */}
+        <p className="mt-5 text-sm sm:text-base text-[#64748B] max-w-2xl font-normal leading-relaxed tracking-normal">
+          O único gerenciador que separa seus gastos dos gastos de terceiros, calcula a amortização antecipada de dívidas e indica o melhor cartão de compra hoje para até 40 dias sem juros.
         </p>
 
-        {/* Botões de Ação com Acabamento Refinado */}
-        <div className="mt-9 flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto">
+        {/* Botões de Ação */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto">
           <Link 
-            href="/dashboard" 
-            className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs tracking-wider uppercase transition-all duration-300 shadow-[0_2px_12px_rgba(5,150,105,0.22),inset_0_1px_0_rgba(255,255,255,0.3)] flex items-center justify-center gap-2 active:scale-95"
+            href="/planos" 
+            className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-lg shadow-[#1A44C8]/25 flex items-center justify-center gap-2 active:scale-95"
           >
-            <span>Acessar Painel</span>
-            <ArrowRight size={13} />
+            <span>Assinar por R$ 39,90/mês</span>
+            <ArrowRight size={14} />
           </Link>
           <a 
             href="#demonstracao" 
             className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#FFFFFF] hover:bg-[#F8FAFC] border border-[#E5E7EB] text-[#181B22] font-semibold text-xs tracking-wider uppercase transition-all duration-300 flex items-center justify-center gap-2 shadow-sm"
           >
             <Play size={11} className="fill-[#181B22]" />
-            <span>Ver Demonstração ao Vivo</span>
+            <span>Ver Demonstração</span>
           </a>
+        </div>
+
+        {/* Selos de Confiança Imediatos */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] text-[#64748B] font-medium">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck size={14} className="text-[#059669]" />
+            Garantia de 7 dias
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Zap size={14} className="text-[#1A44C8]" />
+            Ativação imediata via Pix & Cartão
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Lock size={14} className="text-[#00A3FF]" />
+            100% privado e sem anúncios
+          </span>
         </div>
 
       </section>
@@ -831,16 +864,21 @@ export default function LandingPage() {
 
       </section>
 
-      {/* 5. ARQUITETURA DE CONTROLE DE CAIXA (#ARQUITETURA) */}
+      {/* 4.5 SIMULADOR INTERATIVO DE ECONOMIA (#ECONOMIA) */}
+      <section id="economia" className="py-16 px-4 sm:px-6 max-w-5xl mx-auto relative z-10">
+        <RoiCalculator />
+      </section>
+
+      {/* 5. FINANÇAS SEM RUÍDO (#ARQUITETURA) */}
       <section id="arquitetura" className="py-24 px-6 max-w-7xl mx-auto relative z-10">
         
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 pb-6 border-b border-[#E5E7EB] gap-4">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#1A44C8] font-bold">
-              [ 01 // ARQUITETURA DO SISTEMA ]
+              [ 02 // DIFERENCIAIS EXCLUSIVOS ]
             </span>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-[#181B22] tracking-tight mt-2">
-              Engenharia financeira sem ruído.
+              Finanças sem ruído.
             </h2>
           </div>
           <p className="text-sm text-[#64748B] font-medium max-w-md">
@@ -1047,7 +1085,7 @@ export default function LandingPage() {
         
         <div className="mb-10">
           <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#1A44C8] font-bold">
-            [ 03 // ACESSO AO SISTEMA ]
+            [ 04 // ACESSO AO SISTEMA ]
           </span>
           <h2 className="text-3xl sm:text-5xl font-extrabold text-[#181B22] tracking-tight mt-2">
             Acesso completo e irrestrito.
@@ -1093,10 +1131,23 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Formas de pagamento aceitas */}
+              <div className="pt-2 border-t border-[#F1F5F9] flex items-center gap-4 text-xs text-[#64748B]">
+                <span className="text-[11px] font-bold text-[#181B22]">Pagamento instantâneo:</span>
+                <div className="flex items-center gap-1.5 font-bold text-[#008A7C]">
+                  <PixIcon size={14} color="#32BCAD" />
+                  <span>PIX Imediato</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-bold text-[#1A44C8]">
+                  <CreditCard size={14} />
+                  <span>Cartão de Crédito</span>
+                </div>
+              </div>
             </div>
 
             {/* Caixa de Preço */}
-            <div className="w-full md:w-72 p-6 sm:p-8 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] flex flex-col items-center justify-center text-center shrink-0">
+            <div className="w-full md:w-72 p-6 sm:p-8 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] flex flex-col items-center justify-center text-center shrink-0 shadow-xs">
               <span className="text-[10px] uppercase font-bold tracking-wider text-[#1A44C8] bg-[#1A44C8]/10 px-2.5 py-0.5 rounded-full">
                 Assinatura Mensal
               </span>
@@ -1115,7 +1166,7 @@ export default function LandingPage() {
 
               <Link 
                 href="/planos" 
-                className="w-full py-3.5 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-md text-center flex items-center justify-center gap-1.5"
+                className="w-full py-3.5 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-md text-center flex items-center justify-center gap-1.5 active:scale-95"
               >
                 <span>Assinar Agora</span>
                 <ArrowRight size={14} />
@@ -1123,13 +1174,128 @@ export default function LandingPage() {
 
               <span className="text-[10px] text-[#059669] font-bold mt-3 flex items-center gap-1">
                 <CheckCircle2 size={12} />
-                Garantia incondicional de 7 dias
+                Garantia de 7 dias
               </span>
             </div>
 
           </div>
         </div>
 
+      </section>
+
+      {/* 8. SEÇÃO FAQ DE QUEBRA DE OBJEÇÕES (#DUVIDAS) */}
+      <section id="duvidas" className="py-24 px-6 max-w-4xl mx-auto relative z-10">
+        
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#1A44C8] font-bold">
+            [ 05 // DÚVIDAS FREQUENTES ]
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-[#181B22] tracking-tight mt-2">
+            Perguntas Frequentes
+          </h2>
+          <p className="text-sm text-[#64748B] font-medium mt-3">
+            Tudo o que você precisa saber sobre a segurança, privacidade e funcionamento do Kaxxa.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {[
+            {
+              q: "O Kaxxa pede senhas do meu banco ou pode movimentar meu dinheiro?",
+              a: "Absolutamente não! O Kaxxa opera com total independência bancária, sem nunca solicitar senhas de banco ou chaves de transferência. Você mantém controle soberano e privacidade total dos seus dados."
+            },
+            {
+              q: "O que torna o Kaxxa diferente de planilhas de Excel ou outros aplicativos?",
+              a: "Planilhas são manuais, quebram fórmulas e exigem horas de manutenção. Outros aplicativos de mercado enchem a sua tela de anúncios tentando vender empréstimos caros. O Kaxxa é 100% silencioso e o único com Gestão de Terceiros nativa (separando faturas de quem pegou seu cartão emprestado), Simulador de Amortização Antecipada e Radar do Melhor Cartão de compra do dia."
+            },
+            {
+              q: "Como funciona a Garantia de 7 Dias?",
+              a: "Você assina com total tranquilidade. Se dentro de 7 dias você sentir que o Kaxxa não transformou sua rotina financeira, basta solicitar o cancelamento diretamente no painel e seu valor é estornado sem burocracia ou perguntas."
+            },
+            {
+              q: "Tem fidelidade ou multa se eu quiser cancelar?",
+              a: "Zero fidelidade e zero multas. Você tem total liberdade e pode pausar ou cancelar sua assinatura mensal com um único clique a qualquer momento no seu painel de configurações."
+            },
+            {
+              q: "Posso acessar pelo celular e pelo computador?",
+              a: "Sim! O Kaxxa foi projetado como uma plataforma web ultrarrápida e responsiva, com experiência fluida e moderna em qualquer smartphone, tablet ou computador."
+            },
+            {
+              q: "Quais são as formas de pagamento disponíveis?",
+              a: "Aceitamos PIX instantâneo (com aprovação e liberação imediata em segundos) e Cartão de Crédito com opção de renovação mensal automática ou avulsa."
+            }
+          ].map((item, idx) => (
+            <div 
+              key={idx}
+              className="rounded-2xl border border-[#E5E7EB] bg-[#FFFFFF] shadow-2xs overflow-hidden transition-all"
+            >
+              <button
+                type="button"
+                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 font-bold text-sm text-[#181B22] hover:text-[#1A44C8] transition-colors"
+              >
+                <span>{item.q}</span>
+                <span className="shrink-0 text-[#64748B]">
+                  {openFaq === idx ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </span>
+              </button>
+              {openFaq === idx && (
+                <div className="px-5 pb-5 sm:px-6 sm:pb-6 text-xs sm:text-sm text-[#64748B] leading-relaxed border-t border-[#F1F5F9] pt-3 animate-in fade-in duration-200">
+                  {item.a}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+      </section>
+
+      {/* 9. BANNER FINAL DE CONVERSÃO */}
+      <section className="py-20 px-6 max-w-5xl mx-auto relative z-10 text-center">
+        <div className="rounded-3xl bg-gradient-to-br from-[#1A44C8] via-[#1538A5] to-[#0A1B54] p-8 sm:p-14 text-white shadow-2xl relative overflow-hidden">
+          
+          {/* Luzes internas decorativas */}
+          <div className="absolute -top-24 -right-24 w-72 h-72 bg-[#00A3FF]/25 rounded-full blur-[70px] pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-[#059669]/25 rounded-full blur-[70px] pointer-events-none" />
+
+          <span className="text-[10px] font-mono font-bold uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full border border-white/20 inline-block mb-4">
+            ACESSO IMEDIATO
+          </span>
+
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight max-w-2xl mx-auto">
+            Comece hoje a cuidar do seu dinheiro como os grandes investidores.
+          </h2>
+
+          <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto mt-4 leading-relaxed font-normal">
+            Assine por apenas R$ 39,90/mês, use por 7 dias com garantia incondicional e sinta a clareza de ter controle definitivo sobre cada centavo.
+          </p>
+
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/planos"
+              className="w-full sm:w-auto px-8 py-4 rounded-full bg-white text-[#1A44C8] hover:bg-slate-100 font-extrabold text-xs uppercase tracking-wider transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span>Garantir Minha Assinatura</span>
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-5 text-[11px] text-blue-200 font-medium">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck size={14} className="text-[#34D399]" />
+              Garantia de 7 dias
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 size={14} className="text-[#34D399]" />
+              Sem fidelidade, cancele quando quiser
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Zap size={14} className="text-[#38BDF8]" />
+              Liberação imediata via Pix & Cartão
+            </span>
+          </div>
+
+        </div>
       </section>
 
       {/* 8. FOOTER */}
