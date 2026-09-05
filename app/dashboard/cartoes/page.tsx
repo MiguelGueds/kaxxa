@@ -297,10 +297,34 @@ export default function MinhasFaturasPage() {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n';
+        let pageLines: string[] = [];
+        let currentLine = '';
+        let lastY: number | null = null;
+
+        for (const item of textContent.items as any[]) {
+          const str = item.str || '';
+          if (!str && !item.hasEOL) continue;
+
+          const y = item.transform ? Math.round(item.transform[5]) : null;
+
+          if ((lastY !== null && y !== null && Math.abs(y - lastY) > 3) || item.hasEOL) {
+            if (currentLine.trim()) {
+              pageLines.push(currentLine.trim());
+            }
+            currentLine = str;
+          } else {
+            currentLine += (currentLine && !currentLine.endsWith(' ') && !str.startsWith(' ') ? ' ' : '') + str;
+          }
+
+          if (y !== null) {
+            lastY = y;
+          }
+        }
+        if (currentLine.trim()) {
+          pageLines.push(currentLine.trim());
+        }
+
+        fullText += pageLines.join('\n') + '\n';
       }
 
       return fullText;
@@ -311,7 +335,7 @@ export default function MinhasFaturasPage() {
   };
 
   const parseTextLinesToItems = (text: string, fileName: string): ImportItem[] => {
-    const lines = text.split(/\r?\n/);
+    const rawLines = text.split(/\r?\n/);
     const items: ImportItem[] = [];
     let idx = 1;
 
@@ -320,9 +344,30 @@ export default function MinhasFaturasPage() {
       jul: '07', ago: '08', set: '09', out: '10', nov: '11', dez: '12'
     };
 
-    lines.forEach((line) => {
+    // Desmembra linhas que contenham múltiplas datas consecutivas
+    const lines: string[] = [];
+    rawLines.forEach((line) => {
       const trimmed = line.trim();
-      if (!trimmed || trimmed.length < 5) return;
+      if (!trimmed) return;
+
+      const dateRegex = /\b(\d{1,2}[\/\.-]\d{1,2}(?:[\/\.-]\d{2,4})?|\d{1,2}\s+(?:JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ))\b/gi;
+      const matches = Array.from(trimmed.matchAll(dateRegex));
+
+      if (matches.length > 1) {
+        for (let m = 0; m < matches.length; m++) {
+          const start = matches[m].index || 0;
+          const end = (m + 1 < matches.length && matches[m + 1].index !== undefined) ? matches[m + 1].index : trimmed.length;
+          const subLine = trimmed.substring(start, end).trim();
+          if (subLine) lines.push(subLine);
+        }
+      } else {
+        lines.push(trimmed);
+      }
+    });
+
+    for (let i = 0; i < lines.length; i++) {
+      let trimmed = lines[i];
+      if (!trimmed || trimmed.length < 3) continue;
 
       const lower = trimmed.toLowerCase();
       if (
@@ -331,13 +376,13 @@ export default function MinhasFaturasPage() {
         lower.includes('pagamento efetuado') || 
         lower.includes('pagamento recebido') || 
         lower.includes('saldo anterior') || 
-        lower.includes('limite total') ||
+        lower.includes('limite disponivel') ||
         lower.includes('vencimento')
       ) {
-        return;
+        continue;
       }
 
-      // Procura data numéricas (DD/MM, DD/MM/YYYY) ou por extenso (12 JUL)
+      // 1. Procura data (DD/MM, DD/MM/YYYY ou 12 JUL)
       let day = '', month = '', year = selectedYear;
       let dateMatch = trimmed.match(/^(\d{1,2})[\/\.-](\d{1,2})(?:[\/\.-](\d{2,4}))?/) || trimmed.match(/(\d{1,2})[\/\.-](\d{1,2})(?:[\/\.-](\d{2,4}))?/);
       let textDateMatch = null;
@@ -356,26 +401,37 @@ export default function MinhasFaturasPage() {
         day = textDateMatch[1].padStart(2, '0');
         month = monthMap[textDateMatch[2].toLowerCase()] || '07';
       } else {
-        return;
+        continue;
       }
 
-      // Procura valor monetário na linha
-      const amounts = trimmed.match(/(?:R\$\s*)?(-?\d{1,3}(?:\.\d{3})*,\d{2}|-?\d+[\.,]\d{2})/g);
-      if (!amounts) return;
+      // 2. Procura valor monetário na linha atual ou na próxima linha (para PDFs de coluna dividida)
+      let amounts = trimmed.match(/(?:R\$\s*)?(-?\d{1,3}(?:\.\d{3})*,\d{2}|-?\d+[\.,]\d{2})/g);
+      
+      if (!amounts && i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        const nextAmounts = nextLine.match(/(?:R\$\s*)?(-?\d{1,3}(?:\.\d{3})*,\d{2}|-?\d+[\.,]\d{2})/g);
+        if (nextAmounts) {
+          amounts = nextAmounts;
+          trimmed = `${trimmed} ${nextLine}`;
+          i++; // avança índice
+        }
+      }
+
+      if (!amounts) continue;
 
       const lastAmtStr = amounts[amounts.length - 1];
       const cleanAmt = lastAmtStr.replace(/R\$\s*/g, '').replace(/\./g, '').replace(',', '.');
       const numAmt = Math.abs(parseFloat(cleanAmt));
-      if (isNaN(numAmt) || numAmt === 0) return;
+      if (isNaN(numAmt) || numAmt === 0) continue;
 
-      // Procura parcela (ex: 1/3)
+      // 3. Procura parcela (ex: 1/3)
       let installmentText: string | undefined;
       const instMatch = trimmed.match(/\b(\d{1,2})\/(\d{1,2})\b/);
       if (instMatch) {
         installmentText = `${instMatch[1]}/${instMatch[2]}`;
       }
 
-      // Limpa descrição
+      // 4. Limpa descrição
       let desc = trimmed;
       if (dateMatch) desc = desc.replace(dateMatch[0], '');
       if (textDateMatch) desc = desc.replace(textDateMatch[0], '');
@@ -397,7 +453,7 @@ export default function MinhasFaturasPage() {
         thirdPartyName: 'Titular (Você)',
         installmentText,
       });
-    });
+    }
 
     return items;
   };
