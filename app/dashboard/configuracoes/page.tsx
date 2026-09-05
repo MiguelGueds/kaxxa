@@ -1334,8 +1334,14 @@ function SettingsContent() {
 
       {/* Modal Kaxxa Proprietário de Confirmação de Exclusão */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center space-y-4 scale-in-center">
+        <div 
+          className="fixed inset-0 z-[9999] bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setDeleteTarget(null)}
+        >
+          <div 
+            onClick={e => e.stopPropagation()} 
+            className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center space-y-4 scale-in-center"
+          >
             <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center mx-auto text-rose-600">
               <Trash2 size={22} />
             </div>
@@ -1398,11 +1404,23 @@ function TabButton({ active, onClick, icon, label, badge }: { active: boolean, o
 
 function ModalWrapper({ children, title, onClose }: { children: React.ReactNode, title: string, onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col scale-in-center">
+    <div 
+      className="fixed inset-0 z-[9999] bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div 
+        onClick={e => e.stopPropagation()} 
+        className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col scale-in-center"
+      >
         <div className="px-6 py-4 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC]">
           <h2 className="text-sm font-bold text-[#181B22]">{title}</h2>
-          <button onClick={onClose} className="text-[#94A3B8] hover:text-[#181B22] transition-colors w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#F1F3F7]"><X size={14} /></button>
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="text-[#94A3B8] hover:text-[#181B22] transition-colors w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#F1F3F7]"
+          >
+            <X size={15} />
+          </button>
         </div>
         <div className="p-6">
           {children}

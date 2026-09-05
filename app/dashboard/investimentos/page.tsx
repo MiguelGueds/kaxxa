@@ -1848,7 +1848,7 @@ export default function InvestimentosPage() {
           MODAL UNIFICADO: NOVO APORTE / EDIÇÃO DE INVESTIMENTO
       ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/40 backdrop-blur-sm flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
           <div className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
             {/* Header com Abas Macro */}
@@ -2094,7 +2094,7 @@ export default function InvestimentosPage() {
           MODAL DE EXCLUSÃO
       ========================================================================= */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/40 backdrop-blur-sm flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
           <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 text-center space-y-3 my-auto animate-scale-in-center">
             <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto">
               <Trash2 size={18} />

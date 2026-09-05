@@ -365,18 +365,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               )}
             </button>
 
-            {/* Botão de Modo Privacidade (Olho) */}
+            {/* Botão de Modo Privacidade (Apenas Ícone do Olho) */}
             <button 
+              type="button"
               onClick={togglePrivacy}
-              className={`h-8 px-2.5 rounded-xl border flex items-center gap-1.5 text-xs transition-all shadow-sm active:scale-95 ${
+              className={`h-8 w-8 rounded-xl border flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0 ${
                 isConcealed 
                   ? 'bg-amber-50 text-amber-700 border-amber-200' 
                   : 'bg-[#F8FAFC] hover:bg-[#F1F3F7] text-[#64748B] hover:text-[#181B22] border-[#E5E7EB]'
               }`}
               title={isConcealed ? "Revelar valores monetários" : "Ocultar valores monetários (Modo Privacidade)"}
+              aria-label={isConcealed ? "Revelar valores monetários" : "Ocultar valores monetários (Modo Privacidade)"}
             >
-              {isConcealed ? <EyeOff size={13} className="text-amber-600" /> : <Eye size={13} className="text-[#1A44C8]" />}
-              <span className="text-[11px] font-semibold hidden sm:inline">{isConcealed ? 'Oculto' : 'Privacidade'}</span>
+              {isConcealed ? <EyeOff size={14} className="text-amber-600" /> : <Eye size={14} className="text-[#1A44C8]" />}
             </button>
 
             {/* Perfil no Topbar (Avatar Redondo) */}

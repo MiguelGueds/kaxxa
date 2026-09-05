@@ -707,8 +707,8 @@ export default function TerceirosPage() {
 
       {/* MODAL DETALHES DO DEVEDOR */}
       {selectedPersonPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedPersonPopup(null)}></div>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#0A0D14]/80 backdrop-blur-md" onClick={() => setSelectedPersonPopup(null)}></div>
           <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
@@ -827,8 +827,8 @@ export default function TerceirosPage() {
 
       {/* MODAL NOVO LANÇAMENTO */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsNewModalOpen(false)}></div>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#0A0D14]/80 backdrop-blur-md" onClick={() => setIsNewModalOpen(false)}></div>
           <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
             <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
               <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
