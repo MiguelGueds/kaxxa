@@ -1,16 +1,25 @@
 import { NextResponse } from 'next/server';
+import { couponService, calculateCouponDiscount } from '@/lib/services/coupons';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { planType, email, name, userId } = await req.json();
+    const { planType, email, name, userId, couponCode } = await req.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'Você precisa estar logado para gerar o pagamento via PIX.' }, { status: 401 });
     }
 
-    const amount = 39.90;
+    let amount = 39.90;
+    if (couponCode) {
+      const coupon = await couponService.getCoupon(couponCode);
+      if (coupon && coupon.active && coupon.used_count < coupon.max_uses) {
+        const { finalPrice } = calculateCouponDiscount(39.90, coupon);
+        amount = finalPrice;
+      }
+    }
+
     const description = 'Kaxxa Finanças - Assinatura Mensal (Acesso Completo)';
 
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;

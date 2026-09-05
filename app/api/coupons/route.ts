@@ -15,11 +15,13 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { code, days, maxUses } = body;
+    const { code, type, value, discountDurationMonths, maxUses } = body;
 
     const coupon = await couponService.createCoupon({
       code: code ? String(code).trim().toUpperCase() : undefined,
-      days: days ? Number(days) : 2,
+      type: type || 'TRIAL_DAYS',
+      value: value ? Number(value) : (type === 'TRIAL_DAYS' ? 2 : 20),
+      discountDurationMonths: discountDurationMonths !== undefined ? Number(discountDurationMonths) : 1,
       maxUses: maxUses ? Number(maxUses) : 1,
     });
 

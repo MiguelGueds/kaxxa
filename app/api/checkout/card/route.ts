@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server';
+import { couponService, calculateCouponDiscount } from '@/lib/services/coupons';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { email, name, userId, recurring = true } = await req.json();
+    const { email, name, userId, recurring = true, couponCode } = await req.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'Você precisa estar logado para realizar o pagamento no cartão.' }, { status: 401 });
+    }
+
+    let amount = 39.90;
+    if (couponCode) {
+      const coupon = await couponService.getCoupon(couponCode);
+      if (coupon && coupon.active && coupon.used_count < coupon.max_uses) {
+        const { finalPrice } = calculateCouponDiscount(39.90, coupon);
+        amount = finalPrice;
+      }
     }
 
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
@@ -34,7 +44,7 @@ export async function POST(req: Request) {
           auto_recurring: {
             frequency: 1,
             frequency_type: 'months',
-            transaction_amount: 39.90,
+            transaction_amount: amount,
             currency_id: 'BRL'
           },
           back_url: `${baseUrl}/dashboard`,
@@ -68,7 +78,7 @@ export async function POST(req: Request) {
               description: 'Acesso completo de 30 dias à plataforma Kaxxa Finanças',
               quantity: 1,
               currency_id: 'BRL',
-              unit_price: 39.90
+              unit_price: amount
             }
           ],
           payer: {

@@ -68,7 +68,9 @@ export default function SettingsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
   const [loadingCoupons, setLoadingCoupons] = useState(false);
   const [newCouponCode, setNewCouponCode] = useState('');
-  const [newCouponDays, setNewCouponDays] = useState(2);
+  const [newCouponType, setNewCouponType] = useState<'TRIAL_DAYS' | 'PERCENT' | 'FIXED'>('TRIAL_DAYS');
+  const [newCouponValue, setNewCouponValue] = useState<number>(2);
+  const [newCouponDurationMonths, setNewCouponDurationMonths] = useState<number>(1);
   const [newCouponMaxUses, setNewCouponMaxUses] = useState(1);
   const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
 
@@ -89,7 +91,8 @@ export default function SettingsPage() {
 
   const generateRandomCouponCode = () => {
     const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-    setNewCouponCode(`TESTE-${randomSuffix}`);
+    const prefix = newCouponType === 'TRIAL_DAYS' ? 'TESTE' : 'PROMO';
+    setNewCouponCode(`${prefix}-${randomSuffix}`);
   };
 
   const handleCreateCoupon = async (e: React.FormEvent) => {
@@ -102,7 +105,9 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           code: newCouponCode.trim() || undefined,
-          days: newCouponDays,
+          type: newCouponType,
+          value: newCouponValue,
+          discountDurationMonths: newCouponDurationMonths,
           maxUses: newCouponMaxUses,
         })
       });
@@ -690,15 +695,103 @@ export default function SettingsPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                {/* Tipo de Cupom */}
+                <div className="sm:col-span-4 space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
+                    Tipo de Benefício
+                  </label>
+                  <select
+                    value={newCouponType}
+                    onChange={(e) => {
+                      const t = e.target.value as 'TRIAL_DAYS' | 'PERCENT' | 'FIXED';
+                      setNewCouponType(t);
+                      if (t === 'TRIAL_DAYS') setNewCouponValue(2);
+                      if (t === 'PERCENT') setNewCouponValue(20);
+                      if (t === 'FIXED') setNewCouponValue(10);
+                    }}
+                    className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
+                  >
+                    <option value="TRIAL_DAYS">Degustação (Dias Grátis)</option>
+                    <option value="PERCENT">Desconto em % (Porcentagem)</option>
+                    <option value="FIXED">Desconto em R$ (Valor Fixo)</option>
+                  </select>
+                </div>
+
+                {/* Valor / Duração */}
+                <div className="sm:col-span-4 space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
+                    {newCouponType === 'TRIAL_DAYS' ? 'Dias de Teste' : newCouponType === 'PERCENT' ? '% de Desconto' : 'Valor do Desconto (R$)'}
+                  </label>
+                  {newCouponType === 'TRIAL_DAYS' ? (
+                    <select
+                      value={newCouponValue}
+                      onChange={(e) => setNewCouponValue(Number(e.target.value))}
+                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
+                    >
+                      <option value={1}>1 Dia de Degustação</option>
+                      <option value={2}>2 Dias (Recomendado)</option>
+                      <option value={3}>3 Dias</option>
+                      <option value={7}>7 Dias</option>
+                      <option value={14}>14 Dias</option>
+                      <option value={30}>30 Dias</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="number"
+                      step={newCouponType === 'FIXED' ? '0.01' : '1'}
+                      min="1"
+                      max={newCouponType === 'PERCENT' ? '100' : '39.90'}
+                      value={newCouponValue}
+                      onChange={(e) => setNewCouponValue(Number(e.target.value))}
+                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
+                    />
+                  )}
+                </div>
+
+                {/* Duração do Desconto (se não for TRIAL_DAYS) */}
+                {newCouponType !== 'TRIAL_DAYS' ? (
+                  <div className="sm:col-span-4 space-y-1">
+                    <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
+                      Validade do Desconto
+                    </label>
+                    <select
+                      value={newCouponDurationMonths}
+                      onChange={(e) => setNewCouponDurationMonths(Number(e.target.value))}
+                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
+                    >
+                      <option value={1}>Apenas no 1º mês</option>
+                      <option value={2}>Nos 2 primeiros meses</option>
+                      <option value={3}>Nos 3 primeiros meses</option>
+                      <option value={0}>Em todos os meses (Vitalício)</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="sm:col-span-4 space-y-1">
+                    <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
+                      Limite de Uso
+                    </label>
+                    <select
+                      value={newCouponMaxUses}
+                      onChange={(e) => setNewCouponMaxUses(Number(e.target.value))}
+                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
+                    >
+                      <option value={1}>1 Uso (Uso Único Descartável)</option>
+                      <option value={2}>2 Usos</option>
+                      <option value={5}>5 Usos</option>
+                      <option value={10}>10 Usos</option>
+                    </select>
+                  </div>
+                )}
+
                 {/* Código */}
-                <div className="sm:col-span-6 space-y-1">
+                <div className="sm:col-span-8 space-y-1">
                   <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
                     Código do Cupom
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Ex: TESTE-78X9"
+                      placeholder="Digite aqui..."
                       value={newCouponCode}
                       onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
                       className="flex-1 uppercase font-mono text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8]"
@@ -715,39 +808,24 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Duração */}
-                <div className="sm:col-span-3 space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
-                    Duração do Teste
-                  </label>
-                  <select
-                    value={newCouponDays}
-                    onChange={(e) => setNewCouponDays(Number(e.target.value))}
-                    className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
-                  >
-                    <option value={1}>1 Dia de Degustação</option>
-                    <option value={2}>2 Dias (Recomendado)</option>
-                    <option value={3}>3 Dias</option>
-                    <option value={7}>7 Dias</option>
-                  </select>
-                </div>
-
-                {/* Limite de Usos */}
-                <div className="sm:col-span-3 space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
-                    Limite de Uso
-                  </label>
-                  <select
-                    value={newCouponMaxUses}
-                    onChange={(e) => setNewCouponMaxUses(Number(e.target.value))}
-                    className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
-                  >
-                    <option value={1}>1 Uso (Uso Único)</option>
-                    <option value={2}>2 Usos</option>
-                    <option value={5}>5 Usos</option>
-                    <option value={10}>10 Usos</option>
-                  </select>
-                </div>
+                {/* Se não for TRIAL_DAYS, limite de usos fica aqui */}
+                {newCouponType !== 'TRIAL_DAYS' && (
+                  <div className="sm:col-span-4 space-y-1">
+                    <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
+                      Limite de Uso
+                    </label>
+                    <select
+                      value={newCouponMaxUses}
+                      onChange={(e) => setNewCouponMaxUses(Number(e.target.value))}
+                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
+                    >
+                      <option value={1}>1 Uso (Uso Único)</option>
+                      <option value={5}>5 Usos</option>
+                      <option value={10}>10 Usos</option>
+                      <option value={999999}>Ilimitado</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end pt-1">
@@ -757,7 +835,7 @@ export default function SettingsPage() {
                   className="px-5 py-2.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
                 >
                   <Plus size={13} />
-                  <span>{isSubmitting ? 'Gerando...' : 'Criar Cupom de Teste'}</span>
+                  <span>{isSubmitting ? 'Gerando...' : 'Criar Cupom'}</span>
                 </button>
               </div>
             </form>
@@ -786,7 +864,7 @@ export default function SettingsPage() {
                 <div className="p-8 border border-dashed border-[#E5E7EB] rounded-2xl text-center space-y-1.5">
                   <Ticket size={24} className="mx-auto text-slate-400" />
                   <p className="text-xs text-[#64748B] font-bold">Nenhum cupom gerado ainda</p>
-                  <p className="text-[10px] text-slate-400">Use o formulário acima para gerar seu primeiro cupom descartável de teste.</p>
+                  <p className="text-[10px] text-slate-400">Use o formulário acima para gerar seu primeiro cupom de teste ou desconto.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -794,6 +872,15 @@ export default function SettingsPage() {
                     const isExhausted = coupon.used_count >= coupon.max_uses;
                     const isCodeCopied = copiedCouponId === `code-${coupon.id}`;
                     const isLinkCopied = copiedCouponId === `link-${coupon.id}`;
+
+                    let benefitLabel = `${coupon.value} dias grátis`;
+                    if (coupon.type === 'PERCENT') {
+                      const dur = coupon.discount_duration_months === 0 ? 'Vitalício' : coupon.discount_duration_months === 1 ? '1º mês' : `${coupon.discount_duration_months} meses`;
+                      benefitLabel = `${coupon.value}% OFF (${dur})`;
+                    } else if (coupon.type === 'FIXED') {
+                      const dur = coupon.discount_duration_months === 0 ? 'Vitalício' : coupon.discount_duration_months === 1 ? '1º mês' : `${coupon.discount_duration_months} meses`;
+                      benefitLabel = `R$ ${Number(coupon.value).toFixed(2).replace('.', ',')} OFF (${dur})`;
+                    }
 
                     return (
                       <div
@@ -811,19 +898,19 @@ export default function SettingsPage() {
                                 {coupon.code}
                               </span>
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#1A44C8] border border-blue-100">
-                                {coupon.value} {coupon.value === 1 ? 'dia' : 'dias'} grátis
+                                {benefitLabel}
                               </span>
                             </div>
                             <div className="mt-1 flex items-center gap-1.5 text-[10px]">
                               {isExhausted ? (
                                 <span className="text-rose-600 font-bold flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                  Esgotado ({coupon.used_count}/{coupon.max_uses} usos)
+                                  Expirado
                                 </span>
                               ) : (
                                 <span className="text-[#059669] font-bold flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                  Disponível ({coupon.used_count}/{coupon.max_uses} usos)
+                                  Disponível ({coupon.used_count}/{coupon.max_uses} {coupon.max_uses === 1 ? 'uso' : 'usos'})
                                 </span>
                               )}
                             </div>
@@ -838,18 +925,6 @@ export default function SettingsPage() {
                             <Trash2 size={14} />
                           </button>
                         </div>
-
-                        {/* Detalhes de quem usou */}
-                        {coupon.used_by && coupon.used_by.length > 0 && (
-                          <div className="p-2 bg-slate-100/70 rounded-xl text-[10px] text-[#475569] space-y-0.5 border border-slate-200">
-                            <span className="font-bold block text-[#181B22]">Utilizado por:</span>
-                            {coupon.used_by.map((u: any, i: number) => (
-                              <div key={i} className="truncate">
-                                • {u.email || u.user_id} ({new Date(u.used_at).toLocaleDateString('pt-BR')})
-                              </div>
-                            ))}
-                          </div>
-                        )}
 
                         {/* Botões de Ação Rápida: Copiar Código e Copiar Link */}
                         <div className="grid grid-cols-2 gap-2 pt-1">

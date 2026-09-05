@@ -37,8 +37,8 @@ export default function PlanosCheckoutPage() {
 
   // Forma de Pagamento Direta: 'PIX' | 'CARD'
   const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CARD'>('PIX');
-  // Se Cartão: Ativar renovação automática mensal (recorrente) ou pagamento avulso
-  const [cardRecurring, setCardRecurring] = useState(true);
+  // Se Cartão: Ativar renovação automática mensal - por padrão DESMARCADO conforme solicitação
+  const [cardRecurring, setCardRecurring] = useState(false);
 
   // Checkout State
   const [loading, setLoading] = useState(false);
@@ -58,13 +58,19 @@ export default function PlanosCheckoutPage() {
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string;
-    days: number;
     type: string;
+    value: number;
+    discountDurationMonths: number;
+    discountAmount: number;
+    finalPrice: number;
     message: string;
   } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
   const [showCouponInput, setShowCouponInput] = useState(false);
+
+  // Preço calculado com desconto
+  const displayPrice = appliedCoupon ? appliedCoupon.finalPrice : 39.90;
 
   // Polling interval
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -297,7 +303,7 @@ export default function PlanosCheckoutPage() {
     };
   }, [pixData, isApproved, user, router]);
 
-  // Validar Cupom de Desconto
+  // Validar Cupom de Desconto ou Degustação
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!couponInput.trim()) return;
@@ -314,6 +320,7 @@ export default function PlanosCheckoutPage() {
           code: couponInput.trim(),
           userId: user?.id,
           email: user?.email,
+          originalPrice: 39.90,
         })
       });
 
@@ -324,8 +331,11 @@ export default function PlanosCheckoutPage() {
 
       setAppliedCoupon({
         code: data.code,
-        days: data.days,
         type: data.type,
+        value: data.value,
+        discountDurationMonths: data.discountDurationMonths,
+        discountAmount: data.discountAmount,
+        finalPrice: data.finalPrice,
         message: data.message,
       });
       setPixData(null);
@@ -343,8 +353,8 @@ export default function PlanosCheckoutPage() {
     setCouponError('');
   };
 
-  // Resgatar / Ativar Cupom de Degustação (R$ 0,00)
-  const handleRedeemCoupon = async () => {
+  // Resgatar Cupom de Degustação (100% Grátis)
+  const handleRedeemTrialCoupon = async () => {
     if (!user) {
       handleGoogleClick();
       return;
@@ -401,6 +411,7 @@ export default function PlanosCheckoutPage() {
           email: userEmail || user?.email,
           name: userName || 'Cliente Kaxxa',
           userId: user?.id,
+          couponCode: appliedCoupon?.code,
         })
       });
 
@@ -467,6 +478,7 @@ export default function PlanosCheckoutPage() {
           name: userName || 'Cliente Kaxxa',
           userId: user?.id,
           recurring: cardRecurring,
+          couponCode: appliedCoupon?.code,
         })
       });
 
@@ -547,11 +559,11 @@ export default function PlanosCheckoutPage() {
               <CheckCircle2 size={32} className="animate-bounce" />
             </div>
             <h3 className="text-lg font-black text-[#181B22] mb-1">
-              {appliedCoupon ? 'Acesso Liberado!' : 'Pagamento Aprovado!'}
+              {appliedCoupon?.type === 'TRIAL_DAYS' ? 'Acesso Liberado!' : 'Pagamento Aprovado!'}
             </h3>
             <p className="text-xs text-[#64748B] mb-4 leading-relaxed">
-              {appliedCoupon 
-                ? `Seu teste de ${appliedCoupon.days} dias foi ativado com sucesso. Redirecionando para seu painel...`
+              {appliedCoupon?.type === 'TRIAL_DAYS' 
+                ? `Seu teste de ${appliedCoupon.value} dias foi ativado com sucesso. Redirecionando para seu painel...`
                 : 'Sua Assinatura Kaxxa foi liberada com sucesso. Redirecionando para seu painel...'}
             </p>
             <div className="w-full bg-[#F1F5F9] h-2 rounded-full overflow-hidden">
@@ -574,7 +586,7 @@ export default function PlanosCheckoutPage() {
             Assinatura Kaxxa
           </h1>
           <p className="text-xs text-[#64748B] mt-0.5">
-            Acesso completo a todas as ferramentas financeiras por R$ 39,90.
+            Acesso completo a todas as ferramentas financeiras.
           </p>
         </div>
 
@@ -592,23 +604,20 @@ export default function PlanosCheckoutPage() {
         {/* Grid de 2 Colunas */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-          {/* COLUNA ESQUERDA (7 cols): ESCOLHA DIRETA PIX vs CARTÃO */}
+          {/* COLUNA ESQUERDA (7 cols): FORMA DE PAGAMENTO */}
           <div className="lg:col-span-7 space-y-4">
 
-            {/* SELEÇÃO DIRETA ENTRE PIX E CARTÃO OU CUPOM DE ACESSO */}
+            {/* SELEÇÃO DIRETA ENTRE PIX E CARTÃO (SEM PREÇO REPETIDO NO CABEÇALHO) */}
             <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5 hover:shadow-md transition-all">
               
-              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+              <div className="pb-2 border-b border-[#F1F5F9]">
                 <h2 className="text-xs font-extrabold text-[#181B22] uppercase tracking-wide">
-                  {appliedCoupon ? 'Benefício do Cupom' : 'Escolha a Forma de Pagamento'}
+                  Escolha a Forma de Pagamento
                 </h2>
-                <span className={`text-xs font-black ${appliedCoupon ? 'text-[#059669]' : 'text-[#059669]'}`}>
-                  {appliedCoupon ? 'GRÁTIS (R$ 0,00)' : 'R$ 39,90'}
-                </span>
               </div>
 
-              {/* SE CUPOM ESTIVER ATIVADO: CARD DE RESGATE GRÁTIS */}
-              {appliedCoupon ? (
+              {/* SE CUPOM DE TESTE 100% ESTIVER ATIVADO: CARD DE ATIVAÇÃO GRÁTIS */}
+              {appliedCoupon && appliedCoupon.type === 'TRIAL_DAYS' ? (
                 <div className="p-4 bg-emerald-50/80 border-2 border-[#059669] rounded-xl space-y-3 animate-in fade-in">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
@@ -625,7 +634,7 @@ export default function PlanosCheckoutPage() {
                           </span>
                         </div>
                         <p className="text-[11px] text-[#059669] font-medium mt-0.5">
-                          {appliedCoupon.days} dias de degustação completa sem precisar pagar nada.
+                          {appliedCoupon.value} dias de degustação completa sem precisar pagar nada.
                         </p>
                       </div>
                     </div>
@@ -641,7 +650,7 @@ export default function PlanosCheckoutPage() {
 
                   <button
                     type="button"
-                    onClick={handleRedeemCoupon}
+                    onClick={handleRedeemTrialCoupon}
                     disabled={loading}
                     className="w-full py-3 bg-[#059669] hover:bg-[#047857] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
                   >
@@ -650,14 +659,14 @@ export default function PlanosCheckoutPage() {
                     ) : (
                       <>
                         <Zap size={14} />
-                        <span>ATIVAR MEU ACESSO DE {appliedCoupon.days} DIAS GRÁTIS</span>
+                        <span>ATIVAR MEU ACESSO DE {appliedCoupon.value} DIAS GRÁTIS</span>
                         <ArrowRight size={13} />
                       </>
                     )}
                   </button>
                 </div>
               ) : (
-                /* FLUXO NORMAL: BOTOES DE ESCOLHA DIRETA PIX vs CARTÃO */
+                /* FLUXO NORMAL OU COM CUPOM DE DESCONTO (% / R$) */
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     {/* BOTÃO PIX */}
@@ -716,30 +725,48 @@ export default function PlanosCheckoutPage() {
                     </button>
                   </div>
 
-                  {/* OPÇÃO DE ATIVAR RECORRÊNCIA AO SELECIONAR CARTÃO */}
+                  {/* OPÇÃO DE ATIVAR RECORRÊNCIA AO SELECIONAR CARTÃO (COM DESIGN PERSUASIVO) */}
                   {paymentMethod === 'CARD' && (
-                    <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl space-y-2 animate-in fade-in duration-200">
-                      <label className="flex items-start gap-2.5 cursor-pointer">
+                    <div className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                      cardRecurring 
+                        ? 'bg-blue-50/70 border-[#1A44C8] shadow-sm ring-2 ring-[#1A44C8]/10' 
+                        : 'bg-gradient-to-r from-blue-50/40 via-amber-50/40 to-slate-50 border-[#E2E8F0] hover:border-[#1A44C8]'
+                    }`}>
+                      <label className="flex items-start gap-3 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={cardRecurring}
                           onChange={(e) => setCardRecurring(e.target.checked)}
-                          className="w-4 h-4 mt-0.5 text-[#1A44C8] rounded border-gray-300 focus:ring-[#1A44C8] cursor-pointer"
+                          className="w-5 h-5 mt-0.5 text-[#1A44C8] rounded border-gray-300 focus:ring-[#1A44C8] cursor-pointer"
                         />
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-extrabold text-[#181B22]">
+                          <div className="flex items-center justify-between flex-wrap gap-1">
+                            <span className="text-xs font-black text-[#181B22] flex items-center gap-1.5">
+                              <Sparkles size={13} className="text-[#1A44C8]" />
                               Ativar renovação automática mensal
                             </span>
-                            <span className="text-[10px] font-black text-[#1A44C8]">
-                              R$ 39,90/mês
+                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${cardRecurring ? 'bg-blue-100 text-[#1A44C8]' : 'bg-slate-200 text-slate-700'}`}>
+                              R$ {displayPrice.toFixed(2).replace('.', ',')}/mês
                             </span>
                           </div>
-                          <p className="text-[10px] text-[#64748B] mt-0.5 leading-relaxed">
-                            {cardRecurring 
-                              ? 'Seu plano renova todo mês sem você se preocupar com vencimento. Cancele com 1 clique a qualquer momento no seu perfil.'
-                              : 'Modo Avulso: Cobrança única de 30 dias. Nenhuma cobrança futura será realizada no seu cartão.'}
+                          
+                          <p className="text-[11px] text-[#475569] mt-1 leading-relaxed">
+                            {cardRecurring ? (
+                              <span className="text-[#059669] font-bold flex items-center gap-1 mt-0.5">
+                                <CheckCircle2 size={12} /> Renovação contínua ativa. Seu acesso não será interrompido e você pode cancelar com 1 clique a qualquer momento no perfil.
+                              </span>
+                            ) : (
+                              <span className="text-blue-950 font-medium block mt-0.5">
+                                ⚡ Recomendado: Ative para não se preocupar com vencimentos manuais e manter seu acesso sempre garantido sem interrupções.
+                              </span>
+                            )}
                           </p>
+
+                          <div className="flex items-center gap-3 mt-2 text-[10px] font-bold text-[#64748B]">
+                            <span>✓ Sem carência nem multas</span>
+                            <span>✓ Cancele com 1 clique</span>
+                            <span>✓ Cobrança oficial Mercado Pago</span>
+                          </div>
                         </div>
                       </label>
                     </div>
@@ -762,7 +789,7 @@ export default function PlanosCheckoutPage() {
                               <Clock size={13} />
                               Expira em {formatTime(countdown)}
                             </span>
-                            <span>Total: R$ 39,90</span>
+                            <span>Total: R$ {displayPrice.toFixed(2).replace('.', ',')}</span>
                           </div>
 
                           <div className="p-2.5 bg-white border border-[#E2E8F0] rounded-xl inline-block shadow-sm">
@@ -849,7 +876,7 @@ export default function PlanosCheckoutPage() {
                           ) : (
                             <>
                               <Zap size={14} />
-                              <span>PAGAR COM PIX • R$ 39,90</span>
+                              <span>PAGAR COM PIX • R$ {displayPrice.toFixed(2).replace('.', ',')}</span>
                             </>
                           )}
                         </button>
@@ -872,7 +899,9 @@ export default function PlanosCheckoutPage() {
                           <>
                             <Lock size={14} />
                             <span>
-                              {cardRecurring ? 'ASSINAR COM CARTÃO (R$ 39,90/MÊS)' : 'PAGAR R$ 39,90 NO CARTÃO (30 DIAS)'}
+                              {cardRecurring 
+                                ? `ASSINAR COM CARTÃO (R$ ${displayPrice.toFixed(2).replace('.', ',')}/MÊS)` 
+                                : `PAGAR R$ ${displayPrice.toFixed(2).replace('.', ',')} NO CARTÃO (30 DIAS)`}
                             </span>
                             <ArrowRight size={13} />
                           </>
@@ -925,7 +954,7 @@ export default function PlanosCheckoutPage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Ex: TESTE-2DIAS"
+                      placeholder="Digite aqui..."
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                       disabled={couponLoading || !!appliedCoupon}
@@ -979,8 +1008,8 @@ export default function PlanosCheckoutPage() {
                   <div>
                     <h3 className="font-extrabold text-[#181B22]">Assinatura Kaxxa</h3>
                     <p className="text-[10px] text-[#64748B]">
-                      {appliedCoupon 
-                        ? `Degustação de ${appliedCoupon.days} dias` 
+                      {appliedCoupon?.type === 'TRIAL_DAYS'
+                        ? `Degustação de ${appliedCoupon.value} dias` 
                         : (paymentMethod === 'CARD' && cardRecurring ? 'Cobrança mensal recorrente' : '30 dias de acesso')}
                     </p>
                   </div>
@@ -990,12 +1019,12 @@ export default function PlanosCheckoutPage() {
                 </div>
 
                 {appliedCoupon && (
-                  <div className="flex justify-between items-center text-[#059669] text-xs font-bold bg-emerald-50 p-1.5 rounded-lg border border-emerald-200">
+                  <div className="flex justify-between items-center text-[#059669] text-xs font-bold bg-emerald-50 p-2 rounded-lg border border-emerald-200">
                     <span className="flex items-center gap-1">
                       <Tag size={12} />
                       Cupom ({appliedCoupon.code})
                     </span>
-                    <span>- R$ 39,90</span>
+                    <span>- R$ {appliedCoupon.discountAmount.toFixed(2).replace('.', ',')}</span>
                   </div>
                 )}
 
@@ -1007,11 +1036,7 @@ export default function PlanosCheckoutPage() {
                 <div className="pt-2 border-t border-[#E2E8F0] flex justify-between items-baseline">
                   <span className="text-xs font-black text-[#181B22]">Total Hoje:</span>
                   <span className="text-lg font-black text-[#181B22]">
-                    {appliedCoupon ? (
-                      <span className="text-[#059669]">R$ 0,00</span>
-                    ) : (
-                      'R$ 39,90'
-                    )}
+                    R$ {displayPrice.toFixed(2).replace('.', ',')}
                   </span>
                 </div>
               </div>
