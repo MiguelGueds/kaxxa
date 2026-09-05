@@ -247,24 +247,7 @@ function SettingsContent() {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto animate-fade-in-up w-full space-y-6">
-      {/* 1. CABEÇALHO CONTEXTUAL DEDICADO AS CONFIGURAÇÕES DO SISTEMA */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-[#E5E7EB]/80">
-        <div>
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] mb-1">
-            <span>Kaxxa</span>
-            <span>/</span>
-            <span className="text-[#1A44C8]">Configurações</span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black text-[#181B22] tracking-tight">
-            Configurações
-          </h1>
-          <p className="text-xs text-[#64748B] mt-0.5">
-            Estruture suas contas bancárias, cartões de crédito, categorias financeiras e pessoas cadastradas.
-          </p>
-        </div>
-      </header>
-
-      {/* 2. SUB-ABAS EM FORMATO PILL MODERNO */}
+      {/* SUB-ABAS EM FORMATO PILL MODERNO */}
       <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
         <button 
           type="button"
