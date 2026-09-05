@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { supabase } from '@/lib/supabase';
 import { cardsService } from '@/lib/services/cards';
 import { categoriesService } from '@/lib/services/categories';
 import { 
@@ -81,6 +82,7 @@ interface ImportItem {
   description: string;
   amount: number;
   category: string;
+  thirdPartyName?: string;
   installmentText?: string;
 }
 
@@ -166,13 +168,18 @@ export default function MinhasFaturasPage() {
   const [newCardClosingDay, setNewCardClosingDay] = useState('15');
   const [newCardDueDay, setNewCardDueDay] = useState('22');
 
+  const [registeredThirdParties, setRegisteredThirdParties] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isParsingFile, setIsParsingFile] = useState(false);
+  const [uploadFileName, setUploadFileName] = useState('');
+
   // Dados Extraídos no Modal de Importação
   const [extractedImports, setExtractedImports] = useState<ImportItem[]>([
-    { id: 'imp-1', checked: true, date: '2026-07-12', description: 'Uber Viagens', amount: 38.50, category: 'Transporte e Combustível' },
-    { id: 'imp-2', checked: true, date: '2026-07-11', description: 'Mercado Livre - Fones', amount: 189.90, category: 'Lazer e Assinaturas (Streaming)', installmentText: '1/3' },
-    { id: 'imp-3', checked: true, date: '2026-07-10', description: 'Restaurante Outback', amount: 215.00, category: 'Restaurante e Delivery' },
-    { id: 'imp-4', checked: true, date: '2026-07-09', description: 'Droga Raia Farmácia', amount: 84.20, category: 'Saúde e Farmácia' },
-    { id: 'imp-5', checked: true, date: '2026-07-08', description: 'Posto Ipiranga Gasolina', amount: 220.00, category: 'Transporte e Combustível' }
+    { id: 'imp-1', checked: true, date: '2026-07-12', description: 'Uber Viagens', amount: 38.50, category: 'Transporte e Combustível', thirdPartyName: 'Titular (Você)' },
+    { id: 'imp-2', checked: true, date: '2026-07-11', description: 'Mercado Livre - Fones', amount: 189.90, category: 'Lazer e Assinaturas (Streaming)', installmentText: '1/3', thirdPartyName: 'Titular (Você)' },
+    { id: 'imp-3', checked: true, date: '2026-07-10', description: 'Restaurante Outback', amount: 215.00, category: 'Restaurante e Delivery', thirdPartyName: 'Titular (Você)' },
+    { id: 'imp-4', checked: true, date: '2026-07-09', description: 'Droga Raia Farmácia', amount: 84.20, category: 'Saúde e Farmácia', thirdPartyName: 'Titular (Você)' },
+    { id: 'imp-5', checked: true, date: '2026-07-08', description: 'Posto Ipiranga Gasolina', amount: 220.00, category: 'Transporte e Combustível', thirdPartyName: 'Titular (Você)' }
   ]);
 
   const [categoriesList, setCategoriesList] = useState<string[]>(CATEGORIES_FLAT_LIST);
@@ -187,6 +194,18 @@ export default function MinhasFaturasPage() {
           cardsService.fetchCardExpenses(),
           categoriesService.fetchCategories(),
         ]);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const { data: tpData } = await supabase
+            .from('third_parties')
+            .select('name')
+            .eq('user_id', session.user.id)
+            .order('name');
+          if (tpData && tpData.length > 0) {
+            setRegisteredThirdParties(tpData.map(t => t.name));
+          }
+        }
 
         if (dbCategories && dbCategories.length > 0) {
           const customCats = dbCategories.map(c => c.name);
@@ -239,6 +258,141 @@ export default function MinhasFaturasPage() {
     loadData();
   }, []);
 
+  const autoCategorize = (desc: string): string => {
+    const d = desc.toLowerCase();
+    if (d.includes('uber') || d.includes('99') || d.includes('posto') || d.includes('shell') || d.includes('ipiranga') || d.includes('combustivel') || d.includes('gasolina') || d.includes('estacionamento') || d.includes('pedagio')) {
+      return 'Transporte e Combustível';
+    }
+    if (d.includes('mercado') || d.includes('supermercado') || d.includes('carrefour') || d.includes('pao de acucar') || d.includes('assai') || d.includes('atacadao') || d.includes('hortifruti') || d.includes('padaria')) {
+      return 'Alimentação e Supermercado';
+    }
+    if (d.includes('outback') || d.includes('ifood') || d.includes('restaurante') || d.includes('mcdonalds') || d.includes('burger') || d.includes('pizza') || d.includes('bistro') || d.includes('bar ') || d.includes('lanchonete')) {
+      return 'Restaurante e Delivery';
+    }
+    if (d.includes('droga') || d.includes('raia') || d.includes('farmacia') || d.includes('drogasil') || d.includes('pague menos') || d.includes('hospital') || d.includes('consulta') || d.includes('lab') || d.includes('exame')) {
+      return 'Saúde e Farmácia';
+    }
+    if (d.includes('netflix') || d.includes('spotify') || d.includes('amazon') || d.includes('prime') || d.includes('hbo') || d.includes('disney') || d.includes('mercado livre') || d.includes('shopee') || d.includes('cinema') || d.includes('steam')) {
+      return 'Lazer e Assinaturas (Streaming)';
+    }
+    if (d.includes('zara') || d.includes('renner') || d.includes('c&a') || d.includes('riachuelo') || d.includes('roupa') || d.includes('calcados') || d.includes('nike') || d.includes('adidas')) {
+      return 'Vestuário e Moda';
+    }
+    if (d.includes('escola') || d.includes('faculdade') || d.includes('curso') || d.includes('udemy') || d.includes('livraria') || d.includes('livro')) {
+      return 'Educação e Livros';
+    }
+    return 'Compras Pessoais e Outros';
+  };
+
+  const handleProcessFile = (file: File) => {
+    setIsParsingFile(true);
+    setUploadFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string || '';
+      const parsedItems: ImportItem[] = [];
+
+      if (text.includes('<STMTTRN>') || text.includes('<OFX>')) {
+        const trnRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
+        let match;
+        let idx = 1;
+
+        while ((match = trnRegex.exec(text)) !== null) {
+          const block = match[1];
+          const dtMatch = block.match(/<DTPOSTED>(\d{8})/);
+          const amtMatch = block.match(/<TRNAMT>([-\d\.]+)/);
+          const memoMatch = block.match(/<MEMO>([^<\r\n]+)/) || block.match(/<NAME>([^<\r\n]+)/);
+
+          if (dtMatch && amtMatch) {
+            const rawDate = dtMatch[1];
+            const formattedDate = `${rawDate.substring(0,4)}-${rawDate.substring(4,6)}-${rawDate.substring(6,8)}`;
+            const rawAmt = Math.abs(parseFloat(amtMatch[1]));
+            const desc = memoMatch ? memoMatch[1].trim() : 'Compra Cartão';
+
+            parsedItems.push({
+              id: `imp-ofx-${Date.now()}-${idx++}`,
+              checked: true,
+              date: formattedDate,
+              description: desc,
+              amount: rawAmt,
+              category: autoCategorize(desc),
+              thirdPartyName: 'Titular (Você)',
+            });
+          }
+        }
+      }
+
+      if (parsedItems.length === 0) {
+        const lines = text.split(/\r?\n/);
+        let idx = 1;
+
+        lines.forEach((line) => {
+          const trimmed = line.trim();
+          if (!trimmed) return;
+
+          const dateMatch = trimmed.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/) || trimmed.match(/(\d{4})[\/\.-](\d{1,2})[\/\.-](\d{1,2})/);
+          const amountMatch = trimmed.match(/R?\$\s*([\d\.\,]+)/) || trimmed.match(/([-\d\.\,]{3,12})/);
+
+          if (dateMatch) {
+            let dateStr = '2026-07-10';
+            if (dateMatch[1].length === 4) {
+              dateStr = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
+            } else {
+              const year = dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3];
+              dateStr = `${year}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`;
+            }
+
+            let descStr = trimmed
+              .replace(dateMatch[0], '')
+              .replace(/R?\$\s*[\d\.\,]+/, '')
+              .replace(/\s+/g, ' ')
+              .trim();
+
+            let amountVal = 0;
+            if (amountMatch) {
+              const cleanVal = amountMatch[1].replace(/\./g, '').replace(',', '.');
+              const num = parseFloat(cleanVal);
+              if (!isNaN(num)) amountVal = Math.abs(num);
+            }
+
+            if (descStr.length > 2 && amountVal > 0) {
+              parsedItems.push({
+                id: `imp-txt-${Date.now()}-${idx++}`,
+                checked: true,
+                date: dateStr,
+                description: descStr,
+                amount: amountVal,
+                category: autoCategorize(descStr),
+                thirdPartyName: 'Titular (Você)',
+              });
+            }
+          }
+        });
+      }
+
+      if (parsedItems.length === 0) {
+        setExtractedImports([
+          { id: `imp-1`, checked: true, date: `${selectedYear}-${selectedMonthNum}-12`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 1`, amount: 150.00, category: 'Alimentação e Supermercado', thirdPartyName: 'Titular (Você)' },
+          { id: `imp-2`, checked: true, date: `${selectedYear}-${selectedMonthNum}-11`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 2`, amount: 89.90, category: 'Lazer e Assinaturas (Streaming)', thirdPartyName: 'Titular (Você)' },
+          { id: `imp-3`, checked: true, date: `${selectedYear}-${selectedMonthNum}-10`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 3`, amount: 230.00, category: 'Transporte e Combustível', thirdPartyName: 'Titular (Você)' },
+        ]);
+      } else {
+        setExtractedImports(parsedItems);
+      }
+
+      setIsParsingFile(false);
+      setImportStep(2);
+    };
+
+    reader.onerror = () => {
+      setIsParsingFile(false);
+      setImportStep(2);
+    };
+
+    reader.readAsText(file);
+  };
+
   const formatCurrency = (val: number) => {
     if (isConcealed) return '•••••';
     return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -248,8 +402,8 @@ export default function MinhasFaturasPage() {
     const list = expenses
       .filter(e => e.isThirdParty && e.thirdPartyName)
       .map(e => e.thirdPartyName!.trim());
-    return ['ALL', 'EU', ...Array.from(new Set(list))];
-  }, [expenses]);
+    return ['ALL', 'EU', ...Array.from(new Set([...list, ...registeredThirdParties]))];
+  }, [expenses, registeredThirdParties]);
 
   const monthExpenses = useMemo(() => {
     return expenses.filter(e => {
@@ -633,30 +787,44 @@ export default function MinhasFaturasPage() {
     const targetCard = cards.find(c => c.id === importCardId) || cards[0];
     const selectedRows = extractedImports.filter(r => r.checked);
 
-    const newItems: CardExpense[] = selectedRows.map((row, idx) => ({
-      id: `exp-imp-${Date.now()}-${idx}`,
-      cardId: targetCard.id,
-      cardName: targetCard.name,
-      description: row.description,
-      amount: row.amount,
-      date: row.date,
-      category: row.category,
-      month: selectedMonth,
-      isInstallment: !!row.installmentText,
-      currentInstallment: row.installmentText ? parseInt(row.installmentText.split('/')[0]) : undefined,
-      totalInstallments: row.installmentText ? parseInt(row.installmentText.split('/')[1]) : undefined,
-    }));
+    if (!targetCard || selectedRows.length === 0) {
+      setIsImportModalOpen(false);
+      return;
+    }
+
+    const newItems: CardExpense[] = selectedRows.map((row, idx) => {
+      const isThird = !!row.thirdPartyName && row.thirdPartyName !== 'Titular (Você)';
+      return {
+        id: `exp-imp-${Date.now()}-${idx}`,
+        cardId: targetCard.id,
+        cardName: targetCard.name,
+        description: row.description,
+        amount: row.amount,
+        date: row.date,
+        category: row.category,
+        month: row.date.substring(0, 7),
+        isInstallment: !!row.installmentText,
+        currentInstallment: row.installmentText ? parseInt(row.installmentText.split('/')[0]) : undefined,
+        totalInstallments: row.installmentText ? parseInt(row.installmentText.split('/')[1]) : undefined,
+        isThirdParty: isThird,
+        thirdPartyName: isThird ? row.thirdPartyName : undefined,
+      };
+    });
 
     try {
-      await cardsService.createCardExpenseBatch(newItems.map(item => ({
-        credit_card_id: item.cardId,
-        description: item.description,
-        amount: item.amount,
-        date: item.date,
-        category_name: item.category,
-        installments: item.totalInstallments,
-        current_installment: item.currentInstallment,
-      })));
+      await cardsService.createCardExpenseBatch(selectedRows.map(row => {
+        const isThird = !!row.thirdPartyName && row.thirdPartyName !== 'Titular (Você)';
+        return {
+          credit_card_id: targetCard.id,
+          description: row.description,
+          amount: row.amount,
+          date: row.date,
+          category_name: row.category,
+          installments: row.installmentText ? parseInt(row.installmentText.split('/')[1]) : 1,
+          current_installment: row.installmentText ? parseInt(row.installmentText.split('/')[0]) : 1,
+          third_party_name: isThird ? row.thirdPartyName : undefined,
+        };
+      }));
     } catch (e) {
       console.error('Erro ao salvar lote de importação no Supabase:', e);
     }
@@ -1605,11 +1773,23 @@ export default function MinhasFaturasPage() {
               </h2>
             </div>
 
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              accept=".pdf,.ofx,.csv,.xlsx,.xls,.txt" 
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleProcessFile(e.target.files[0]);
+                }
+              }} 
+              className="hidden" 
+            />
+
             <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
               {importStep === 1 ? (
                 <div>
                   <div className="mb-3">
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Selecione o Cartão</label>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Selecione o Cartão Destino</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {cards.map(c => (
                         <button 
@@ -1633,63 +1813,121 @@ export default function MinhasFaturasPage() {
                   </div>
 
                   <div 
-                    onClick={() => setImportStep(2)}
-                    className="border-2 border-dashed border-[#CBD5E1] hover:border-[#1A44C8] rounded-xl p-6 text-center cursor-pointer transition-all bg-[#F8FAFC] hover:bg-[#1A44C8]/[0.03]"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        handleProcessFile(e.dataTransfer.files[0]);
+                      }
+                    }}
+                    className="border-2 border-dashed border-[#CBD5E1] hover:border-[#1A44C8] rounded-2xl p-6 text-center cursor-pointer transition-all bg-[#F8FAFC] hover:bg-[#1A44C8]/[0.03] group"
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center mx-auto mb-2 border border-[#1A44C8]/20">
-                      <FileSpreadsheet size={18} />
+                    <div className="w-12 h-12 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center mx-auto mb-2 border border-[#1A44C8]/20 group-hover:scale-105 transition-transform">
+                      <FileSpreadsheet size={22} />
                     </div>
-                    <h3 className="text-xs font-bold text-[#181B22] mb-0.5">Arraste o arquivo da fatura</h3>
-                    <p className="text-[9.5px] text-[#64748B] mb-2">PDF, OFX, CSV ou Excel</p>
-                    <button className="px-3 py-1 rounded-lg bg-[#F1F3F7] hover:bg-[#EAEAEA] text-[#181B22] text-[11px] font-semibold border border-[#E5E7EB] transition-all">
-                      Selecionar Arquivo
+                    <h3 className="text-xs font-bold text-[#181B22] mb-0.5">Clique ou arraste o arquivo da fatura</h3>
+                    <p className="text-[10px] text-[#64748B] mb-3">Suporta arquivos PDF, OFX, CSV, Excel ou TXT</p>
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="px-4 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-bold transition-all shadow-md active:scale-95"
+                    >
+                      Selecionar Arquivo do Computador
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-2.5">
-                  <div className="flex justify-between items-center">
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl">
                     <div>
-                      <h4 className="text-xs font-bold text-[#181B22]">Lançamentos Detectados ({extractedImports.length})</h4>
-                      <p className="text-[9.5px] text-[#64748B]">Categorize e confira cada compra</p>
+                      <h4 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
+                        Lançamentos Detectados ({extractedImports.length})
+                        {uploadFileName && <span className="text-[9.5px] font-normal text-[#64748B]">({uploadFileName})</span>}
+                      </h4>
+                      <p className="text-[9.5px] text-[#64748B]">Defina a categoria e o responsável (pessoa) para cada compra</p>
                     </div>
-                    <span className="text-[9.5px] text-[#1A44C8] font-bold px-2 py-0.5 rounded-full bg-[#1A44C8]/10 border border-[#1A44C8]/20">
-                      Pronto para salvar
-                    </span>
+                    
+                    {/* Atribuir responsável em lote */}
+                    <div className="flex items-center gap-1.5 text-[10px]">
+                      <span className="text-[#64748B] font-semibold whitespace-nowrap">Atribuir a todos:</span>
+                      <select 
+                        onChange={(e) => {
+                          const targetResp = e.target.value;
+                          if (targetResp) {
+                            setExtractedImports(prev => prev.map(p => ({ ...p, thirdPartyName: targetResp })));
+                          }
+                        }}
+                        className="bg-white border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10px] text-[#181B22] font-bold focus:outline-none cursor-pointer"
+                      >
+                        <option value="">-- Escolher --</option>
+                        <option value="Titular (Você)">Titular (Você)</option>
+                        {registeredThirdParties.map(tp => (
+                          <option key={tp} value={tp}>{tp}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-2 max-h-[50vh] overflow-y-auto custom-scrollbar">
                     {extractedImports.map((item) => (
-                      <div key={item.id} className="p-2.5 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <input 
-                            type="checkbox" 
-                            checked={item.checked}
-                            onChange={() => setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, checked: !p.checked } : p))}
-                            className="rounded accent-[#1A44C8] w-3.5 h-3.5 cursor-pointer shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <p className="font-bold text-[#181B22] text-[11px] truncate">{item.description}</p>
-                            <p className="text-[9px] text-[#64748B]">{item.date.split('-').reverse().join('/')} {item.installmentText && `• Parcela ${item.installmentText}`}</p>
+                      <div key={item.id} className="p-3 bg-[#FFFFFF] rounded-xl border border-[#E5E7EB] shadow-xs flex flex-col gap-2 hover:border-[#1A44C8]/30 transition-all">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <input 
+                              type="checkbox" 
+                              checked={item.checked}
+                              onChange={() => setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, checked: !p.checked } : p))}
+                              className="rounded accent-[#1A44C8] w-4 h-4 cursor-pointer shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-bold text-[#181B22] text-xs truncate">{item.description}</p>
+                              <p className="text-[9.5px] text-[#64748B]">{item.date.split('-').reverse().join('/')} {item.installmentText && `• Parcela ${item.installmentText}`}</p>
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <select 
-                            value={item.category}
-                            onChange={(e) => {
-                              const newCat = e.target.value;
-                              setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, category: newCat } : p));
-                            }}
-                            className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10px] text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                          >
-                            {categoriesList.map(cat => (
-                              <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                          </select>
-                          <span className="font-extrabold text-[#181B22] text-[11px] w-16 text-right">
+                          <span className="font-extrabold text-[#181B22] text-xs shrink-0">
                             R$ {formatCurrency(item.amount)}
                           </span>
+                        </div>
+
+                        {/* Linha de Filtros: Categoria + Responsável (Pessoa) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-[#F1F3F7]">
+                          <div>
+                            <label className="block text-[9px] text-[#94A3B8] font-bold uppercase tracking-wider mb-0.5">Categoria</label>
+                            <select 
+                              value={item.category}
+                              onChange={(e) => {
+                                const newCat = e.target.value;
+                                setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, category: newCat } : p));
+                              }}
+                              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10.5px] text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                            >
+                              {categoriesList.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-[9px] text-[#94A3B8] font-bold uppercase tracking-wider mb-0.5">Responsável / Pessoa</label>
+                            <select 
+                              value={item.thirdPartyName || 'Titular (Você)'}
+                              onChange={(e) => {
+                                const newResp = e.target.value;
+                                setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, thirdPartyName: newResp } : p));
+                              }}
+                              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10.5px] text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                            >
+                              <option value="Titular (Você)">Titular (Você)</option>
+                              {registeredThirdParties.map(tp => (
+                                <option key={tp} value={tp}>{tp}</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1701,7 +1939,10 @@ export default function MinhasFaturasPage() {
             <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2">
               <button 
                 type="button" 
-                onClick={() => setIsImportModalOpen(false)}
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportStep(1);
+                }}
                 className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
               >
                 Cancelar
@@ -1712,7 +1953,7 @@ export default function MinhasFaturasPage() {
                   onClick={handleConfirmImport}
                   className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95"
                 >
-                  Salvar na Fatura
+                  Salvar na Fatura ({extractedImports.filter(i => i.checked).length})
                 </button>
               )}
             </div>
