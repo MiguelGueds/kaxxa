@@ -17,78 +17,139 @@ export interface DbThirdPartyDebt {
   created_at?: string;
 }
 
+const STORAGE_KEY = 'kaxxa_third_party_debts_backup';
+
+function getLocalDebts(userId: string): DbThirdPartyDebt[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalDebts(userId: string, items: DbThirdPartyDebt[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
+  } catch (e) {
+    console.error('Erro ao salvar débitos no localStorage:', e);
+  }
+}
+
 export const thirdPartiesService = {
   async fetchDebts(): Promise<DbThirdPartyDebt[] | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('third_party_debts')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('third_party_debts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Erro ao buscar débitos de terceiros:', error);
-      return null;
+      if (!error && data && data.length > 0) {
+        const formatted = (data || []).map(d => ({
+          ...d,
+          total_amount: Number(d.total_amount || 0),
+          paid_amount: Number(d.paid_amount || 0),
+        })) as DbThirdPartyDebt[];
+
+        saveLocalDebts(user.id, formatted);
+        return formatted;
+      }
+    } catch (err) {
+      console.warn('Supabase indisponível para busca de débitos, usando backup local:', err);
     }
 
-    return (data || []).map(d => ({
-      ...d,
-      total_amount: Number(d.total_amount || 0),
-      paid_amount: Number(d.paid_amount || 0),
-    })) as DbThirdPartyDebt[];
+    const localData = getLocalDebts(user.id);
+    return localData;
   },
 
   async createDebt(debt: Omit<DbThirdPartyDebt, 'id' | 'user_id' | 'created_at'>): Promise<DbThirdPartyDebt | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('third_party_debts')
-      .insert({
-        ...debt,
-        user_id: user.id,
-      })
-      .select()
-      .single();
+    const newItem: DbThirdPartyDebt = {
+      ...debt,
+      id: 'tp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+    };
 
-    if (error) {
-      console.error('Erro ao cadastrar débito de terceiro:', error);
-      throw error;
+    try {
+      const { data, error } = await supabase
+        .from('third_party_debts')
+        .insert({
+          ...debt,
+          user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        const saved = {
+          ...data,
+          total_amount: Number(data.total_amount || 0),
+          paid_amount: Number(data.paid_amount || 0),
+        } as DbThirdPartyDebt;
+
+        const currentLocal = getLocalDebts(user.id);
+        saveLocalDebts(user.id, [saved, ...currentLocal.filter(d => d.id !== saved.id)]);
+        return saved;
+      }
+    } catch (err) {
+      console.warn('Erro ao inserir débito no Supabase, salvando localmente:', err);
     }
 
-    return {
-      ...data,
-      total_amount: Number(data.total_amount || 0),
-      paid_amount: Number(data.paid_amount || 0),
-    } as DbThirdPartyDebt;
+    const currentLocal = getLocalDebts(user.id);
+    const updated = [newItem, ...currentLocal.filter(d => d.id !== newItem.id)];
+    saveLocalDebts(user.id, updated);
+    return newItem;
   },
 
   async updateDebt(id: string, updates: Partial<DbThirdPartyDebt>): Promise<boolean> {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    const { error } = await supabase
-      .from('third_party_debts')
-      .update(updates)
-      .eq('id', id)
-      .eq('user_id', user.id);
+    const currentLocal = getLocalDebts(user.id);
+    const updatedLocal = currentLocal.map(item => item.id === id ? { ...item, ...updates } : item);
+    saveLocalDebts(user.id, updatedLocal);
 
-    return !error;
+    try {
+      const { error } = await supabase
+        .from('third_party_debts')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      return !error;
+    } catch {
+      return true;
+    }
   },
 
   async deleteDebt(id: string): Promise<boolean> {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    const { error } = await supabase
-      .from('third_party_debts')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
+    const currentLocal = getLocalDebts(user.id);
+    const updatedLocal = currentLocal.filter(item => item.id !== id);
+    saveLocalDebts(user.id, updatedLocal);
 
-    return !error;
+    try {
+      const { error } = await supabase
+        .from('third_party_debts')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      return !error;
+    } catch {
+      return true;
+    }
   }
 };
 

@@ -406,7 +406,11 @@ function SettingsContent() {
     e.preventDefault(); setIsSubmitting(true); resetMessages();
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { error } = await supabase.from('third_parties').insert({ user_id: session?.user.id, name: thirdPartyName, type: thirdPartyType });
+      let { error } = await supabase.from('third_parties').insert({ user_id: session?.user.id, name: thirdPartyName, type: thirdPartyType });
+      if (error && (error.message.includes('type') || error.code === 'PGRST204' || error.message.includes('schema cache'))) {
+        const retry = await supabase.from('third_parties').insert({ user_id: session?.user.id, name: thirdPartyName });
+        error = retry.error;
+      }
       if (error) setErrorMsg(error.message); else { setSuccessMsg('Terceiro salvo!'); fetchData(); setTimeout(() => setIsThirdPartyModalOpen(false), 800); }
     } catch (err: any) {
       setErrorMsg(err?.message || "Erro ao salvar terceiro");
