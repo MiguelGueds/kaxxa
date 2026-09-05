@@ -33,7 +33,7 @@ export default function PlanosCheckoutPage() {
   const [userEmail, setUserEmail] = useState('');
 
   // Payment Method
-  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
+  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CARD_RECURRING' | 'CARD_SINGLE'>('PIX');
 
   // Checkout State
   const [loading, setLoading] = useState(false);
@@ -173,7 +173,7 @@ export default function PlanosCheckoutPage() {
     }
   };
 
-  const handleCardSubscription = async () => {
+  const handleCardPayment = async (recurring: boolean) => {
     setLoading(true);
     setErrorMsg('');
 
@@ -185,19 +185,20 @@ export default function PlanosCheckoutPage() {
           email: userEmail || user?.email,
           name: userName || 'Cliente Kaxxa',
           userId: user?.id,
+          recurring,
         })
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Não foi possível iniciar a assinatura');
+        throw new Error(data.error || 'Não foi possível iniciar o pagamento no cartão');
       }
 
       if (data.initPoint) {
         window.location.href = data.initPoint;
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Erro ao processar assinatura no cartão.');
+      setErrorMsg(err.message || 'Erro ao processar pagamento no cartão.');
       setLoading(false);
     }
   };
@@ -407,7 +408,7 @@ export default function PlanosCheckoutPage() {
                 </div>
 
                 {/* Seletor de Forma de Pagamento */}
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('PIX')}
@@ -417,37 +418,58 @@ export default function PlanosCheckoutPage() {
                         : 'border-[#E5E7EB] hover:border-gray-300 bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
-                        <QrCode size={16} className={paymentMethod === 'PIX' ? 'text-[#059669]' : 'text-gray-400'} />
+                        <QrCode size={15} className={paymentMethod === 'PIX' ? 'text-[#059669]' : 'text-gray-400'} />
                         <span className="text-xs font-bold text-[#181B22]">PIX</span>
                       </div>
                       <span className="text-[9px] font-bold text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded-full">
                         Instantâneo
                       </span>
                     </div>
-                    <p className="text-[10px] text-[#64748B] leading-tight">Pagamento mensal avulso via QR Code</p>
+                    <p className="text-[10px] text-[#64748B] leading-tight">QR Code avulso (30 dias)</p>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('CREDIT_CARD')}
+                    onClick={() => setPaymentMethod('CARD_RECURRING')}
                     className={`p-3 rounded-2xl border-2 text-left transition-all flex flex-col justify-between ${
-                      paymentMethod === 'CREDIT_CARD'
+                      paymentMethod === 'CARD_RECURRING'
                         ? 'border-[#1A44C8] bg-[#1A44C8]/[0.03] shadow-sm'
                         : 'border-[#E5E7EB] hover:border-gray-300 bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
-                        <CreditCard size={16} className={paymentMethod === 'CREDIT_CARD' ? 'text-[#1A44C8]' : 'text-gray-400'} />
+                        <CreditCard size={15} className={paymentMethod === 'CARD_RECURRING' ? 'text-[#1A44C8]' : 'text-gray-400'} />
                         <span className="text-xs font-bold text-[#181B22]">Cartão</span>
                       </div>
                       <span className="text-[9px] font-bold text-[#1A44C8] bg-[#1A44C8]/10 px-1.5 py-0.5 rounded-full">
                         Recorrente
                       </span>
                     </div>
-                    <p className="text-[10px] text-[#64748B] leading-tight">Cobrança automática mensal no cartão</p>
+                    <p className="text-[10px] text-[#64748B] leading-tight">Renovação automática mensal</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('CARD_SINGLE')}
+                    className={`p-3 rounded-2xl border-2 text-left transition-all flex flex-col justify-between ${
+                      paymentMethod === 'CARD_SINGLE'
+                        ? 'border-[#1A44C8] bg-[#1A44C8]/[0.03] shadow-sm'
+                        : 'border-[#E5E7EB] hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <CreditCard size={15} className={paymentMethod === 'CARD_SINGLE' ? 'text-amber-600' : 'text-gray-400'} />
+                        <span className="text-xs font-bold text-[#181B22]">Cartão</span>
+                      </div>
+                      <span className="text-[9px] font-bold text-amber-700 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
+                        Único
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#64748B] leading-tight">Pague 1 mês sem renovar</p>
                   </button>
                 </div>
 
@@ -476,7 +498,7 @@ export default function PlanosCheckoutPage() {
                   </div>
                 </div>
 
-                {paymentMethod === 'CREDIT_CARD' ? (
+                {paymentMethod === 'CARD_RECURRING' && (
                   <div className="p-3.5 rounded-xl bg-blue-50/60 border border-blue-200/70 text-xs text-[#1E3A8A] space-y-1">
                     <p className="font-bold flex items-center gap-1.5">
                       <Sparkles size={14} className="text-[#1A44C8]" />
@@ -486,14 +508,28 @@ export default function PlanosCheckoutPage() {
                       O valor de <strong>R$ 39,90</strong> será cobrado todo mês diretamente no seu cartão, sem você se preocupar com vencimento. Cancele quando quiser a qualquer momento.
                     </p>
                   </div>
-                ) : (
+                )}
+
+                {paymentMethod === 'CARD_SINGLE' && (
+                  <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/70 text-xs text-[#92400E] space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <CreditCard size={14} className="text-[#D97706]" />
+                      <span>Pagamento Único no Cartão (30 Dias)</span>
+                    </p>
+                    <p className="text-[11px] text-[#334155] leading-relaxed">
+                      Cobrança única de <strong>R$ 39,90</strong> no cartão de crédito. Você terá 30 dias de acesso completo sem nenhuma renovação automática.
+                    </p>
+                  </div>
+                )}
+
+                {paymentMethod === 'PIX' && (
                   <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200/70 text-xs text-[#065F46] space-y-1">
                     <p className="font-bold flex items-center gap-1.5">
                       <Zap size={14} className="text-[#059669]" />
                       <span>Liberação em 3 segundos</span>
                     </p>
                     <p className="text-[11px] text-[#334155] leading-relaxed">
-                      Gere o código PIX e pague no app do seu banco para o seu acesso ser liberado imediatamente.
+                      Gere o código PIX e pague no app do seu banco para o seu acesso ser liberado imediatamente (30 dias de acesso).
                     </p>
                   </div>
                 )}
@@ -505,7 +541,7 @@ export default function PlanosCheckoutPage() {
                 )}
 
                 {/* Botão Principal */}
-                {paymentMethod === 'PIX' ? (
+                {paymentMethod === 'PIX' && (
                   <button
                     type="button"
                     onClick={handleGeneratePix}
@@ -521,10 +557,12 @@ export default function PlanosCheckoutPage() {
                       </>
                     )}
                   </button>
-                ) : (
+                )}
+
+                {paymentMethod === 'CARD_RECURRING' && (
                   <button
                     type="button"
-                    onClick={handleCardSubscription}
+                    onClick={() => handleCardPayment(true)}
                     disabled={loading}
                     className="w-full py-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
                   >
@@ -534,6 +572,24 @@ export default function PlanosCheckoutPage() {
                       <>
                         <Lock size={14} />
                         <span>ASSINAR COM CARTÃO • R$ 39,90/MÊS</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {paymentMethod === 'CARD_SINGLE' && (
+                  <button
+                    type="button"
+                    onClick={() => handleCardPayment(false)}
+                    disabled={loading}
+                    className="w-full py-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Lock size={14} />
+                        <span>PAGAR NO CARTÃO • R$ 39,90 (PAGAMENTO ÚNICO)</span>
                       </>
                     )}
                   </button>
