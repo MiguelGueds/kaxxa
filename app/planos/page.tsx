@@ -226,6 +226,40 @@ export default function PlanosCheckoutPage() {
     return () => clearInterval(interval);
   }, [authLoading, user, initGsi]);
 
+  const renderWarningButtons = useCallback(() => {
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id && !user) {
+      try {
+        const containers = [
+          'google-btn-warning-pix',
+          'google-btn-warning-card',
+          'google-btn-warning-trial'
+        ];
+        containers.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.innerHTML = '';
+            (window as any).google.accounts.id.renderButton(el, {
+              theme: 'filled_blue',
+              size: 'medium',
+              text: 'continue_with',
+              shape: 'pill',
+            });
+          }
+        });
+      } catch (e) {
+        console.error('Error rendering warning Google buttons:', e);
+      }
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (authWarning) {
+      renderWarningButtons();
+      const t = setTimeout(renderWarningButtons, 80);
+      return () => clearTimeout(t);
+    }
+  }, [authWarning, renderWarningButtons]);
+
   const handleGoogleOAuthDirect = async () => {
     try {
       setLoading(true);
@@ -678,15 +712,20 @@ export default function PlanosCheckoutPage() {
                     <div className="p-3 bg-amber-50 border-2 border-amber-300 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-amber-950 animate-in fade-in slide-in-from-top-1 duration-200">
                       <div className="flex items-center gap-2">
                         <AlertCircle size={16} className="text-amber-600 shrink-0" />
-                        <span className="font-bold">Entre na sua conta antes de continuar</span>
+                        <span className="font-bold">Entre em sua conta antes</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleGoogleOAuthDirect}
-                        className="w-full sm:w-auto px-3.5 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95 shrink-0"
-                      >
-                        <span>Entrar com Google</span>
-                      </button>
+                      <div className="shrink-0 flex justify-center">
+                        <div id="google-btn-warning-trial" />
+                        {!gsiReady && (
+                          <button
+                            type="button"
+                            onClick={handleGoogleClick}
+                            className="px-3.5 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
+                          >
+                            <span>Entrar com Google</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -924,15 +963,20 @@ export default function PlanosCheckoutPage() {
                             <div className="p-3 bg-amber-50 border-2 border-amber-300 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-amber-950 animate-in fade-in slide-in-from-top-1 duration-200">
                               <div className="flex items-center gap-2">
                                 <AlertCircle size={16} className="text-amber-600 shrink-0" />
-                                <span className="font-bold">Entre na sua conta antes de pagar</span>
+                                <span className="font-bold">Entre em sua conta antes</span>
                               </div>
-                              <button
-                                type="button"
-                                onClick={handleGoogleOAuthDirect}
-                                className="w-full sm:w-auto px-3.5 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95 shrink-0"
-                              >
-                                <span>Entrar com Google</span>
-                              </button>
+                              <div className="shrink-0 flex justify-center">
+                                <div id="google-btn-warning-pix" />
+                                {!gsiReady && (
+                                  <button
+                                    type="button"
+                                    onClick={handleGoogleClick}
+                                    className="px-3.5 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
+                                  >
+                                    <span>Entrar com Google</span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           )}
 
@@ -964,15 +1008,20 @@ export default function PlanosCheckoutPage() {
                         <div className="p-3 bg-amber-50 border-2 border-amber-300 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-amber-950 animate-in fade-in slide-in-from-top-1 duration-200">
                           <div className="flex items-center gap-2">
                             <AlertCircle size={16} className="text-amber-600 shrink-0" />
-                            <span className="font-bold">Entre na sua conta antes de pagar</span>
+                            <span className="font-bold">Entre em sua conta antes</span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={handleGoogleOAuthDirect}
-                            className="w-full sm:w-auto px-3.5 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95 shrink-0"
-                          >
-                            <span>Entrar com Google</span>
-                          </button>
+                          <div className="shrink-0 flex justify-center">
+                            <div id="google-btn-warning-card" />
+                            {!gsiReady && (
+                              <button
+                                type="button"
+                                onClick={handleGoogleClick}
+                                className="px-3.5 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
+                              >
+                                <span>Entrar com Google</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       )}
 
