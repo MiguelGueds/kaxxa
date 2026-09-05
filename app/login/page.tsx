@@ -34,7 +34,11 @@ export default function LoginPage() {
       if (error) throw error;
     } catch (err: any) {
       console.error('Google Auth error:', err);
-      setErrorMsg(err.message || 'Erro ao conectar com o Google.');
+      if (err.message?.includes('provider is not enabled') || err.message?.includes('Unsupported provider') || err.error_code === 'validation_failed') {
+        setErrorMsg('O login com Google ainda não foi ativado no painel do Supabase. Use seu E-mail e Senha abaixo para cadastrar ou entrar!');
+      } else {
+        setErrorMsg(err.message || 'Erro ao conectar com o Google.');
+      }
       setLoading(false);
     }
   };
