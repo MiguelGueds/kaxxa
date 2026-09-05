@@ -13,6 +13,7 @@ import {
   Copy, 
   CheckCircle2, 
   ArrowRight, 
+  ArrowLeft,
   Lock, 
   Clock, 
   Sparkles,
@@ -559,7 +560,7 @@ export default function PlanosCheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100/40 via-[#F8FAFC] to-[#EEF2F6] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] overflow-x-hidden">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] overflow-x-hidden">
       
       {/* Script Oficial do Google Identity Services */}
       <Script 
@@ -568,25 +569,33 @@ export default function PlanosCheckoutPage() {
         onLoad={initGsi} 
       />
 
-      {/* Luzes Suaves com Degradê de Alta Fidelidade */}
-      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-[550px] h-[550px] bg-gradient-to-br from-[#1A44C8]/10 via-[#00A3FF]/10 to-transparent blur-[140px] rounded-full" />
-        <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] bg-gradient-to-bl from-[#6366F1]/10 via-[#38BDF8]/10 to-transparent blur-[150px] rounded-full" />
-        <div className="absolute -bottom-40 left-1/4 w-[500px] h-[500px] bg-emerald-500/[0.06] blur-[130px] rounded-full" />
-      </div>
+      {/* Header Minimalista, Sofisticado e com Logo Centralizada */}
+      <header className="relative z-20 w-full border-b border-[#E2E8F0] bg-white px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-2xs">
+        {/* Lado Esquerdo: Botão Voltar */}
+        <div className="w-1/3 flex items-center justify-start">
+          <Link 
+            href="/" 
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#64748B] hover:text-[#181B22] transition-colors group"
+          >
+            <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5 text-[#64748B]" />
+            <span className="hidden sm:inline">Voltar</span>
+          </Link>
+        </div>
 
-      {/* Header Minimalista e Compacto */}
-      <header className="relative z-10 w-full border-b border-[#E2E8F0] bg-white/80 backdrop-blur-md px-6 py-3 flex items-center justify-between shadow-sm">
-        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-          <KaxxaLogo className="w-7 h-7" />
-          <KaxxaWordmark className="text-lg tracking-tight" />
-        </Link>
+        {/* Centro: Logo Kaxxa Perfeitamente Centralizada */}
+        <div className="w-1/3 flex items-center justify-center">
+          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+            <KaxxaLogo className="w-7 h-7" />
+            <KaxxaWordmark className="text-xl tracking-tight" />
+          </Link>
+        </div>
 
-        <div className="flex items-center gap-3 text-xs">
+        {/* Lado Direito: Status da Conta / Login */}
+        <div className="w-1/3 flex items-center justify-end gap-2.5 text-xs">
           {user ? (
             <div className="flex items-center gap-2 text-[#64748B]">
-              <span className="hidden sm:inline">Conectado como:</span>
-              <strong className="text-[#181B22] max-w-[190px] truncate">{user.email}</strong>
+              <span className="hidden md:inline text-[11px]">Conectado:</span>
+              <strong className="text-[#181B22] max-w-[120px] sm:max-w-[180px] truncate text-xs">{user.email}</strong>
               <button 
                 type="button"
                 onClick={handleSignOut}
@@ -1061,12 +1070,12 @@ export default function PlanosCheckoutPage() {
             </div>
 
             {/* SEÇÃO PROFISSIONAL: CUPOM DE DESCONTO */}
-            <div className="bg-white/90 backdrop-blur-md border border-[#E2E8F0] rounded-xl p-3.5 shadow-sm">
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-3.5 shadow-2xs">
               {!showCouponInput && !appliedCoupon ? (
                 <button
                   type="button"
                   onClick={() => setShowCouponInput(true)}
-                  className="text-xs text-[#1A44C8] hover:underline font-bold flex items-center gap-1.5"
+                  className="text-xs text-[#1A44C8] hover:underline font-normal flex items-center gap-1.5"
                 >
                   <Tag size={13} />
                   <span>Possui um cupom de desconto?</span>

@@ -130,7 +130,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0F172A] via-[#0D1527] to-[#090D16] text-[#181B22] relative flex items-center justify-center font-sans overflow-hidden selection:bg-[#1A44C8]/30 selection:text-white">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#181B22] relative flex items-center justify-center font-sans overflow-hidden selection:bg-[#1A44C8]/20 selection:text-[#1A44C8]">
       
       {/* Script Oficial do Google Identity Services */}
       <Script 
@@ -139,48 +139,48 @@ export default function LoginPage() {
         onLoad={initGsi} 
       />
 
-      {/* Grid Tecnológico Animado de Fundo */}
+      {/* Grid Tecnológico Pontilhado Sutil de Alta Definição */}
       <div 
-        className="absolute inset-0 opacity-20 pointer-events-none"
+        className="absolute inset-0 opacity-40 pointer-events-none"
         style={{
-          backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px'
+          backgroundImage: `radial-gradient(#CBD5E1 1px, transparent 1px)`,
+          backgroundSize: '24px 24px'
         }}
       />
 
-      {/* Orbes de Luz Vivas com Animação Fluida */}
+      {/* Orbes de Luz Vivas com Animação Fluida e Contraste Sofisticado */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Orbe Azul Principal - Pulso e Rotação */}
-        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-[#1A44C8]/40 to-[#00A3FF]/30 rounded-full blur-[120px] animate-[pulse_6s_ease-in-out_infinite]" />
+        {/* Orbe Azul Principal - Pulso Suave */}
+        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-[#1A44C8]/20 via-[#00A3FF]/15 to-transparent rounded-full blur-[100px] animate-[pulse_6s_ease-in-out_infinite]" />
         
-        {/* Orbe Violeta/Ciano - Movimento cruzado */}
-        <div className="absolute bottom-1/4 right-1/4 translate-x-1/3 translate-y-1/3 w-[600px] h-[600px] bg-gradient-to-bl from-[#6366F1]/30 via-[#38BDF8]/25 to-transparent rounded-full blur-[140px] animate-[pulse_8s_ease-in-out_infinite_2s]" />
+        {/* Orbe Ciano/Índigo - Movimento Fluido */}
+        <div className="absolute bottom-1/4 right-1/4 translate-x-1/3 translate-y-1/3 w-[600px] h-[600px] bg-gradient-to-bl from-[#6366F1]/18 via-[#38BDF8]/18 to-transparent rounded-full blur-[110px] animate-[pulse_8s_ease-in-out_infinite_2s]" />
         
         {/* Orbe Esmeralda Suave no Topo */}
-        <div className="absolute -top-20 right-1/3 w-[450px] h-[450px] bg-[#059669]/20 rounded-full blur-[130px] animate-[pulse_7s_ease-in-out_infinite_1s]" />
+        <div className="absolute -top-20 right-1/3 w-[450px] h-[450px] bg-[#059669]/14 rounded-full blur-[100px] animate-[pulse_7s_ease-in-out_infinite_1s]" />
       </div>
 
-      {/* Círculos de Órbita Animados Dinâmicos */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[850px] pointer-events-none z-0 opacity-35">
+      {/* Círculos de Órbita Animados Dinâmicos (Realçados com Gradientes Vivos) */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[850px] pointer-events-none z-0 opacity-60">
         <svg viewBox="0 0 850 850" className="w-full h-full overflow-visible">
           <defs>
             <linearGradient id="loginGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#00A3FF" stopOpacity="0.8" />
-              <stop offset="50%" stopColor="#1A44C8" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#6366F1" stopOpacity="0" />
+              <stop offset="0%" stopColor="#00A3FF" stopOpacity="0.85" />
+              <stop offset="50%" stopColor="#1A44C8" stopOpacity="0.65" />
+              <stop offset="100%" stopColor="#6366F1" stopOpacity="0.1" />
             </linearGradient>
             <linearGradient id="loginGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#059669" stopOpacity="0.7" />
-              <stop offset="60%" stopColor="#1A44C8" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#00A3FF" stopOpacity="0" />
+              <stop offset="0%" stopColor="#059669" stopOpacity="0.85" />
+              <stop offset="60%" stopColor="#1A44C8" stopOpacity="0.55" />
+              <stop offset="100%" stopColor="#00A3FF" stopOpacity="0.1" />
             </linearGradient>
           </defs>
           
           <g className="animate-[spin_24s_linear_infinite]" style={{ transformOrigin: '425px 425px' }}>
-            <ellipse cx="425" cy="425" rx="380" ry="140" fill="none" stroke="url(#loginGrad1)" strokeWidth="1.8" strokeDasharray="8 6" />
+            <ellipse cx="425" cy="425" rx="380" ry="140" fill="none" stroke="url(#loginGrad1)" strokeWidth="2" strokeDasharray="10 7" />
           </g>
           <g className="animate-[spin_32s_linear_infinite_reverse]" style={{ transformOrigin: '425px 425px' }}>
-            <ellipse cx="425" cy="425" rx="360" ry="160" fill="none" stroke="url(#loginGrad2)" strokeWidth="1.5" transform="rotate(55 425 425)" />
+            <ellipse cx="425" cy="425" rx="360" ry="160" fill="none" stroke="url(#loginGrad2)" strokeWidth="1.8" strokeDasharray="8 6" transform="rotate(55 425 425)" />
           </g>
         </svg>
       </div>
@@ -188,19 +188,19 @@ export default function LoginPage() {
       {/* Botão Voltar para Início */}
       <Link
         href="/"
-        className="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white transition-colors z-20 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md shadow-lg group"
+        className="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2 text-xs font-bold text-[#64748B] hover:text-[#181B22] transition-colors z-20 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white border border-[#E2E8F0] backdrop-blur-md shadow-xs group"
       >
-        <ArrowLeft className="w-4 h-4 text-[#00A3FF] transition-transform group-hover:-translate-x-0.5" />
+        <ArrowLeft className="w-4 h-4 text-[#1A44C8] transition-transform group-hover:-translate-x-0.5" />
         <span>Voltar ao início</span>
       </Link>
 
-      {/* Card Central com Borda Iluminada Shimmer */}
+      {/* Card Central com Borda Iluminada Sofisticada */}
       <div className="w-full max-w-[420px] z-10 px-4 py-8 animate-in fade-in zoom-in-95 duration-500">
         
-        {/* Contêiner com Gradiente de Borda Sofisticado */}
-        <div className="relative p-[1.5px] rounded-3xl bg-gradient-to-b from-white/25 via-white/10 to-[#1A44C8]/30 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_40px_rgba(26,68,200,0.25)] backdrop-blur-2xl">
+        {/* Contêiner com Borda e Sombra de Alto Padrão */}
+        <div className="relative p-[1px] rounded-3xl bg-gradient-to-b from-blue-200/70 via-slate-200/60 to-emerald-200/50 shadow-[0_20px_50px_-15px_rgba(26,68,200,0.12),0_4px_12px_rgba(0,0,0,0.03)] backdrop-blur-xl">
           
-          <div className="bg-[#FFFFFF] rounded-[22px] p-7 sm:p-9 relative overflow-hidden">
+          <div className="bg-white rounded-[23px] p-7 sm:p-9 relative overflow-hidden">
             
             {/* Brilho Superior Interno */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#00A3FF] via-[#1A44C8] to-[#059669]" />
