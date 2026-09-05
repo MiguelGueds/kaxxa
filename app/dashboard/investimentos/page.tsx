@@ -116,7 +116,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     macroType: 'FIXA',
     category: 'CAIXINHA_PORQUINHO',
     name: 'Caixinha Reserva de Emergência',
-    institution: 'Nubank',
+    institution: '',
     rateOrYield: '100% do CDI',
     liquidity: 'DIARIA',
     dueDate: 'Liquidez Imediata (D+0)',
@@ -131,7 +131,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     macroType: 'FIXA',
     category: 'CAIXINHA_PORQUINHO',
     name: 'Porquinho Reserva de Viagem',
-    institution: 'Banco Inter',
+    institution: '',
     rateOrYield: '102% do CDI',
     liquidity: 'DIARIA',
     dueDate: 'Liquidez Imediata (D+0)',
@@ -146,7 +146,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     macroType: 'FIXA',
     category: 'TESOURO_DIRETO',
     name: 'Tesouro IPCA+ 2035',
-    institution: 'Tesouro Direto',
+    institution: '',
     rateOrYield: 'IPCA + 6.35% a.a.',
     liquidity: 'VENCIMENTO',
     dueDate: '15/05/2035',
@@ -161,7 +161,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     macroType: 'FIXA',
     category: 'CDB_LCI_LCA',
     name: 'CDB Pós-Fixado 110% CDI',
-    institution: 'C6 Bank',
+    institution: '',
     rateOrYield: '110% do CDI',
     liquidity: 'VENCIMENTO',
     dueDate: '20/12/2026',
@@ -176,7 +176,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     macroType: 'FIXA',
     category: 'CDB_LCI_LCA',
     name: 'LCI Imobiliária 94% CDI Isenta',
-    institution: 'Caixa Econômica',
+    institution: '',
     rateOrYield: '94% CDI (Isento)',
     liquidity: 'VENCIMENTO',
     dueDate: '10/08/2027',
@@ -194,7 +194,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     category: 'ACOES',
     name: 'Petrobras PN',
     ticker: 'PETR4',
-    institution: 'XP Investimentos',
+    institution: '',
     rateOrYield: 'DY 14.5% a.a.',
     quantity: 250,
     averagePrice: 32.50,
@@ -210,7 +210,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     category: 'ACOES',
     name: 'Banco do Brasil ON',
     ticker: 'BBAS3',
-    institution: 'BTG Pactual',
+    institution: '',
     rateOrYield: 'DY 9.8% a.a.',
     quantity: 300,
     averagePrice: 24.20,
@@ -226,7 +226,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     category: 'FIIS',
     name: 'Maxi Renda FII',
     ticker: 'MXRF11',
-    institution: 'XP Investimentos',
+    institution: '',
     rateOrYield: 'DY 12.2% a.a.',
     quantity: 700,
     averagePrice: 10.00,
@@ -242,7 +242,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     category: 'FIIS',
     name: 'Maxi Renda FII',
     ticker: 'MXRF11',
-    institution: 'Nubank',
+    institution: '',
     rateOrYield: 'DY 12.2% a.a.',
     quantity: 500,
     averagePrice: 10.24,
@@ -258,7 +258,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     category: 'FIIS',
     name: 'CSHG Logística FII',
     ticker: 'HGLG11',
-    institution: 'Itaú Corretora',
+    institution: '',
     rateOrYield: 'DY 8.9% a.a.',
     quantity: 60,
     averagePrice: 158.00,
@@ -274,7 +274,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     category: 'BDRS_STOCKS',
     name: 'Apple Inc BDR',
     ticker: 'AAPL34',
-    institution: 'XP Investimentos',
+    institution: '',
     rateOrYield: 'Global Tech',
     quantity: 70,
     averagePrice: 48.00,
@@ -290,7 +290,7 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     category: 'CRIPTO',
     name: 'Bitcoin',
     ticker: 'BTC',
-    institution: 'Mercado Bitcoin',
+    institution: '',
     rateOrYield: 'Reserva Digital',
     quantity: 0.035,
     averagePrice: 290000.00,
@@ -1599,7 +1599,6 @@ export default function InvestimentosPage() {
                           <thead>
                             <tr className="border-b border-[#E5E7EB] text-[9px] uppercase tracking-wider text-[#94A3B8] font-bold">
                               <th className="pb-2 px-2">Ativo / Código</th>
-                              <th className="pb-2 px-2">Instituição</th>
                               {isFixedIncome ? (
                                 <>
                                   <th className="pb-2 px-2">Taxa / Indexador</th>
@@ -1641,20 +1640,6 @@ export default function InvestimentosPage() {
                                         </p>
                                       </div>
                                     </div>
-                                  </td>
-
-                                  {/* Instituição / Banco */}
-                                  <td className="py-2.5 px-2">
-                                    {asset.institutions.filter(i => i && i.trim()).length > 0 ? (
-                                      <div className="flex items-center gap-1.5">
-                                        <BankLogo name={asset.institutions.filter(i => i && i.trim())[0]} size="xs" />
-                                        <span className="text-[#181B22] font-semibold truncate max-w-[100px] text-[10px]">
-                                          {asset.institutions.filter(i => i && i.trim()).join(', ')}
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-[#94A3B8] text-[10px]">-</span>
-                                    )}
                                   </td>
 
                                   {/* Colunas específicas Fixa vs Variável */}
@@ -1734,7 +1719,6 @@ export default function InvestimentosPage() {
                     <tr className="border-b border-[#E5E7EB] text-[9px] uppercase tracking-wider text-[#94A3B8] font-bold">
                       <th className="pb-2 px-2">Ativo / Investimento</th>
                       <th className="pb-2 px-2">Tipo / Classe</th>
-                      <th className="pb-2 px-2">Instituição</th>
                       <th className="pb-2 px-2">Taxa / Condição</th>
                       <th className="pb-2 px-2 text-right">Qtd / Preço</th>
                       <th className="pb-2 px-2 text-right">Total Aportado</th>
@@ -1774,18 +1758,6 @@ export default function InvestimentosPage() {
                               <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#F1F3F7] border border-[#E5E7EB] text-[#181B22] font-bold">
                                 {item.category.replace('_', ' ')}
                               </span>
-                            </td>
-
-                            {/* Instituição */}
-                            <td className="py-2.5 px-2 whitespace-nowrap">
-                              {item.institution && item.institution.trim() ? (
-                                <div className="flex items-center gap-1.5">
-                                  <BankLogo name={item.institution} size="xs" />
-                                  <span className="text-[#181B22] font-semibold text-[10px]">{item.institution}</span>
-                                </div>
-                              ) : (
-                                <span className="text-[#94A3B8] text-[10px]">-</span>
-                              )}
                             </td>
 
                             {/* Taxa */}
@@ -1954,28 +1926,15 @@ export default function InvestimentosPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Instituição / Banco (Opcional)</label>
-                      <input 
-                        type="text" 
-                        value={rfInstitution}
-                        onChange={(e) => setRfInstitution(e.target.value)}
-                        placeholder="Ex: Nubank, Inter, Itaú (Opcional)"
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Taxa / Indexador</label>
-                      <input 
-                        type="text" 
-                        value={rfRate}
-                        onChange={(e) => setRfRate(e.target.value)}
-                        placeholder="Ex: 100% do CDI, IPCA + 6.2%"
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-medium"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Taxa / Indexador</label>
+                    <input 
+                      type="text" 
+                      value={rfRate}
+                      onChange={(e) => setRfRate(e.target.value)}
+                      placeholder="Ex: 100% do CDI, IPCA + 6.2%"
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-medium"
+                    />
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
@@ -2059,17 +2018,6 @@ export default function InvestimentosPage() {
                         ))}
                       </div>
                     )}
-                  </div>
-
-                  <div>
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Corretora / Instituição (Opcional)</label>
-                    <input 
-                      type="text" 
-                      value={rvInstitution}
-                      onChange={(e) => setRvInstitution(e.target.value)}
-                      placeholder="Ex: XP, NuInvest, BTG, Inter (Opcional)"
-                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
-                    />
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
