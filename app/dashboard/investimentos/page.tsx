@@ -378,6 +378,7 @@ export default function InvestimentosPage() {
   const [rvQuantity, setRvQuantity] = useState('');
   const [rvPrice, setRvPrice] = useState('');
   const [rvYieldRate, setRvYieldRate] = useState('');
+  const [aporteDate, setAporteDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   const formatCurrency = (val: number) => {
     if (isConcealed) return '•••••';
@@ -725,12 +726,14 @@ export default function InvestimentosPage() {
     setRvQuantity('');
     setRvPrice('');
     setRvYieldRate('');
+    setAporteDate(new Date().toISOString().split('T')[0]);
     setIsModalOpen(true);
   };
 
   // Abrir Modal para Editar Investimento
   const handleEditInvestment = (item: InvestmentItem) => {
     setEditingInvestment(item);
+    setAporteDate(item.createdAt ? item.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]);
     if (item.macroType === 'FIXA') {
       setModalTab('FIXA');
       setRfCategory(item.category);
@@ -759,6 +762,8 @@ export default function InvestimentosPage() {
 
   // Salvar Aporte (Criação ou Edição)
   const handleSaveInvestment = async () => {
+    const selectedIsoDate = aporteDate ? new Date(aporteDate + 'T12:00:00Z').toISOString() : new Date().toISOString();
+
     if (modalTab === 'FIXA') {
       const amt = parseFloat(rfAmount.replace(',', '.')) || 0;
       if (!rfName || amt <= 0) return;
@@ -776,6 +781,7 @@ export default function InvestimentosPage() {
             due_date: rfLiquidity === 'DIARIA' ? 'Liquidez Imediata (D+0)' : (rfDueDate || 'No Vencimento'),
             invested_amount: amt,
             current_value: amt,
+            created_at: selectedIsoDate,
           });
         } catch (e) {
           console.error('Erro ao atualizar investimento no Supabase:', e);
@@ -795,12 +801,13 @@ export default function InvestimentosPage() {
             totalInvested: amt,
             currentBalance: Math.max(0, inv.currentBalance + diff),
             monthlyEstimatedYield: monthlyEst,
-            isFgcProtected: rfCategory !== 'TESOURO_DIRETO'
+            isFgcProtected: rfCategory !== 'TESOURO_DIRETO',
+            createdAt: selectedIsoDate
           };
         }));
       } else {
         let createdId = 'rf-' + Date.now();
-        let createdAtIso = new Date().toISOString();
+        let createdAtIso = selectedIsoDate;
         try {
           const created = await investmentsService.createInvestment({
             macro_type: 'FIXA',
@@ -815,6 +822,7 @@ export default function InvestimentosPage() {
             invested_amount: amt,
             current_value: amt,
             profitability_pct: 0,
+            created_at: selectedIsoDate,
           });
           if (created) {
             createdId = created.id;
@@ -873,6 +881,7 @@ export default function InvestimentosPage() {
             invested_amount: totalInv,
             current_value: curBal,
             profitability_pct: 2.0,
+            created_at: selectedIsoDate,
           });
         } catch (e) {
           console.error('Erro ao atualizar investimento no Supabase:', e);
@@ -892,12 +901,13 @@ export default function InvestimentosPage() {
             currentPrice: p,
             totalInvested: totalInv,
             currentBalance: curBal,
-            monthlyEstimatedYield: estDividends
+            monthlyEstimatedYield: estDividends,
+            createdAt: selectedIsoDate
           };
         }));
       } else {
         let createdId = 'rv-' + Date.now();
-        let createdAtIso = new Date().toISOString();
+        let createdAtIso = selectedIsoDate;
         try {
           const created = await investmentsService.createInvestment({
             macro_type: 'VARIAVEL',
@@ -911,6 +921,7 @@ export default function InvestimentosPage() {
             invested_amount: totalInv,
             current_value: curBal,
             profitability_pct: 2.0,
+            created_at: selectedIsoDate,
           });
           if (created) {
             createdId = created.id;
@@ -1966,13 +1977,23 @@ export default function InvestimentosPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data do Aporte</label>
+                      <input 
+                        type="date" 
+                        value={aporteDate}
+                        onChange={(e) => setAporteDate(e.target.value)}
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] font-semibold focus:outline-none focus:border-[#1A44C8]"
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Liquidez</label>
                       <select 
                         value={rfLiquidity}
                         onChange={(e) => setRfLiquidity(e.target.value as any)}
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
                       >
                         <option value="DIARIA">Imediata / Diária (D+0)</option>
                         <option value="D+1">D+1 Útil</option>
@@ -1988,7 +2009,7 @@ export default function InvestimentosPage() {
                         value={rfAmount}
                         onChange={(e) => setRfAmount(e.target.value)}
                         placeholder="0,00"
-                        className="w-full bg-[#F1F3F7] border border-[#1A44C8] rounded-xl py-1.5 px-3 text-xs text-[#1A44C8] font-extrabold focus:outline-none"
+                        className="w-full bg-[#F1F3F7] border border-[#1A44C8] rounded-xl py-1.5 px-2.5 text-xs text-[#1A44C8] font-extrabold focus:outline-none"
                       />
                     </div>
                   </div>
@@ -2039,7 +2060,17 @@ export default function InvestimentosPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data do Aporte</label>
+                      <input 
+                        type="date" 
+                        value={aporteDate}
+                        onChange={(e) => setAporteDate(e.target.value)}
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] font-semibold focus:outline-none focus:border-[#1A44C8]"
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Quantidade</label>
                       <input 
@@ -2048,7 +2079,7 @@ export default function InvestimentosPage() {
                         value={rvQuantity}
                         onChange={(e) => setRvQuantity(e.target.value)}
                         placeholder="Ex: 100"
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-bold"
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
                       />
                     </div>
 
@@ -2060,7 +2091,7 @@ export default function InvestimentosPage() {
                         value={rvPrice}
                         onChange={(e) => setRvPrice(e.target.value)}
                         placeholder="0,00"
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-bold"
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
                       />
                     </div>
                   </div>
