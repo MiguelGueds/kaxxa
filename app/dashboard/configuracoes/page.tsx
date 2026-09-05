@@ -298,17 +298,22 @@ function SettingsContent() {
     resetMessages();
 
     try {
-      // Salva cancelamento e solicitação no Supabase
-      await supabase
-        .from('subscriptions')
-        .update({
-          status: 'CANCELED',
-          updated_at: new Date().toISOString()
+      const res = await fetch('/api/subscriptions/refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: refundReason,
+          pixKey: refundPixKey
         })
-        .eq('user_id', userId);
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao registrar solicitação de reembolso.');
+      }
 
       setSubscription(prev => prev ? { ...prev, status: 'CANCELED' } : null);
-      setSuccessMsg('Solicitação de cancelamento e reembolso registrada! Processaremos o estorno em até 24h úteis.');
+      setSuccessMsg('Solicitação de cancelamento e estorno registrada! O reembolso será processado em até 24h úteis.');
       setIsRefundModalOpen(false);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Erro ao solicitar reembolso.');
@@ -828,7 +833,8 @@ function SettingsContent() {
                         <span>Mudar Método</span>
                       </button>
 
-                      {subscription?.status !== 'CANCELED' && (
+                      {/* Opção de Cancelar Renovação restrita a assinaturas ativas com cartão de crédito recorrente */}
+                      {subscription?.status === 'ACTIVE' && subscription?.payment_method === 'CREDIT_CARD' && (
                         <button
                           type="button"
                           onClick={() => setIsCancelModalOpen(true)}
@@ -841,37 +847,20 @@ function SettingsContent() {
                     </div>
                   </div>
 
-                </div>
-
-                {/* Bloco de Garantia Incondicional de 7 Dias / Reembolso */}
-                {isWithin7Days && subscription?.status === 'ACTIVE' ? (
-                  <div className="p-4 rounded-2xl bg-white border border-[#E5E7EB] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-                    <div className="space-y-1 text-left w-full sm:w-auto">
-                      <div className="flex items-center gap-2 font-bold text-[#181B22]">
-                        <ShieldCheck size={16} className="text-[#059669]" />
-                        <span>Garantia Incondicional de 7 Dias</span>
-                        <span className="text-[10px] bg-emerald-50 text-emerald-800 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                          {daysRemainingRefund > 0 ? `${daysRemainingRefund} dia${daysRemainingRefund > 1 ? 's' : ''} restante${daysRemainingRefund > 1 ? 's' : ''}` : 'Último dia'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[#64748B] leading-relaxed">
-                        Você está dentro do prazo de garantia legal e pode solicitar o cancelamento com estorno total do valor pago.
-                      </p>
+                  {/* Link discreto de estorno/reembolso visível exclusivamente dentro do prazo legal de 7 dias */}
+                  {isWithin7Days && subscription?.status === 'ACTIVE' && (
+                    <div className="pt-3.5 text-center border-t border-[#F1F5F9] mt-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsRefundModalOpen(true)}
+                        className="text-[11px] text-[#94A3B8] hover:text-[#64748B] hover:underline transition-colors font-medium select-none"
+                      >
+                        Solicitar estorno/reembolso da assinatura
+                      </button>
                     </div>
+                  )}
 
-                    <button
-                      type="button"
-                      onClick={() => setIsRefundModalOpen(true)}
-                      className="w-full sm:w-auto py-2 px-4 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-rose-600 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 active:scale-95"
-                    >
-                      Solicitar Reembolso
-                    </button>
-                  </div>
-                ) : (
-                  <div className="pt-2 text-center text-[11px] text-slate-400">
-                    Prazo de garantia incondicional de 7 dias encerrado. Para suspender cobranças futuras, utilize a opção &quot;Cancelar Renovação&quot; acima.
-                  </div>
-                )}
+                </div>
 
               </div>
             )}

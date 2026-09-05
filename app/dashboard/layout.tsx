@@ -25,9 +25,12 @@ import {
   EyeOff,
   ShieldCheck,
   Ticket,
-  UserCircle2
+  UserCircle2,
+  Sun,
+  Moon
 } from 'lucide-react';
 
+import { useTheme } from '@/app/contexts/ThemeContext';
 import { KaxxaLogo, KaxxaKLogo } from '@/app/components/KaxxaLogo';
 import { subscriptionService } from '@/lib/services/subscription';
 import { isAdminEmail } from '@/lib/admin';
@@ -40,6 +43,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { isConcealed, togglePrivacy } = usePrivacy();
+  const { theme, toggleTheme } = useTheme();
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar: string | null }>({
     name: 'Minha Conta',
     email: '',
@@ -324,18 +328,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Campo de Busca Rápida (Abre Command Palette ⌘K) */}
+            {/* Campo de Busca Rápida (Abre Command Palette) */}
             <div 
               onClick={() => setIsCommandPaletteOpen(true)}
               className="hidden md:flex items-center gap-2 bg-[#F8FAFC] border border-[#E5E7EB] hover:border-[#1A44C8]/40 rounded-xl px-3 py-1.5 transition-all cursor-pointer shadow-inner group"
-              title="Buscar páginas, módulos e ações (⌘K)"
+              title="Buscar no Kaxxa"
             >
               <Search size={13} className="text-[#94A3B8] group-hover:text-[#1A44C8] transition-colors" />
               <span className="text-xs text-[#94A3B8] group-hover:text-[#64748B] w-36 font-sans select-none truncate">
                 Buscar no Kaxxa...
-              </span>
-              <span className="text-[9px] font-mono text-[#64748B] bg-[#FFFFFF] border border-[#E5E7EB] px-1.5 py-0.5 rounded shadow-sm">
-                ⌘K
               </span>
             </div>
 
@@ -344,11 +345,26 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={() => setIsCommandPaletteOpen(true)}
               className="md:hidden h-8 w-8 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F3F7] border border-[#E5E7EB] flex items-center justify-center text-[#64748B] hover:text-[#181B22]"
-              title="Buscar no Kaxxa (⌘K)"
+              title="Buscar no Kaxxa"
             >
               <Search size={14} />
             </button>
             
+            {/* Botão de Alternância de Modo Noturno / Claro */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="h-8 w-8 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] hover:bg-[#F1F3F7] text-[#64748B] hover:text-[#181B22] flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
+              title={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
+              aria-label={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
+            >
+              {theme === 'dark' ? (
+                <Sun size={14} className="text-amber-400" />
+              ) : (
+                <Moon size={14} className="text-[#64748B]" />
+              )}
+            </button>
+
             {/* Botão de Modo Privacidade (Olho) */}
             <button 
               onClick={togglePrivacy}

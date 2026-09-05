@@ -21,6 +21,88 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Modo Escuro Global */
+html.dark {
+  color-scheme: dark;
+  background-color: #0B0E14;
+}
+
+html.dark body {
+  background-color: #0B0E14;
+  color: #F8FAFC;
+}
+
+html.dark .bg-\[\#F5F6F9\],
+html.dark .bg-canvas {
+  background-color: #0B0E14 !important;
+}
+
+html.dark .bg-\[\#FFFFFF\],
+html.dark .bg-white,
+html.dark .bg-surface {
+  background-color: #121620 !important;
+}
+
+html.dark .bg-\[\#F8FAFC\],
+html.dark .bg-\[\#F1F3F7\],
+html.dark .bg-slate-50,
+html.dark .bg-gray-50,
+html.dark .bg-gray-100 {
+  background-color: #181E2C !important;
+}
+
+html.dark .border-\[\#E5E7EB\],
+html.dark .border-\[\#CBD5E1\],
+html.dark .border-\[\#F1F3F7\],
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-gray-200 {
+  border-color: #1E293B !important;
+}
+
+html.dark .divide-\[\#F1F5F9\] > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-\[\#F1F3F7\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1E293B !important;
+}
+
+html.dark .text-\[\#181B22\],
+html.dark .text-slate-900,
+html.dark .text-gray-900,
+html.dark .text-ink {
+  color: #F8FAFC !important;
+}
+
+html.dark .text-\[\#64748B\],
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #94A3B8 !important;
+}
+
+html.dark .text-\[\#94A3B8\],
+html.dark .text-slate-400 {
+  color: #64748B !important;
+}
+
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+  background-color: #181E2C !important;
+  color: #F8FAFC !important;
+  border-color: #1E293B !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748B !important;
+}
+
+html.dark .hover\:bg-\[\#F8FAFC\]:hover,
+html.dark .hover\:bg-\[\#F1F3F7\]:hover,
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-gray-50:hover {
+  background-color: #1A2234 !important;
+}
+
 ::selection {
   background-color: #1A44C8;
   color: #FFFFFF;
