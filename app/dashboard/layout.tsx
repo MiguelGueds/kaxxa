@@ -35,7 +35,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { isConcealed, togglePrivacy } = usePrivacy();
-  const [checkingAccess, setCheckingAccess] = useState(true);
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar: string | null }>({
     name: 'Minha Conta',
     email: '',
@@ -68,22 +67,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const [accessGranted, setAccessGranted] = useState<boolean | null>(null);
+
   // Verificação de Paywall / Assinatura
   useEffect(() => {
+    let isMounted = true;
     async function checkSubscription() {
       try {
         const { granted } = await subscriptionService.isAccessGranted();
         if (!granted) {
-          router.push('/planos');
+          if (isMounted) setAccessGranted(false);
+          router.replace('/planos');
           return;
         }
+        if (isMounted) setAccessGranted(true);
       } catch (err) {
         console.error('Erro ao verificar permissão:', err);
-      } finally {
-        setCheckingAccess(false);
+        if (isMounted) setAccessGranted(false);
+        router.replace('/planos');
       }
     }
     checkSubscription();
+    return () => { isMounted = false; };
   }, [pathname, router]);
 
   // Fechar menu mobile ao navegar
@@ -129,9 +134,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const { title: pageTitle } = getPageInfo();
 
-  if (checkingAccess) {
+  if (accessGranted !== true) {
     return (
-      <div className="min-h-screen bg-[#F5F6F9] flex flex-col items-center justify-center gap-3">
+      <div className="fixed inset-0 z-50 bg-[#F5F6F9] flex flex-col items-center justify-center gap-3">
         <KaxxaLogo size={36} />
         <div className="w-5 h-5 border-2 border-[#1A44C8]/30 border-t-[#1A44C8] rounded-full animate-spin" />
       </div>

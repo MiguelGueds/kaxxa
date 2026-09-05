@@ -8,7 +8,6 @@ import {
   Check, 
   ShieldCheck, 
   Zap, 
-  Sparkles, 
   QrCode, 
   CreditCard, 
   Copy, 
@@ -16,10 +15,10 @@ import {
   ArrowRight, 
   Lock, 
   Clock, 
-  RotateCcw,
-  UserCheck,
-  Smartphone,
-  RefreshCw
+  Sparkles,
+  Gift,
+  KeyRound,
+  UserCheck
 } from 'lucide-react';
 import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
 import { supabase } from '@/lib/supabase';
@@ -35,11 +34,10 @@ export default function PlanosCheckoutPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [gsiReady, setGsiReady] = useState(false);
 
-  // Billing Mode: 'SINGLE' | 'RECURRING'
-  const [billingMode, setBillingMode] = useState<'SINGLE' | 'RECURRING'>('RECURRING');
-
-  // Payment Method: 'PIX' | 'CARD_RECURRING' | 'CARD_SINGLE'
-  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CARD_RECURRING' | 'CARD_SINGLE'>('CARD_RECURRING');
+  // Forma de Pagamento Direta: 'PIX' | 'CARD'
+  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CARD'>('PIX');
+  // Se Cartão: Ativar renovação automática mensal (recorrente) ou pagamento avulso
+  const [cardRecurring, setCardRecurring] = useState(true);
 
   // Checkout State
   const [loading, setLoading] = useState(false);
@@ -53,7 +51,14 @@ export default function PlanosCheckoutPage() {
   const [copied, setCopied] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [countdown, setCountdown] = useState(900); // 15 minutos em segundos
+  const [countdown, setCountdown] = useState(900);
+
+  // VIP Code State
+  const [showVipInput, setShowVipInput] = useState(false);
+  const [vipCode, setVipCode] = useState('');
+  const [vipLoading, setVipLoading] = useState(false);
+  const [vipSuccess, setVipSuccess] = useState('');
+  const [vipError, setVipError] = useState('');
 
   // Polling interval
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -161,10 +166,10 @@ export default function PlanosCheckoutPage() {
           btnContainer.innerHTML = '';
           (window as any).google.accounts.id.renderButton(btnContainer, {
             theme: 'outline',
-            size: 'large',
+            size: 'medium',
             text: 'continue_with',
             shape: 'pill',
-            width: 280,
+            width: 240,
             logo_alignment: 'left',
           });
           setGsiReady(true);
@@ -342,7 +347,7 @@ export default function PlanosCheckoutPage() {
     }
   };
 
-  const handleCardPayment = async (recurring: boolean) => {
+  const handleCardPayment = async () => {
     if (!user) {
       handleGoogleClick();
       return;
@@ -359,7 +364,7 @@ export default function PlanosCheckoutPage() {
           email: userEmail || user?.email,
           name: userName || 'Cliente Kaxxa',
           userId: user?.id,
-          recurring,
+          recurring: cardRecurring,
         })
       });
 
@@ -374,6 +379,46 @@ export default function PlanosCheckoutPage() {
     } catch (err: any) {
       setErrorMsg(err.message || 'Erro ao processar pagamento no cartão.');
       setLoading(false);
+    }
+  };
+
+  // Validador de Código VIP/Teste
+  const handleVipSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      setVipError('Faça login com o Google acima antes de validar seu convite.');
+      return;
+    }
+    if (!vipCode.trim()) return;
+
+    setVipLoading(true);
+    setVipError('');
+    setVipSuccess('');
+
+    try {
+      const res = await fetch('/api/checkout/vip-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: vipCode.trim(),
+          userId: user.id,
+          email: user.email,
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Código VIP inválido.');
+      }
+
+      setVipSuccess(data.message || `Acesso de teste de ${data.days} dias liberado!`);
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1600);
+    } catch (err: any) {
+      setVipError(err.message || 'Erro ao validar código.');
+    } finally {
+      setVipLoading(false);
     }
   };
 
@@ -394,7 +439,7 @@ export default function PlanosCheckoutPage() {
       />
 
       {/* Header Minimalista e Compacto */}
-      <header className="relative z-10 w-full border-b border-[#E2E8F0] bg-white/90 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
+      <header className="relative z-10 w-full border-b border-[#E2E8F0] bg-white/90 backdrop-blur-md px-6 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
           <KaxxaLogo className="w-7 h-7" />
           <KaxxaWordmark className="text-lg tracking-tight" />
@@ -404,21 +449,23 @@ export default function PlanosCheckoutPage() {
           {user ? (
             <div className="flex items-center gap-2 text-[#64748B]">
               <span className="hidden sm:inline">Conectado como:</span>
-              <strong className="text-[#181B22] max-w-[170px] truncate">{user.email}</strong>
+              <strong className="text-[#181B22] max-w-[190px] truncate">{user.email}</strong>
               <button 
+                type="button"
                 onClick={handleSignOut}
-                className="text-[#1A44C8] hover:underline font-bold ml-1"
+                className="text-[#1A44C8] hover:underline font-bold ml-1 text-xs"
               >
                 Sair
               </button>
             </div>
           ) : (
-            <Link 
-              href="/login"
-              className="text-[#1A44C8] hover:underline font-bold"
+            <button 
+              type="button"
+              onClick={handleGoogleClick}
+              className="text-[#1A44C8] hover:underline font-bold text-xs"
             >
               Fazer Login
-            </Link>
+            </button>
           )}
         </div>
       </header>
@@ -441,366 +488,151 @@ export default function PlanosCheckoutPage() {
         </div>
       )}
 
-      {/* Conteúdo Principal do Checkout Compacto */}
-      <main className="relative z-10 max-w-5xl mx-auto px-4 py-6 sm:py-9">
+      {/* Conteúdo Principal Ultra Compacto */}
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-6 sm:py-8">
         
         {/* Título Compacto */}
-        <div className="mb-6">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+        <div className="mb-5">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] text-[10px] font-extrabold uppercase tracking-wider mb-1">
             <ShieldCheck size={12} />
-            <span>Checkout Seguro • Ativação Imediata</span>
+            <span>Checkout Oficial • Liberação Imediata</span>
           </div>
-          <h1 className="text-2xl sm:text-2xl font-black text-[#181B22] tracking-tight">
-            Finalizar Assinatura Kaxxa
+          <h1 className="text-xl sm:text-2xl font-black text-[#181B22] tracking-tight">
+            Assinatura Kaxxa
           </h1>
           <p className="text-xs text-[#64748B] mt-0.5">
-            Escolha como prefere pagar para liberar o acesso total ao seu controle financeiro.
+            Acesso completo a todas as ferramentas financeiras por R$ 39,90.
           </p>
         </div>
 
-        {/* Grid de 2 Colunas */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Notificação Compacta de Login se não estiver logado */}
+        {!user && !authLoading && (
+          <div className="mb-4 p-3 bg-blue-50/70 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-[#1E3A8A]">
+              <UserCheck size={16} className="text-[#1A44C8] shrink-0" />
+              <span>Conecte sua conta para vincular o pagamento à sua assinatura:</span>
+            </div>
+            <div id="google-btn-planos" className="shrink-0 flex justify-center" />
+          </div>
+        )}
 
-          {/* COLUNA ESQUERDA (7 cols): O FLUXO DE PAGAMENTO PASSO A PASSO */}
+        {/* Grid de 2 Colunas */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+          {/* COLUNA ESQUERDA (7 cols): ESCOLHA DIRETA PIX vs CARTÃO */}
           <div className="lg:col-span-7 space-y-4">
 
-            {/* PASSO 1: SUA CONTA DE ACESSO */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm transition-all">
-              <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9] mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#1A44C8] text-white flex items-center justify-center text-xs font-black">
-                    1
-                  </div>
-                  <h2 className="text-xs font-extrabold text-[#181B22] uppercase tracking-wide">
-                    Sua Conta de Acesso
-                  </h2>
-                </div>
-                <span className="text-[10px] font-bold text-[#64748B]">
-                  {user ? 'Identificado' : 'Identificação Rápida'}
-                </span>
-              </div>
-
-              {authLoading ? (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl animate-pulse flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-200" />
-                  <div className="space-y-1 flex-1">
-                    <div className="w-20 h-2.5 bg-slate-200 rounded" />
-                    <div className="w-40 h-2 bg-slate-200 rounded" />
-                  </div>
-                </div>
-              ) : user ? (
-                /* Usuário Conectado */
-                <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-sm shrink-0">
-                      {userName ? userName[0].toUpperCase() : userEmail ? userEmail[0].toUpperCase() : 'K'}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-[#181B22] truncate">{userName || 'Conta Kaxxa'}</span>
-                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded-full shrink-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          Pronto
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[#475569] truncate">
-                        Ativação para: <strong>{userEmail}</strong>
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="text-xs font-bold text-[#1A44C8] hover:text-[#1538A5] hover:underline shrink-0 ml-2 px-2 py-1 rounded-lg hover:bg-white/80 transition-colors"
-                  >
-                    Trocar
-                  </button>
-                </div>
-              ) : (
-                /* Usuário Não Conectado */
-                <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center shrink-0">
-                      <UserCheck size={16} />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-[#181B22]">
-                        Conecte-se com o Google em 1 clique
-                      </h3>
-                      <p className="text-[10px] text-[#64748B]">
-                        Sua assinatura será vinculada com total segurança sem precisar criar senhas.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center pt-0.5 min-h-[40px]">
-                    <div id="google-btn-planos" className="flex justify-center w-full min-h-[38px]" />
-                    {!gsiReady && (
-                      <button
-                        type="button"
-                        onClick={handleGoogleClick}
-                        disabled={loading}
-                        className="w-full max-w-xs py-2.5 px-4 bg-white hover:bg-gray-50 border border-[#E2E8F0] hover:border-[#1A44C8] text-[#181B22] rounded-full font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
-                      >
-                        {loading ? (
-                          <div className="w-4 h-4 border-2 border-[#1A44C8]/30 border-t-[#1A44C8] rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                            </svg>
-                            <span>Conectar com Google</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* PASSO 2: ESCOLHA DA FORMA DE PAGAMENTO */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm transition-all">
-              <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9] mb-3.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#1A44C8] text-white flex items-center justify-center text-xs font-black">
-                    2
-                  </div>
-                  <h2 className="text-xs font-extrabold text-[#181B22] uppercase tracking-wide">
-                    Forma de Pagamento
-                  </h2>
-                </div>
-                <span className="text-[10px] font-bold text-[#059669]">
+            {/* SELEÇÃO DIRETA ENTRE PIX E CARTÃO */}
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5">
+              
+              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+                <h2 className="text-xs font-extrabold text-[#181B22] uppercase tracking-wide">
+                  Escolha a Forma de Pagamento
+                </h2>
+                <span className="text-xs font-black text-[#059669]">
                   R$ 39,90
                 </span>
               </div>
 
-              {/* SELETOR DE MODALIDADE: RECORRENTE vs ÚNICO */}
-              <div className="bg-[#F1F5F9] p-1 rounded-xl flex items-center gap-1 border border-[#E2E8F0] mb-3.5">
+              {/* BOTOES DE ESCOLHA DIRETA */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* BOTÃO PIX */}
                 <button
                   type="button"
-                  onClick={() => { 
-                    setBillingMode('RECURRING'); 
-                    setPaymentMethod('CARD_RECURRING'); 
+                  onClick={() => {
+                    setPaymentMethod('PIX');
+                    setErrorMsg('');
+                  }}
+                  className={`p-3 rounded-xl border-2 text-left transition-all relative ${
+                    paymentMethod === 'PIX'
+                      ? 'border-[#059669] bg-emerald-50/25 shadow-sm ring-2 ring-[#059669]/10'
+                      : 'border-[#E2E8F0] hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                      paymentMethod === 'PIX' ? 'bg-[#059669] text-white' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      <Zap size={15} />
+                    </div>
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-[#059669]">
+                      Instantâneo
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-extrabold text-[#181B22]">PIX</h3>
+                  <p className="text-[10px] text-[#64748B] mt-0.5">QR Code ou Copia e Cola</p>
+                </button>
+
+                {/* BOTÃO CARTÃO DE CRÉDITO */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentMethod('CARD');
                     setPixData(null);
                     setErrorMsg('');
                   }}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    billingMode === 'RECURRING'
-                      ? 'bg-white text-[#181B22] shadow-sm ring-1 ring-black/[0.04]'
-                      : 'text-[#64748B] hover:text-[#181B22]'
+                  className={`p-3 rounded-xl border-2 text-left transition-all relative ${
+                    paymentMethod === 'CARD'
+                      ? 'border-[#1A44C8] bg-blue-50/25 shadow-sm ring-2 ring-[#1A44C8]/10'
+                      : 'border-[#E2E8F0] hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <RefreshCw size={12} className={billingMode === 'RECURRING' ? 'text-[#1A44C8]' : 'text-slate-400'} />
-                  <span>Pagamento Recorrente</span>
-                  <span className="hidden sm:inline-block text-[9px] px-1.5 py-0.2 rounded bg-blue-100 text-[#1A44C8] font-extrabold">
-                    Automático
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { 
-                    setBillingMode('SINGLE'); 
-                    setPaymentMethod('PIX'); 
-                    setPixData(null);
-                    setErrorMsg('');
-                  }}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    billingMode === 'SINGLE'
-                      ? 'bg-white text-[#181B22] shadow-sm ring-1 ring-black/[0.04]'
-                      : 'text-[#64748B] hover:text-[#181B22]'
-                  }`}
-                >
-                  <Clock size={12} className={billingMode === 'SINGLE' ? 'text-amber-600' : 'text-slate-400'} />
-                  <span>Pagamento Único</span>
-                  <span className="hidden sm:inline-block text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-extrabold">
-                    30 Dias
-                  </span>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                      paymentMethod === 'CARD' ? 'bg-[#1A44C8] text-white' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      <CreditCard size={15} />
+                    </div>
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-100 text-[#1A44C8]">
+                      Mercado Pago
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-extrabold text-[#181B22]">Cartão de Crédito</h3>
+                  <p className="text-[10px] text-[#64748B] mt-0.5">Recorrente ou Pagamento Único</p>
                 </button>
               </div>
 
-              {/* CASO 1: PAGAMENTO RECORRENTE (ASSINATURA MENSAL) */}
-              {billingMode === 'RECURRING' && (
-                <div className="space-y-3 animate-in fade-in-50 duration-200">
-                  <div className="p-4 rounded-xl border-2 border-[#1A44C8] bg-blue-50/20 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-[#1A44C8] text-white flex items-center justify-center shrink-0 mt-0.5">
-                          <CreditCard size={16} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-xs font-black text-[#181B22]">
-                              Cartão de Crédito (Assinatura Recorrente)
-                            </h3>
-                            <span className="text-[9px] font-extrabold text-[#1A44C8] bg-blue-100 px-1.5 py-0.5 rounded-full">
-                              Recomendado
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-[#475569] mt-1 leading-relaxed">
-                            R$ 39,90 cobrado todo mês diretamente no seu cartão. Você não precisa se preocupar com vencimento e pode cancelar a qualquer momento no painel.
-                          </p>
-                          <div className="flex items-center gap-3 mt-2 text-[10px] font-bold text-[#1A44C8]">
-                            <span>✓ Sem fidelidade</span>
-                            <span>✓ Cancele com 1 clique</span>
-                          </div>
-                        </div>
+              {/* OPÇÃO DE ATIVAR RECORRÊNCIA (APARECE DIRETAMENTE AO SELECIONAR CARTÃO) */}
+              {paymentMethod === 'CARD' && (
+                <div className="p-3 bg-blue-50/50 border border-blue-200/80 rounded-xl space-y-2 animate-in fade-in duration-200">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={cardRecurring}
+                      onChange={(e) => setCardRecurring(e.target.checked)}
+                      className="w-4 h-4 mt-0.5 text-[#1A44C8] rounded border-gray-300 focus:ring-[#1A44C8] cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-extrabold text-[#181B22]">
+                          Ativar renovação automática mensal
+                        </span>
+                        <span className="text-[10px] font-black text-[#1A44C8]">
+                          R$ 39,90/mês
+                        </span>
                       </div>
-
-                      <div className="text-right shrink-0">
-                        <div className="text-sm font-black text-[#181B22]">R$ 39,90</div>
-                        <span className="text-[10px] text-[#64748B]">/ mês</span>
-                      </div>
+                      <p className="text-[10px] text-[#64748B] mt-0.5 leading-relaxed">
+                        {cardRecurring 
+                          ? 'Seu plano renova todo mês sem você se preocupar com vencimento. Cancele com 1 clique a qualquer momento no seu perfil.'
+                          : 'Modo Avulso: Cobrança única de 30 dias. Nenhuma cobrança futura será realizada no seu cartão.'}
+                      </p>
                     </div>
-                  </div>
-
-                  <p className="text-[11px] text-[#64748B] text-center">
-                    Prefere pagar apenas 1 mês avulso sem renovar?{' '}
-                    <button
-                      type="button"
-                      onClick={() => { setBillingMode('SINGLE'); setPaymentMethod('PIX'); }}
-                      className="text-[#1A44C8] font-bold hover:underline"
-                    >
-                      Ir para Pagamento Único
-                    </button>
-                  </p>
+                  </label>
                 </div>
               )}
-
-              {/* CASO 2: PAGAMENTO ÚNICO (PIX OU CARTÃO) */}
-              {billingMode === 'SINGLE' && (
-                <div className="space-y-2.5 animate-in fade-in-50 duration-200">
-                  
-                  {/* OPÇÃO PIX */}
-                  <div 
-                    onClick={() => { setPaymentMethod('PIX'); setPixData(null); setErrorMsg(''); }}
-                    className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer ${
-                      paymentMethod === 'PIX'
-                        ? 'border-[#059669] bg-emerald-50/20 shadow-sm'
-                        : 'border-[#E2E8F0] hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          paymentMethod === 'PIX' ? 'bg-[#059669] text-white' : 'bg-slate-100 text-slate-500'
-                        }`}>
-                          <Zap size={15} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <h4 className="text-xs font-bold text-[#181B22]">PIX Instantâneo</h4>
-                            <span className="text-[9px] font-extrabold text-[#059669] bg-emerald-100 px-1.5 py-0.2 rounded-full">
-                              Liberação em 3s
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-[#64748B]">
-                            QR Code ou Copia-e-Cola • 30 dias de acesso sem renovação
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="text-xs font-black text-[#181B22]">R$ 39,90</span>
-                        <span className="text-[9px] text-[#64748B] block">avulso</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* OPÇÃO CARTÃO ÚNICO */}
-                  <div 
-                    onClick={() => { setPaymentMethod('CARD_SINGLE'); setPixData(null); setErrorMsg(''); }}
-                    className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer ${
-                      paymentMethod === 'CARD_SINGLE'
-                        ? 'border-amber-600 bg-amber-50/20 shadow-sm'
-                        : 'border-[#E2E8F0] hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          paymentMethod === 'CARD_SINGLE' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-500'
-                        }`}>
-                          <CreditCard size={15} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <h4 className="text-xs font-bold text-[#181B22]">Cartão de Crédito</h4>
-                            <span className="text-[9px] font-extrabold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded-full">
-                              Pagamento Único
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-[#64748B]">
-                            Cobrança avulsa de 30 dias • Nenhuma cobrança futura
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="text-xs font-black text-[#181B22]">R$ 39,90</span>
-                        <span className="text-[9px] text-[#64748B] block">avulso</span>
-                      </div>
-                    </div>
-
-                    {/* OPÇÃO DE ATIVAR RECORRÊNCIA AO SELECIONAR CARTÃO NO PAGAMENTO ÚNICO */}
-                    {paymentMethod === 'CARD_SINGLE' && (
-                      <div className="mt-3 pt-2.5 border-t border-amber-200/60 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 text-[11px] text-[#181B22]">
-                          <Sparkles size={13} className="text-[#1A44C8]" />
-                          <span className="font-semibold">Deseja ativar a renovação automática todo mês?</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setBillingMode('RECURRING');
-                            setPaymentMethod('CARD_RECURRING');
-                          }}
-                          className="px-2.5 py-1 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-lg text-[10px] font-bold shrink-0 transition-all shadow-sm"
-                        >
-                          Ativar Recorrência
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-              )}
-
-            </div>
-
-            {/* PASSO 3: CONCLUSÃO E PAGAMENTO */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm transition-all space-y-3.5">
-              <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#1A44C8] text-white flex items-center justify-center text-xs font-black">
-                    3
-                  </div>
-                  <h2 className="text-xs font-extrabold text-[#181B22] uppercase tracking-wide">
-                    Confirmar e Pagar
-                  </h2>
-                </div>
-                <span className="text-[10px] font-bold text-[#64748B]">
-                  Processamento Mercado Pago
-                </span>
-              </div>
 
               {/* Erro */}
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold text-center animate-in fade-in">
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold text-center">
                   {errorMsg}
                 </div>
               )}
 
-              {/* FLUXO PIX */}
+              {/* FLUXO PIX SELECIONADO */}
               {paymentMethod === 'PIX' && (
-                <div>
+                <div className="pt-1">
                   {pixData ? (
-                    <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-center space-y-3.5">
+                    <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-center space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-[#E2E8F0] text-xs font-bold">
                         <span className="text-[#059669] flex items-center gap-1">
                           <Clock size={13} />
@@ -814,19 +646,19 @@ export default function PlanosCheckoutPage() {
                           <img 
                             src={`data:image/png;base64,${pixData.qrCodeBase64}`} 
                             alt="QR Code PIX"
-                            className="w-40 h-40 object-contain rounded-lg mx-auto"
+                            className="w-36 h-36 object-contain rounded-lg mx-auto"
                           />
                         ) : (
-                          <div className="w-40 h-40 bg-gray-50 rounded-lg flex items-center justify-center mx-auto">
-                            <QrCode size={90} className="text-[#181B22]" />
+                          <div className="w-36 h-36 bg-gray-50 rounded-lg flex items-center justify-center mx-auto">
+                            <QrCode size={80} className="text-[#181B22]" />
                           </div>
                         )}
-                        <div className="flex items-center justify-center gap-2 mt-2.5 text-[11px] font-bold text-[#1A44C8]">
+                        <div className="flex items-center justify-center gap-2 mt-2 text-[10px] font-bold text-[#1A44C8]">
                           <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1A44C8] opacity-75" />
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1A44C8]" />
                           </span>
-                          <span>Aguardando confirmação do banco...</span>
+                          <span>Aguardando pagamento no banco...</span>
                         </div>
                       </div>
 
@@ -840,21 +672,21 @@ export default function PlanosCheckoutPage() {
                             type="text"
                             readOnly
                             value={pixData.qrCode}
-                            className="w-full bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-2 text-xs text-[#64748B] font-mono select-all focus:outline-none truncate"
+                            className="w-full bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1.5 text-xs text-[#64748B] font-mono select-all focus:outline-none truncate"
                           />
                           <button
                             type="button"
                             onClick={handleCopyPix}
-                            className="px-3.5 py-2 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95"
+                            className="px-3 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95"
                           >
                             {copied ? (
                               <>
-                                <Check size={13} />
+                                <Check size={12} />
                                 <span>Copiado</span>
                               </>
                             ) : (
                               <>
-                                <Copy size={13} />
+                                <Copy size={12} />
                                 <span>Copiar</span>
                               </>
                             )}
@@ -867,205 +699,194 @@ export default function PlanosCheckoutPage() {
                           type="button"
                           onClick={handleManualCheckStatus}
                           disabled={loading}
-                          className="w-full py-3 bg-[#059669] hover:bg-[#047857] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98"
+                          className="w-full py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98"
                         >
-                          <CheckCircle2 size={15} />
-                          <span>Já fiz o pagamento no meu banco (Liberar Acesso)</span>
+                          <CheckCircle2 size={14} />
+                          <span>Já paguei no meu banco (Liberar Agora)</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setPixData(null)}
-                          className="w-full py-0.5 text-center text-xs text-[#64748B] hover:text-[#181B22] font-semibold"
+                          className="w-full text-center text-[11px] text-[#64748B] hover:text-[#181B22]"
                         >
-                          Trocar forma de pagamento
+                          Gerar outro código
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-[#475569] space-y-1.5">
-                        <p className="font-bold text-[#181B22] flex items-center gap-1.5">
-                          <Smartphone size={14} className="text-[#059669]" />
-                          <span>Como pagar com PIX:</span>
-                        </p>
-                        <ol className="list-decimal list-inside space-y-0.5 text-[11px] text-[#475569]">
-                          <li>Clique em &quot;Gerar QR Code PIX&quot; abaixo.</li>
-                          <li>Abra o app do seu banco e escaneie o código ou copie o código.</li>
-                          <li>Seu acesso será liberado em segundos após o pagamento.</li>
-                        </ol>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleGeneratePix}
-                        disabled={loading}
-                        className="w-full py-3.5 bg-[#059669] hover:bg-[#047857] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
-                      >
-                        {loading ? (
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <Zap size={14} />
-                            <span>GERAR QR CODE PIX • R$ 39,90</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleGeneratePix}
+                      disabled={loading}
+                      className="w-full py-3 bg-[#059669] hover:bg-[#047857] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                    >
+                      {loading ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Zap size={14} />
+                          <span>PAGAR COM PIX • R$ 39,90</span>
+                        </>
+                      )}
+                    </button>
                   )}
                 </div>
               )}
 
-              {/* FLUXO CARTÃO RECORRENTE */}
-              {paymentMethod === 'CARD_RECURRING' && (
-                <div className="space-y-2.5">
-                  <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-[#1E3A8A] space-y-1">
-                    <p className="font-bold flex items-center gap-1.5">
-                      <Lock size={13} className="text-[#1A44C8]" />
-                      <span>Pagamento Seguro pelo Mercado Pago</span>
-                    </p>
-                    <p className="text-[11px] text-[#334155] leading-relaxed">
-                      Ao clicar abaixo, você será direcionado à página segura do Mercado Pago para digitar os dados do <strong>seu cartão de crédito</strong>. Cobrança de <strong>R$ 39,90/mês</strong> com cancelamento livre a qualquer momento.
-                    </p>
-                  </div>
-
+              {/* FLUXO CARTÃO SELECIONADO */}
+              {paymentMethod === 'CARD' && (
+                <div className="pt-1">
                   <button
                     type="button"
-                    onClick={() => handleCardPayment(true)}
+                    onClick={handleCardPayment}
                     disabled={loading}
-                    className="w-full py-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                    className="w-full py-3 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
                   >
                     {loading ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
                         <Lock size={14} />
-                        <span>ASSINAR COM MEU CARTÃO (R$ 39,90/MÊS)</span>
+                        <span>
+                          {cardRecurring ? 'ASSINAR COM CARTÃO (R$ 39,90/MÊS)' : 'PAGAR R$ 39,90 NO CARTÃO (30 DIAS)'}
+                        </span>
                         <ArrowRight size={13} />
                       </>
                     )}
                   </button>
+                  <p className="text-[10px] text-[#64748B] text-center mt-2">
+                    Você será direcionado à página segura do Mercado Pago para inserir os dados do cartão.
+                  </p>
                 </div>
               )}
 
-              {/* FLUXO CARTÃO ÚNICO */}
-              {paymentMethod === 'CARD_SINGLE' && (
-                <div className="space-y-2.5">
-                  <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-[#92400E] space-y-1">
-                    <p className="font-bold flex items-center gap-1.5">
-                      <ShieldCheck size={13} className="text-amber-700" />
-                      <span>Cobrança Única Sem Nenhuma Renovação</span>
-                    </p>
-                    <p className="text-[11px] text-[#334155] leading-relaxed">
-                      Ao clicar abaixo, você será direcionado à tela oficial do Mercado Pago para digitar com segurança os dados do <strong>seu cartão</strong> para uma cobrança avulsa de <strong>R$ 39,90</strong> (30 dias de acesso).
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleCardPayment(false)}
-                    disabled={loading}
-                    className="w-full py-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
-                  >
-                    {loading ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Lock size={14} />
-                        <span>PAGAR R$ 39,90 NO MEU CARTÃO (PAGAMENTO ÚNICO)</span>
-                        <ArrowRight size={13} />
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#94A3B8]">
+              <div className="pt-2 border-t border-[#F1F5F9] flex items-center justify-center gap-1.5 text-[10px] text-[#94A3B8]">
                 <ShieldCheck size={12} className="text-[#059669]" />
-                <span>O Kaxxa não armazena dados de cartão. Processamento criptografado pelo Mercado Pago.</span>
+                <span>Dados 100% protegidos por criptografia Mercado Pago.</span>
               </div>
 
             </div>
 
+            {/* SEÇÃO DISCRETA: CÓDIGO VIP / TESTE INTERNO */}
+            <div className="text-center pt-1">
+              {!showVipInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowVipInput(true)}
+                  className="text-[11px] text-[#64748B] hover:text-[#1A44C8] font-medium transition-colors inline-flex items-center gap-1"
+                >
+                  <KeyRound size={11} />
+                  <span>Possui um código de acesso ou convite VIP?</span>
+                </button>
+              ) : (
+                <form onSubmit={handleVipSubmit} className="max-w-md mx-auto p-3 bg-white border border-[#E2E8F0] rounded-xl shadow-sm text-left space-y-2 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
+                      <Gift size={13} className="text-[#1A44C8]" />
+                      Ativar Convite VIP / Teste
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowVipInput(false)}
+                      className="text-[10px] text-[#64748B] hover:text-[#181B22]"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Ex: AMIGOKAXA"
+                      value={vipCode}
+                      onChange={(e) => setVipCode(e.target.value.toUpperCase())}
+                      className="flex-1 uppercase font-mono text-xs px-2.5 py-1.5 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#1A44C8]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={vipLoading || !vipCode.trim()}
+                      className="px-3.5 py-1.5 bg-[#181B22] hover:bg-black text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                    >
+                      {vipLoading ? 'Validando...' : 'Ativar'}
+                    </button>
+                  </div>
+
+                  {vipSuccess && (
+                    <p className="text-[11px] text-[#059669] font-bold">{vipSuccess}</p>
+                  )}
+                  {vipError && (
+                    <p className="text-[11px] text-rose-600 font-bold">{vipError}</p>
+                  )}
+                </form>
+              )}
+            </div>
+
           </div>
 
-          {/* COLUNA DIREITA (5 cols): RESUMO DA ASSINATURA KAXXA & GARANTIA DE 7 DIAS */}
-          <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-6">
+          {/* COLUNA DIREITA (5 cols): RESUMO E GARANTIA DE 7 DIAS */}
+          <div className="lg:col-span-5 space-y-3.5 lg:sticky lg:top-4">
 
             {/* Card de Resumo do Pedido */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm">
-              <h2 className="text-xs font-extrabold text-[#181B22] uppercase tracking-wide pb-3 border-b border-[#F1F5F9]">
-                Resumo do Pedido
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-sm">
+              <h2 className="text-xs font-extrabold text-[#181B22] uppercase tracking-wide pb-2.5 border-b border-[#F1F5F9]">
+                Resumo da Assinatura
               </h2>
 
-              <div className="py-3 space-y-2.5 text-xs">
+              <div className="py-2.5 space-y-2 text-xs">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-extrabold text-[#181B22]">Assinatura Kaxxa</h3>
-                    <p className="text-[11px] text-[#64748B]">Acesso Completo a Todos os Módulos</p>
+                    <p className="text-[10px] text-[#64748B]">
+                      {paymentMethod === 'CARD' && cardRecurring ? 'Cobrança mensal recorrente' : '30 dias de acesso'}
+                    </p>
                   </div>
                   <span className="font-bold text-[#181B22]">R$ 39,90</span>
                 </div>
 
-                <div className="flex justify-between items-center text-[#64748B]">
-                  <span>Taxa de Ativação</span>
-                  <span className="font-bold text-[#059669]">GRÁTIS (R$ 0,00)</span>
-                </div>
-
-                <div className="flex justify-between items-center text-[#64748B]">
+                <div className="flex justify-between items-center text-[#64748B] text-[11px]">
                   <span>Cancelamento</span>
                   <span className="font-bold text-[#059669]">Livre sem multas</span>
                 </div>
 
-                <div className="pt-2.5 border-t border-[#E2E8F0] flex justify-between items-baseline">
-                  <div>
-                    <span className="text-xs font-black text-[#181B22] block">Total a Pagar Hoje:</span>
-                    <span className="text-[10px] text-[#64748B]">
-                      {billingMode === 'RECURRING' ? 'Cobrado mensalmente' : 'Cobrança avulsa por 30 dias'}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xl font-black text-[#181B22] tracking-tight">R$ 39,90</span>
-                  </div>
+                <div className="pt-2 border-t border-[#E2E8F0] flex justify-between items-baseline">
+                  <span className="text-xs font-black text-[#181B22]">Total Hoje:</span>
+                  <span className="text-lg font-black text-[#181B22]">R$ 39,90</span>
                 </div>
               </div>
 
               {/* Benefícios Inclusos */}
-              <div className="mt-3 pt-3 border-t border-[#E2E8F0] space-y-2 text-xs text-[#334155]">
-                <span className="text-[10px] font-extrabold text-[#181B22] uppercase tracking-wider block mb-0.5">
-                  O que você desbloqueia:
+              <div className="mt-2.5 pt-2.5 border-t border-[#E2E8F0] space-y-1.5 text-xs text-[#334155]">
+                <span className="text-[10px] font-extrabold text-[#181B22] uppercase tracking-wider block mb-1">
+                  Incluso no seu plano:
                 </span>
-                <div className="flex items-center gap-2">
-                  <Check size={13} className="text-[#059669] shrink-0 stroke-[3]" />
+                <div className="flex items-center gap-2 text-[11px]">
+                  <Check size={12} className="text-[#059669] shrink-0 stroke-[3]" />
                   <span>Amortização inteligente de dívidas</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check size={13} className="text-[#059669] shrink-0 stroke-[3]" />
-                  <span>Gestão ilimitada de cartões & previsão de faturas</span>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <Check size={12} className="text-[#059669] shrink-0 stroke-[3]" />
+                  <span>Gestão de cartões & previsão de faturas</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check size={13} className="text-[#059669] shrink-0 stroke-[3]" />
-                  <span>Divisão e cobrança automática de terceiros</span>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <Check size={12} className="text-[#059669] shrink-0 stroke-[3]" />
+                  <span>Divisão e cobrança de terceiros</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check size={13} className="text-[#059669] shrink-0 stroke-[3]" />
-                  <span>Controle de contas bancárias e investimentos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check size={13} className="text-[#059669] shrink-0 stroke-[3]" />
-                  <span>Painel limpo, sem anúncios nem rastreadores</span>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <Check size={12} className="text-[#059669] shrink-0 stroke-[3]" />
+                  <span>Controle de contas bancárias e metas</span>
                 </div>
               </div>
             </div>
 
             {/* Card Garantia de 7 dias */}
-            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#059669] flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5">
-                <ShieldCheck size={17} />
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 flex items-start gap-2.5 shadow-sm">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[#059669] flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5">
+                <ShieldCheck size={15} />
               </div>
               <div className="text-xs">
                 <h3 className="font-extrabold text-[#181B22]">Garantia de 7 dias</h3>
-                <p className="text-[#64748B] text-[11px] mt-0.5 leading-relaxed">
-                  Teste o Kaxxa sem nenhum risco. Se por qualquer motivo você decidir que a plataforma não é para você, devolvemos 100% do seu dinheiro.
+                <p className="text-[#64748B] text-[10px] mt-0.5 leading-relaxed">
+                  Satisfação garantida ou seu dinheiro de volta em até 7 dias diretamente pelo Mercado Pago.
                 </p>
               </div>
             </div>
