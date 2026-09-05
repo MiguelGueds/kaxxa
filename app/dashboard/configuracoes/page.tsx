@@ -44,31 +44,12 @@ type ThirdParty = { id: string; name: string; type: string; };
 function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'PERFIL' | 'ASSINATURA' | 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS'>('PERFIL');
-  const [section, setSection] = useState<'CONTA' | 'SISTEMA'>('CONTA');
+  const [activeTab, setActiveTab] = useState<'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS'>('CONTAS');
   
   // Shared States
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-
-  // --- PERFIL STATE ---
-  const [userId, setUserId] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-  const [userName, setUserName] = useState('');
-  const [userPhone, setUserPhone] = useState('');
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // --- ASSINATURA STATE ---
-  const [subscription, setSubscription] = useState<DbSubscription | null>(null);
-  const [loadingSub, setLoadingSub] = useState(true);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
-  const [refundReason, setRefundReason] = useState('');
-  const [refundPixKey, setRefundPixKey] = useState('');
-
-  const isAdmin = isAdminEmail(userEmail);
 
   // Categorias
   const [categories, setCategories] = useState<Category[]>([]);
@@ -110,78 +91,36 @@ function SettingsContent() {
     fetchData();
   }, []);
 
-  // Sincroniza a aba e seção a partir dos parâmetros de URL (?tab=perfil, ?tab=sistema, ?tab=assinatura, etc)
+  // Sincroniza a aba a partir dos parâmetros de URL (?tab=contas, ?tab=cartoes, ?tab=categorias, ?tab=terceiros)
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (!tabParam) return;
     const t = tabParam.toLowerCase();
 
-    if (t === 'perfil') {
-      setSection('CONTA');
-      setActiveTab('PERFIL');
-    } else if (t === 'assinatura') {
-      setSection('CONTA');
-      setActiveTab('ASSINATURA');
-    } else if (t === 'sistema' || t === 'contas') {
-      setSection('SISTEMA');
-      setActiveTab('CONTAS');
-    } else if (t === 'cartoes') {
-      setSection('SISTEMA');
+    if (t === 'perfil' || t === 'assinatura') {
+      router.replace(`/dashboard/minha-conta?tab=${t}`);
+      return;
+    }
+
+    if (t === 'cartoes') {
       setActiveTab('CARTOES');
     } else if (t === 'categorias') {
-      setSection('SISTEMA');
       setActiveTab('CATEGORIAS');
-    } else if (t === 'terceiros') {
-      setSection('SISTEMA');
+    } else if (t === 'terceiros' || t === 'pessoas') {
       setActiveTab('TERCEIROS');
-    }
-  }, [searchParams]);
-
-  const handleSelectSection = (newSection: 'CONTA' | 'SISTEMA') => {
-    setSection(newSection);
-    if (newSection === 'CONTA') {
-      const nextTab = activeTab === 'ASSINATURA' ? 'ASSINATURA' : 'PERFIL';
-      setActiveTab(nextTab);
-      router.replace(`/dashboard/configuracoes?tab=${nextTab.toLowerCase()}`, { scroll: false });
     } else {
-      const isSystemTab = ['CONTAS', 'CARTOES', 'CATEGORIAS', 'TERCEIROS'].includes(activeTab);
-      const nextTab = isSystemTab ? activeTab : 'CONTAS';
-      setActiveTab(nextTab as any);
-      router.replace(`/dashboard/configuracoes?tab=${nextTab.toLowerCase()}`, { scroll: false });
+      setActiveTab('CONTAS');
     }
-  };
+  }, [searchParams, router]);
 
-  const handleSelectTab = (newTab: 'PERFIL' | 'ASSINATURA' | 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS') => {
+  const handleSelectTab = (newTab: 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS') => {
     setActiveTab(newTab);
-    if (newTab === 'PERFIL' || newTab === 'ASSINATURA') {
-      setSection('CONTA');
-    } else {
-      setSection('SISTEMA');
-    }
     router.replace(`/dashboard/configuracoes?tab=${newTab.toLowerCase()}`, { scroll: false });
   };
 
   const fetchData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    
-    // Perfil
-    const u = session.user;
-    setUserId(u.id);
-    setUserEmail(u.email || '');
-    setUserName(u.user_metadata?.full_name || u.email?.split('@')[0] || '');
-    setUserPhone(u.user_metadata?.phone || '');
-    setUserAvatar(u.user_metadata?.avatar_url || null);
-
-    // Assinatura
-    try {
-      const sub = await subscriptionService.getSubscription();
-      setSubscription(sub);
-    } catch (e) {
-      console.error('Erro ao buscar assinatura:', e);
-    } finally {
-      setLoadingSub(false);
-    }
 
     // Dados Financeiros
     const [catRes, accRes, cardRes, thirdRes] = await Promise.all([
@@ -208,119 +147,6 @@ function SettingsContent() {
   };
 
   const resetMessages = () => { setErrorMsg(''); setSuccessMsg(''); };
-
-  // --- PERFIL HANDLERS ---
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      setErrorMsg('A imagem selecionada deve ter no máximo 2MB.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setUserAvatar(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    resetMessages();
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          full_name: userName,
-          phone: userPhone,
-          avatar_url: userAvatar
-        }
-      });
-
-      if (error) throw error;
-      setSuccessMsg('Perfil atualizado com sucesso!');
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro ao atualizar perfil.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // --- ASSINATURA HANDLERS ---
-  const handleCancelRecurring = async () => {
-    setIsSubmitting(true);
-    resetMessages();
-
-    try {
-      if (userId) {
-        await supabase
-          .from('subscriptions')
-          .update({ 
-            status: 'CANCELED',
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', userId);
-
-        setSubscription(prev => prev ? { ...prev, status: 'CANCELED' } : null);
-        setSuccessMsg('Renovação automática cancelada. Seu acesso permanecerá ativo até o fim do ciclo atual.');
-        setIsCancelModalOpen(false);
-      }
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro ao cancelar renovação.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Cálculo de dias desde a contratação para garantia de 7 dias
-  const getDaysSinceCreated = () => {
-    if (!subscription) return 999;
-    if (!subscription.created_at) return 1; // Se existe assinatura ativa sem created_at, considera recente dentro do prazo
-    const created = new Date(subscription.created_at).getTime();
-    if (isNaN(created)) return 1;
-    const now = Date.now();
-    return Math.max(0, Math.floor((now - created) / (1000 * 60 * 60 * 24)));
-  };
-  const isWithin7Days = getDaysSinceCreated() <= 7;
-  const daysRemainingRefund = Math.max(0, 7 - getDaysSinceCreated());
-
-  const handleRequestRefund = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isWithin7Days) {
-      setErrorMsg('O prazo de garantia de 7 dias expirou para esta assinatura.');
-      setIsRefundModalOpen(false);
-      return;
-    }
-    setIsSubmitting(true);
-    resetMessages();
-
-    try {
-      const res = await fetch('/api/subscriptions/refund', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reason: refundReason,
-          pixKey: refundPixKey
-        })
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Erro ao registrar solicitação de reembolso.');
-      }
-
-      setSubscription(prev => prev ? { ...prev, status: 'CANCELED' } : null);
-      setSuccessMsg('Solicitação de cancelamento e estorno registrada! O reembolso será processado em até 24h úteis.');
-      setIsRefundModalOpen(false);
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro ao solicitar reembolso.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   // --- CATEGORIAS ---
   const handleOpenMainCategoryModal = () => {
@@ -421,470 +247,80 @@ function SettingsContent() {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto animate-fade-in-up w-full space-y-6">
-      {/* 1. CABEÇALHO CONTEXTUAL COM IDENTIFICAÇÃO CLARA DA SEÇÃO */}
+      {/* 1. CABEÇALHO CONTEXTUAL DEDICADO AS CONFIGURAÇÕES DO SISTEMA */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-[#E5E7EB]/80">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] mb-1">
-            <span>Configurações</span>
+            <span>Kaxxa</span>
             <span>/</span>
-            <span className="text-[#1A44C8]">{section === 'CONTA' ? 'Minha Conta' : 'Sistema'}</span>
+            <span className="text-[#1A44C8]">Configurações</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-[#181B22] tracking-tight">
-            {section === 'CONTA' ? 'Minha Conta' : 'Configurações do Sistema'}
+            Configurações
           </h1>
           <p className="text-xs text-[#64748B] mt-0.5">
-            {section === 'CONTA' 
-              ? 'Gerencie seus dados de acesso, foto, informações pessoais e detalhes da sua assinatura.' 
-              : 'Estruture suas contas bancárias, cartões de crédito, categorias financeiras e pessoas cadastradas.'}
+            Estruture suas contas bancárias, cartões de crédito, categorias financeiras e pessoas cadastradas.
           </p>
-        </div>
-
-        {/* Alternador Rápido de Contexto */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#F1F5F9] rounded-2xl border border-[#E2E8F0] self-start sm:self-auto shrink-0">
-          <button
-            type="button"
-            onClick={() => handleSelectSection('CONTA')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-              section === 'CONTA'
-                ? 'bg-white text-[#1A44C8] shadow-sm'
-                : 'text-[#64748B] hover:text-[#181B22]'
-            }`}
-          >
-            <User size={13} />
-            <span>Minha Conta</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSelectSection('SISTEMA')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-              section === 'SISTEMA'
-                ? 'bg-white text-[#1A44C8] shadow-sm'
-                : 'text-[#64748B] hover:text-[#181B22]'
-            }`}
-          >
-            <Wallet size={13} />
-            <span>Configurações do Sistema</span>
-          </button>
         </div>
       </header>
 
       {/* 2. SUB-ABAS EM FORMATO PILL MODERNO */}
       <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
-        {section === 'CONTA' ? (
-          <>
-            <button 
-              type="button"
-              onClick={() => handleSelectTab('PERFIL')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                activeTab === 'PERFIL'
-                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-              }`}
-            >
-              <User size={14} />
-              <span>Meu perfil</span>
-            </button>
+        <button 
+          type="button"
+          onClick={() => handleSelectTab('CONTAS')} 
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+            activeTab === 'CONTAS'
+              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+          }`}
+        >
+          <Landmark size={14} />
+          <span>Contas bancárias</span>
+        </button>
 
-            <button 
-              type="button"
-              onClick={() => handleSelectTab('ASSINATURA')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                activeTab === 'ASSINATURA'
-                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-              }`}
-            >
-              <ShieldCheck size={14} />
-              <span>Minha assinatura</span>
-            </button>
-          </>
-        ) : (
-          <>
-            <button 
-              type="button"
-              onClick={() => handleSelectTab('CONTAS')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                activeTab === 'CONTAS'
-                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-              }`}
-            >
-              <Landmark size={14} />
-              <span>Contas bancárias</span>
-            </button>
+        <button 
+          type="button"
+          onClick={() => handleSelectTab('CARTOES')} 
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+            activeTab === 'CARTOES'
+              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+          }`}
+        >
+          <CreditCard size={14} />
+          <span>Cartões</span>
+        </button>
 
-            <button 
-              type="button"
-              onClick={() => handleSelectTab('CARTOES')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                activeTab === 'CARTOES'
-                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-              }`}
-            >
-              <CreditCard size={14} />
-              <span>Cartões</span>
-            </button>
+        <button 
+          type="button"
+          onClick={() => handleSelectTab('CATEGORIAS')} 
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+            activeTab === 'CATEGORIAS'
+              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+          }`}
+        >
+          <Tag size={14} />
+          <span>Categorias</span>
+        </button>
 
-            <button 
-              type="button"
-              onClick={() => handleSelectTab('CATEGORIAS')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                activeTab === 'CATEGORIAS'
-                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-              }`}
-            >
-              <Tag size={14} />
-              <span>Categorias</span>
-            </button>
-
-            <button 
-              type="button"
-              onClick={() => handleSelectTab('TERCEIROS')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                activeTab === 'TERCEIROS'
-                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-              }`}
-            >
-              <UserCircle2 size={14} />
-              <span>Pessoas</span>
-            </button>
-          </>
-        )}
+        <button 
+          type="button"
+          onClick={() => handleSelectTab('TERCEIROS')} 
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+            activeTab === 'TERCEIROS'
+              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+          }`}
+        >
+          <UserCircle2 size={14} />
+          <span>Pessoas</span>
+        </button>
       </div>
 
       <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
         
-        {/* ======================================================== */}
-        {/* --- ABA MEU PERFIL --- */}
-        {/* ======================================================== */}
-        {activeTab === 'PERFIL' && (
-          <div className="animate-fade-in-up space-y-6 max-w-xl">
-            <div>
-              <h2 className="text-sm font-bold text-[#181B22]">Dados Pessoais</h2>
-              <p className="text-[11px] text-[#64748B] mt-0.5">Atualize sua foto, nome e informações de contato.</p>
-            </div>
-
-            <Alerts error={errorMsg} success={successMsg} />
-
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              
-              {/* Foto de Perfil / Avatar */}
-              <div className="flex items-center gap-4 p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl">
-                <div className="relative group shrink-0">
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-[#1A44C8] to-[#1538A5] text-white flex items-center justify-center font-black text-xl shadow-sm border-2 border-white">
-                    {userAvatar ? (
-                      <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span>{userName ? userName[0].toUpperCase() : userEmail ? userEmail[0].toUpperCase() : 'K'}</span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute inset-0 bg-black/40 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Alterar foto"
-                  >
-                    <Camera size={18} />
-                  </button>
-                </div>
-
-                <div className="space-y-1.5 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const isTrial = subscription?.status === 'TRIAL' || (subscription?.amount === 0 && !isAdminEmail(userEmail));
-                      return (
-                        <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
-                          isTrial 
-                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        }`}>
-                          {isTrial ? 'Período teste' : 'Acesso Pro'}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="text-xs font-bold text-[#1A44C8] hover:text-[#1538A5] bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors"
-                    >
-                      Alterar Foto
-                    </button>
-                    {userAvatar && (
-                      <button
-                        type="button"
-                        onClick={() => setUserAvatar(null)}
-                        className="text-xs font-medium text-rose-600 hover:underline px-2"
-                      >
-                        Remover
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-[#94A3B8]">PNG, JPG ou GIF até 2MB.</p>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-
-              {/* E-mail (Somente leitura - vinculado à conta) */}
-              <div>
-                <div className="flex items-center justify-between mb-1 pl-1">
-                  <label className="text-[9px] text-[#94A3B8] uppercase tracking-widest font-bold">E-mail da Conta</label>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    ✓ Verificado via Google
-                  </span>
-                </div>
-                <input
-                  type="email"
-                  readOnly
-                  value={userEmail}
-                  className="w-full bg-[#F1F5F9] border border-[#E5E7EB] rounded-xl px-4 py-2.5 text-xs text-[#64748B] font-semibold cursor-not-allowed select-none"
-                />
-              </div>
-
-              {/* Nome Completo */}
-              <div>
-                <label className="block text-[9px] text-[#94A3B8] uppercase tracking-widest mb-1 pl-1 font-bold">Nome Completo</label>
-                <input
-                  type="text"
-                  required
-                  value={userName}
-                  onChange={e => setUserName(e.target.value)}
-                  placeholder="Seu nome completo"
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-4 py-2.5 text-xs text-[#181B22] placeholder-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-semibold transition-colors"
-                />
-              </div>
-
-              {/* Telefone / WhatsApp */}
-              <div>
-                <label className="block text-[9px] text-[#94A3B8] uppercase tracking-widest mb-1 pl-1 font-bold">Número de Telefone / WhatsApp</label>
-                <input
-                  type="tel"
-                  value={userPhone}
-                  onChange={e => setUserPhone(e.target.value)}
-                  placeholder="(DDD) 99999-9999"
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-4 py-2.5 text-xs text-[#181B22] placeholder-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-semibold transition-colors"
-                />
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-3 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
-                </button>
-              </div>
-
-            </form>
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* --- ABA ASSINATURA --- */}
-        {/* ======================================================== */}
-        {activeTab === 'ASSINATURA' && (
-          <div className="animate-fade-in-up space-y-6 max-w-2xl">
-            <div>
-              <h2 className="text-sm font-bold text-[#181B22]">Minha Assinatura</h2>
-              <p className="text-[11px] text-[#64748B] mt-0.5">Gerencie seu plano ativo, método de pagamento e ciclo de renovação.</p>
-            </div>
-
-            <Alerts error={errorMsg} success={successMsg} />
-
-            {loadingSub ? (
-              <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl animate-pulse space-y-3">
-                <div className="w-32 h-4 bg-slate-200 rounded" />
-                <div className="w-48 h-3 bg-slate-200 rounded" />
-              </div>
-            ) : isAdmin ? (
-              <div className="space-y-4">
-                {/* Visual limpo para Master Developer */}
-                <div className="bg-white border border-blue-200/80 rounded-2xl divide-y divide-[#F1F5F9] shadow-sm overflow-hidden">
-                  <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#F8FAFC]">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#1A44C8]">Nível de Acesso</span>
-                        <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-[#1A44C8] text-white rounded-md">
-                          Master Developer
-                        </span>
-                      </div>
-                      <h3 className="text-base font-black text-[#181B22]">{userEmail}</h3>
-                      <p className="text-xs text-[#64748B]">Acesso irrestrito de desenvolvimento e administração do Kaxxa.</p>
-                    </div>
-
-                    <div>
-                      <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        Vitalício Permanente
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Status de Cobrança</span>
-                      <strong className="text-sm font-black text-emerald-600">Isento Permanente</strong>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Permissões</span>
-                      <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
-                        <ShieldCheck size={14} className="text-[#1A44C8]" />
-                        Acesso Total de Sistema
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Expiração</span>
-                      <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
-                        <Sparkles size={14} className="text-[#059669]" />
-                        100 Anos (Ativo)
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className="p-5 sm:p-6 bg-[#F8FAFC] flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p className="text-xs text-[#64748B]">
-                      Para testar os fluxos de clientes (checkout, limites e cupons), acesse via conta de teste.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => router.push('/dashboard/admin')}
-                      className="py-2.5 px-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95"
-                    >
-                      <ShieldCheck size={14} />
-                      <span>Ir para Gestão</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                
-                {/* Container Único do Plano (Sem caixas aninhadas) */}
-                <div className="bg-white border border-[#E5E7EB] rounded-2xl divide-y divide-[#F1F5F9] shadow-sm overflow-hidden">
-                  
-                  {/* Cabeçalho */}
-                  <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#FAFBFD]">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#64748B]">Plano Contratado</span>
-                      <h3 className="text-lg font-black text-[#181B22] tracking-tight">Kaxxa Finanças Pro</h3>
-                      <p className="text-xs text-[#64748B]">Acesso completo a todas as ferramentas e inteligência financeira.</p>
-                    </div>
-
-                    <div>
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full ${
-                        subscription?.status === 'ACTIVE' 
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
-                          : subscription?.status === 'CANCELED' 
-                            ? 'bg-amber-50 text-amber-800 border border-amber-200' 
-                            : 'bg-blue-50 text-[#1A44C8] border border-blue-200'
-                      }`}>
-                        <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-                        {subscription?.status === 'ACTIVE' ? 'Assinatura Ativa' : subscription?.status === 'CANCELED' ? 'Cancelamento Agendado' : 'Ativa'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Informações Principais em Linha Limpa */}
-                  <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Valor do Plano</span>
-                      <div className="text-base font-black text-[#181B22]">
-                        R$ 39,90 <span className="text-xs font-normal text-[#64748B]">/ mês</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Forma de Pagamento</span>
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#181B22]">
-                        <CreditCard size={14} className="text-[#1A44C8]" />
-                        <span>{subscription?.payment_method === 'PIX' ? 'PIX (Mensal Avulso)' : 'Cartão de Crédito (Recorrente)'}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Próxima Renovação</span>
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#181B22]">
-                        <Calendar size={14} className="text-[#059669]" />
-                        <span>
-                          {subscription?.current_period_end 
-                            ? new Date(subscription.current_period_end).toLocaleDateString('pt-BR') 
-                            : 'Ativo por 30 dias'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Ações e Notificação de Ciclo */}
-                  <div className="p-5 sm:p-6 bg-[#FAFBFD] flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="text-xs text-[#64748B] w-full sm:w-auto">
-                      {subscription?.status === 'CANCELED' ? (
-                        <span className="text-amber-800 font-medium">
-                          Renovação cancelada. Seu acesso continuará liberado até o término do ciclo atual.
-                        </span>
-                      ) : subscription?.payment_method === 'PIX' ? (
-                        <span>Cobrança avulsa via Pix a cada ciclo. Você pode migrar para cartão a qualquer momento.</span>
-                      ) : (
-                        <span>Renovação automática mensal. Você tem autonomia para alterar ou cancelar a qualquer momento.</span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => router.push('/planos?change_method=true')}
-                        className="flex-1 sm:flex-none py-2.5 px-4 bg-white hover:bg-slate-50 border border-[#E5E7EB] hover:border-[#1A44C8] text-[#181B22] rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
-                      >
-                        <RefreshCw size={13} className="text-[#1A44C8]" />
-                        <span>Mudar Método</span>
-                      </button>
-
-                      {/* Opção de Cancelar Renovação restrita a assinaturas ativas com cartão de crédito recorrente */}
-                      {subscription?.status === 'ACTIVE' && subscription?.payment_method === 'CREDIT_CARD' && (
-                        <button
-                          type="button"
-                          onClick={() => setIsCancelModalOpen(true)}
-                          className="flex-1 sm:flex-none py-2.5 px-4 bg-white hover:bg-rose-50 border border-[#E5E7EB] hover:border-rose-200 text-rose-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
-                        >
-                          <X size={13} />
-                          <span>Cancelar Renovação</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Link discreto de estorno/reembolso visível exclusivamente dentro do prazo legal de 7 dias */}
-                  {isWithin7Days && subscription?.status === 'ACTIVE' && (
-                    <div className="pt-3.5 text-center border-t border-[#F1F5F9] mt-3">
-                      <button
-                        type="button"
-                        onClick={() => setIsRefundModalOpen(true)}
-                        className="text-[11px] text-[#94A3B8] hover:text-[#64748B] hover:underline transition-colors font-medium select-none"
-                      >
-                        Solicitar estorno/reembolso da assinatura
-                      </button>
-                    </div>
-                  )}
-
-                </div>
-
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ======================================================== */}
         {/* --- ABA CONTAS --- */}
         {/* ======================================================== */}

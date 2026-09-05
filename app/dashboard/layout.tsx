@@ -183,13 +183,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (pathname === '/dashboard/cartoes') return { title: 'Minhas Faturas', icon: CreditCard };
     if (pathname === '/dashboard/terceiros') return { title: 'Terceiros', icon: Users };
     if (pathname === '/dashboard/dividas') return { title: 'Dívidas e Empréstimos', icon: Landmark };
-    if (pathname === '/dashboard/configuracoes') {
-      const search = typeof window !== 'undefined' ? window.location.search : '';
-      if (search.includes('tab=perfil') || search.includes('tab=assinatura') || !search) {
-        return { title: 'Minha Conta', icon: UserCircle2 };
-      }
-      return { title: 'Configurações', icon: Settings };
-    }
+    if (pathname === '/dashboard/minha-conta') return { title: 'Minha Conta', icon: UserCircle2 };
+    if (pathname === '/dashboard/configuracoes') return { title: 'Configurações', icon: Settings };
     if (pathname === '/dashboard/admin/cupons') return { title: 'Cupons', icon: Ticket };
     if (pathname?.startsWith('/dashboard/admin')) return { title: 'Gestão', icon: ShieldCheck };
     return { title: 'Dashboard', icon: HomeIcon };
@@ -397,9 +392,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
             {/* Perfil no Topbar (Avatar Redondo + Acesso Pro / Período teste) */}
             <Link 
-              href="/dashboard/configuracoes"
+              href="/dashboard/minha-conta"
               className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full hover:bg-[#F1F3F7] transition-colors border border-transparent hover:border-[#E5E7EB]"
-              title="Meu Perfil e Configurações"
+              title="Minha Conta"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-xs border border-white/60 shrink-0">
                 {userInfo.avatar ? (
