@@ -16,6 +16,15 @@ export default function LoginPage() {
 
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '61580172309-baud3b6dnu4n0ustld3v291btg7b0c2a.apps.googleusercontent.com';
 
+  // Redireciona caso já esteja autenticado
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        router.push('/dashboard');
+      }
+    });
+  }, [router]);
+
   const handleCredentialResponse = useCallback(async (response: any) => {
     try {
       setLoading(true);
