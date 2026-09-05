@@ -7,7 +7,6 @@ import { PrivacyProvider, usePrivacy } from '@/app/contexts/PrivacyContext';
 import { supabase } from '@/lib/supabase';
 import { 
   Search, 
-  Bell, 
   ChevronRight, 
   Menu, 
   LayoutDashboard, 
@@ -25,7 +24,8 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  Ticket
+  Ticket,
+  UserCircle2
 } from 'lucide-react';
 
 import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
@@ -135,7 +135,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     {
       title: 'Configurações',
       items: [
-        { href: '/dashboard/configuracoes', icon: Settings, label: 'Configurações' },
+        { href: '/dashboard/configuracoes?tab=perfil', icon: UserCircle2, label: 'Perfil e Conta' },
+        { href: '/dashboard/configuracoes?tab=sistema', icon: Settings, label: 'Dados do Sistema' },
       ]
     },
     ...(isAdmin ? [
@@ -148,6 +149,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       }
     ] : [])
   ];
+
+  const isItemActive = (href: string) => {
+    if (href === pathname) return true;
+    if (href.startsWith('/dashboard/configuracoes')) {
+      if (pathname !== '/dashboard/configuracoes') return false;
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      if (href.includes('tab=sistema')) {
+        return search.includes('tab=sistema');
+      }
+      return !search.includes('tab=sistema');
+    }
+    return false;
+  };
 
   const getPageInfo = () => {
     if (pathname === '/dashboard') return { title: 'Visão Geral', icon: LayoutDashboard };
@@ -226,7 +240,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 
                 <div className="flex flex-col gap-0.5">
                   {menu.items.map((item) => {
-                    const active = pathname === item.href;
+                    const active = isItemActive(item.href);
                     return (
                       <Link key={item.label} href={item.href}>
                         <div 
@@ -273,55 +287,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             ))}
           </div>
 
-          {/* User Footer no Estilo Micro-Card */}
-          <div className="pt-2.5 border-t border-[#F1F3F7] space-y-1.5">
-            <Link href="/dashboard/configuracoes" className="block">
-              {!isSidebarCollapsed ? (
-                <div className="p-2 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F3F7] border border-[#E5E7EB]/80 flex items-center justify-between shadow-sm transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-lg overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm">
-                      {userInfo.avatar ? (
-                        <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-bold text-[#181B22] truncate leading-tight">{userInfo.name}</p>
-                        {isAdminEmail(userInfo.email) && (
-                          <span className="px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider bg-blue-100 text-[#1A44C8] rounded border border-blue-200 shrink-0">
-                            Admin
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[8.5px] text-[#64748B] truncate">{userInfo.email || 'kaxxa // pro'}</p>
-                    </div>
-                  </div>
-                  <Settings size={12} className="text-[#1A44C8] shrink-0" />
-                </div>
-              ) : (
-                <div className="flex justify-center" title={`${userInfo.name} ${isAdminEmail(userInfo.email) ? '(Admin)' : ''} • Perfil`}>
-                  <div className="w-7 h-7 rounded-lg overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
-                    {userInfo.avatar ? (
-                      <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </Link>
-
+          {/* Rodapé da Sidebar - Sair da Conta */}
+          <div className="pt-2 border-t border-[#F1F3F7]">
             <button 
               onClick={async (e) => { e.preventDefault(); await supabase.auth.signOut(); router.push('/login'); }} 
-              className={`flex items-center rounded-xl bg-transparent hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all text-[#64748B] hover:text-rose-600 group text-xs font-medium ${
-                isSidebarCollapsed ? 'justify-center p-1.5 w-full' : 'justify-center gap-1.5 px-2.5 py-1.5 w-full'
+              className={`flex items-center rounded-xl bg-transparent hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all text-[#64748B] hover:text-rose-600 group text-xs font-semibold ${
+                isSidebarCollapsed ? 'justify-center p-2 w-full' : 'justify-start gap-2.5 px-3 py-2 w-full'
               }`}
-              title="Encerrar Sessão"
+              title="Sair da Conta"
             >
-              <LogOut size={13} className="group-hover:text-rose-600 transition-colors shrink-0" />
-              {!isSidebarCollapsed && <span className="text-[11px]">Encerrar Sessão</span>}
+              <LogOut size={15} className="group-hover:text-rose-600 transition-colors shrink-0" />
+              {!isSidebarCollapsed && <span>Sair da Conta</span>}
             </button>
           </div>
         </div>
@@ -386,26 +362,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <span className="text-[11px] font-semibold hidden sm:inline">{isConcealed ? 'Oculto' : 'Privacidade'}</span>
             </button>
 
-            {/* Sino de Notificações */}
-            <button className="h-8 w-8 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F3F7] border border-[#E5E7EB] flex items-center justify-center text-[#64748B] hover:text-[#181B22] transition-colors relative shadow-sm">
-              <Bell size={13} />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#1A44C8]" />
-            </button>
-
-            {/* Mini Avatar / Perfil no Topbar */}
+            {/* Perfil no Topbar (Avatar Redondo) */}
             <Link 
               href="/dashboard/configuracoes"
-              className="flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-xl hover:bg-[#F1F3F7] transition-colors"
+              className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-[#F1F3F7] transition-colors border border-transparent hover:border-[#E5E7EB]"
               title="Meu Perfil e Configurações"
             >
-              <div className="w-6 h-6 rounded-lg overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
+              <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-xs border border-white/60">
                 {userInfo.avatar ? (
                   <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
                 )}
               </div>
-              <span className="text-xs font-semibold text-[#181B22] hidden sm:block max-w-[120px] truncate">{userInfo.name}</span>
+              <span className="text-xs font-bold text-[#181B22] hidden sm:block max-w-[120px] truncate">{userInfo.name}</span>
               <ChevronRight size={11} className="text-[#94A3B8] hidden sm:block" />
             </Link>
           </div>

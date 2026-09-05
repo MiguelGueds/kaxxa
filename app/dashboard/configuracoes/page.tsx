@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { 
   CreditCard, 
   Landmark, 
@@ -30,7 +30,7 @@ import {
   KeyRound,
   Tag
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { subscriptionService, DbSubscription } from '@/lib/services/subscription';
 import { isAdminEmail } from '@/lib/admin';
@@ -40,8 +40,9 @@ type Account = { id: string; name: string; type: string; balance: number; };
 type Card = { id: string; name: string; limit: number; due_day: number; };
 type ThirdParty = { id: string; name: string; type: string; };
 
-export default function SettingsPage() {
+function SettingsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'PERFIL' | 'ASSINATURA' | 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS'>('PERFIL');
   const [section, setSection] = useState<'CONTA' | 'SISTEMA'>('CONTA');
   
@@ -99,6 +100,57 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Sincroniza a aba e seção a partir dos parâmetros de URL (?tab=perfil, ?tab=sistema, ?tab=assinatura, etc)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (!tabParam) return;
+    const t = tabParam.toLowerCase();
+
+    if (t === 'perfil') {
+      setSection('CONTA');
+      setActiveTab('PERFIL');
+    } else if (t === 'assinatura') {
+      setSection('CONTA');
+      setActiveTab('ASSINATURA');
+    } else if (t === 'sistema' || t === 'contas') {
+      setSection('SISTEMA');
+      setActiveTab('CONTAS');
+    } else if (t === 'cartoes') {
+      setSection('SISTEMA');
+      setActiveTab('CARTOES');
+    } else if (t === 'categorias') {
+      setSection('SISTEMA');
+      setActiveTab('CATEGORIAS');
+    } else if (t === 'terceiros') {
+      setSection('SISTEMA');
+      setActiveTab('TERCEIROS');
+    }
+  }, [searchParams]);
+
+  const handleSelectSection = (newSection: 'CONTA' | 'SISTEMA') => {
+    setSection(newSection);
+    if (newSection === 'CONTA') {
+      const nextTab = activeTab === 'ASSINATURA' ? 'ASSINATURA' : 'PERFIL';
+      setActiveTab(nextTab);
+      router.replace(`/dashboard/configuracoes?tab=${nextTab.toLowerCase()}`, { scroll: false });
+    } else {
+      const isSystemTab = ['CONTAS', 'CARTOES', 'CATEGORIAS', 'TERCEIROS'].includes(activeTab);
+      const nextTab = isSystemTab ? activeTab : 'CONTAS';
+      setActiveTab(nextTab as any);
+      router.replace(`/dashboard/configuracoes?tab=${nextTab.toLowerCase()}`, { scroll: false });
+    }
+  };
+
+  const handleSelectTab = (newTab: 'PERFIL' | 'ASSINATURA' | 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS') => {
+    setActiveTab(newTab);
+    if (newTab === 'PERFIL' || newTab === 'ASSINATURA') {
+      setSection('CONTA');
+    } else {
+      setSection('SISTEMA');
+    }
+    router.replace(`/dashboard/configuracoes?tab=${newTab.toLowerCase()}`, { scroll: false });
+  };
 
   const fetchData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -209,13 +261,29 @@ export default function SettingsPage() {
     }
   };
 
+  // Cálculo de dias desde a contratação para garantia de 7 dias
+  const getDaysSinceCreated = () => {
+    if (!subscription?.created_at) return 999;
+    const created = new Date(subscription.created_at).getTime();
+    if (isNaN(created)) return 999;
+    const now = Date.now();
+    return Math.floor((now - created) / (1000 * 60 * 60 * 24));
+  };
+  const isWithin7Days = getDaysSinceCreated() <= 7;
+  const daysRemainingRefund = Math.max(0, 7 - getDaysSinceCreated());
+
   const handleRequestRefund = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isWithin7Days) {
+      setErrorMsg('O prazo de garantia de 7 dias expirou para esta assinatura.');
+      setIsRefundModalOpen(false);
+      return;
+    }
     setIsSubmitting(true);
     resetMessages();
 
     try {
-      // Salva solicitação formal no Supabase
+      // Salva cancelamento e solicitação no Supabase
       await supabase
         .from('subscriptions')
         .update({
@@ -225,7 +293,7 @@ export default function SettingsPage() {
         .eq('user_id', userId);
 
       setSubscription(prev => prev ? { ...prev, status: 'CANCELED' } : null);
-      setSuccessMsg('Solicitação de cancelamento e reembolso registrada! Processaremos o estorno no Mercado Pago em até 24h úteis.');
+      setSuccessMsg('Solicitação de cancelamento e reembolso registrada! Processaremos o estorno em até 24h úteis.');
       setIsRefundModalOpen(false);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Erro ao solicitar reembolso.');
@@ -233,16 +301,6 @@ export default function SettingsPage() {
       setIsSubmitting(false);
     }
   };
-
-  // Cálculo de dias desde a contratação para garantia de 7 dias
-  const getDaysSinceCreated = () => {
-    if (!subscription?.created_at) return 0;
-    const created = new Date(subscription.created_at).getTime();
-    const now = Date.now();
-    return Math.floor((now - created) / (1000 * 60 * 60 * 24));
-  };
-  const isWithin7Days = getDaysSinceCreated() <= 7;
-  const daysRemainingRefund = Math.max(0, 7 - getDaysSinceCreated());
 
   // --- CATEGORIAS ---
   const handleOpenMainCategoryModal = () => {
@@ -333,12 +391,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1.5 bg-[#F1F5F9] rounded-2xl">
         <button
           type="button"
-          onClick={() => {
-            setSection('CONTA');
-            if (activeTab !== 'PERFIL' && activeTab !== 'ASSINATURA') {
-              setActiveTab('PERFIL');
-            }
-          }}
+          onClick={() => handleSelectSection('CONTA')}
           className={`p-3 rounded-xl transition-all text-left flex items-center gap-3 ${
             section === 'CONTA'
               ? 'bg-white shadow-sm border border-[#E5E7EB]'
@@ -362,12 +415,7 @@ export default function SettingsPage() {
 
         <button
           type="button"
-          onClick={() => {
-            setSection('SISTEMA');
-            if (activeTab === 'PERFIL' || activeTab === 'ASSINATURA') {
-              setActiveTab('CONTAS');
-            }
-          }}
+          onClick={() => handleSelectSection('SISTEMA')}
           className={`p-3 rounded-xl transition-all text-left flex items-center gap-3 ${
             section === 'SISTEMA'
               ? 'bg-white shadow-sm border border-[#E5E7EB]'
@@ -396,40 +444,40 @@ export default function SettingsPage() {
           <>
             <TabButton 
               active={activeTab === 'PERFIL'} 
-              onClick={() => setActiveTab('PERFIL')} 
+              onClick={() => handleSelectTab('PERFIL')} 
               icon={<User size={14} />} 
               label="Meu Perfil" 
             />
             <TabButton 
               active={activeTab === 'ASSINATURA'} 
-              onClick={() => setActiveTab('ASSINATURA')} 
+              onClick={() => handleSelectTab('ASSINATURA')} 
               icon={<ShieldCheck size={14} />} 
-              label="Assinatura" 
+              label="Minha Assinatura" 
             />
           </>
         ) : (
           <>
             <TabButton 
               active={activeTab === 'CONTAS'} 
-              onClick={() => setActiveTab('CONTAS')} 
+              onClick={() => handleSelectTab('CONTAS')} 
               icon={<Landmark size={14} />} 
               label="Contas Bancárias" 
             />
             <TabButton 
               active={activeTab === 'CARTOES'} 
-              onClick={() => setActiveTab('CARTOES')} 
+              onClick={() => handleSelectTab('CARTOES')} 
               icon={<CreditCard size={14} />} 
               label="Cartões de Crédito" 
             />
             <TabButton 
               active={activeTab === 'CATEGORIAS'} 
-              onClick={() => setActiveTab('CATEGORIAS')} 
+              onClick={() => handleSelectTab('CATEGORIAS')} 
               icon={<ListTree size={14} />} 
               label="Categorias" 
             />
             <TabButton 
               active={activeTab === 'TERCEIROS'} 
-              onClick={() => setActiveTab('TERCEIROS')} 
+              onClick={() => handleSelectTab('TERCEIROS')} 
               icon={<UserCircle2 size={14} />} 
               label="Pessoas e Terceiros" 
             />
@@ -565,7 +613,7 @@ export default function SettingsPage() {
           <div className="animate-fade-in-up space-y-6 max-w-2xl">
             <div>
               <h2 className="text-sm font-bold text-[#181B22]">Minha Assinatura</h2>
-              <p className="text-[11px] text-[#64748B] mt-0.5">Gerencie seu plano ativo, método de pagamento e renovação recorrente.</p>
+              <p className="text-[11px] text-[#64748B] mt-0.5">Gerencie seu plano ativo, método de pagamento e ciclo de renovação.</p>
             </div>
 
             <Alerts error={errorMsg} success={successMsg} />
@@ -577,71 +625,62 @@ export default function SettingsPage() {
               </div>
             ) : isAdmin ? (
               <div className="space-y-4">
-                {/* Card de Status da Assinatura para Master Developer */}
-                <div className="p-5 bg-gradient-to-br from-[#F8FAFC] to-blue-50/40 border border-blue-200/80 rounded-2xl space-y-4 shadow-sm">
-                  <div className="flex items-center justify-between pb-3 border-b border-blue-100">
-                    <div>
+                {/* Visual limpo para Master Developer */}
+                <div className="bg-white border border-blue-200/80 rounded-2xl divide-y divide-[#F1F5F9] shadow-sm overflow-hidden">
+                  <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#F8FAFC]">
+                    <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#1A44C8] block">Nível de Acesso</span>
-                        <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-[#1A44C8] text-white rounded-md shadow-sm">
+                        <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#1A44C8]">Nível de Acesso</span>
+                        <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-[#1A44C8] text-white rounded-md">
                           Master Developer
                         </span>
                       </div>
-                      <h3 className="text-base font-black text-[#181B22] mt-0.5">Conta Oficial Kaxxa ({userEmail})</h3>
+                      <h3 className="text-base font-black text-[#181B22]">{userEmail}</h3>
+                      <p className="text-xs text-[#64748B]">Acesso irrestrito de desenvolvimento e administração do Kaxxa.</p>
                     </div>
 
-                    <div className="text-right">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        Acesso Vitalício Ativo
+                        Vitalício Permanente
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
-                      <span className="text-[10px] text-[#64748B] block mb-0.5">Status de Cobrança</span>
+                  <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Status de Cobrança</span>
                       <strong className="text-sm font-black text-emerald-600">Isento Permanente</strong>
                     </div>
 
-                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
-                      <span className="text-[10px] text-[#64748B] block mb-0.5">Permissões de Sistema</span>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Permissões</span>
                       <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
-                        <ShieldCheck size={13} className="text-[#1A44C8]" />
-                        Acesso Total de Desenvolvedor
+                        <ShieldCheck size={14} className="text-[#1A44C8]" />
+                        Acesso Total de Sistema
                       </strong>
                     </div>
 
-                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
-                      <span className="text-[10px] text-[#64748B] block mb-0.5">Expiração</span>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Expiração</span>
                       <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
-                        <Sparkles size={13} className="text-[#059669]" />
-                        Vitalício (100 Anos)
+                        <Sparkles size={14} className="text-[#059669]" />
+                        100 Anos (Ativo)
                       </strong>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-white border border-blue-100 rounded-xl space-y-2 text-xs">
-                    <h4 className="font-bold text-[#181B22] flex items-center gap-1.5">
-                      <KeyRound size={14} className="text-[#1A44C8]" />
-                      Como testar a experiência real de novos clientes?
-                    </h4>
-                    <p className="text-[11px] text-[#64748B] leading-relaxed">
-                      Esta conta oficial (<code className="text-[#1A44C8] font-bold">{userEmail}</code>) tem passe livre permanente de desenvolvedor master com acesso completo às telas de <strong>Gestão</strong> e <strong>Cupons</strong>.
+                  <div className="p-5 sm:p-6 bg-[#F8FAFC] flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <p className="text-xs text-[#64748B]">
+                      Para testar os fluxos de clientes (checkout, limites e cupons), acesse via conta de teste.
                     </p>
-                    <p className="text-[11px] text-[#64748B] leading-relaxed">
-                      Para testar o fluxo exato de novos clientes (bloqueio do paywall ao acessar <code className="text-[#181B22] font-semibold">/dashboard</code>, tela de pagamento <code className="text-[#181B22] font-semibold">/planos</code>, resgate de cupons de degustação, Pix com QR Code e cancelamento), utilize uma <strong>segunda conta pessoal</strong> ou abra em aba anônima.
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => router.push('/dashboard/admin')}
-                      className="flex-1 py-2.5 px-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                      className="py-2.5 px-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95"
                     >
                       <ShieldCheck size={14} />
-                      <span>Ir para o Painel de Gestão</span>
+                      <span>Ir para Gestão</span>
                     </button>
                   </div>
                 </div>
@@ -649,157 +688,112 @@ export default function SettingsPage() {
             ) : (
               <div className="space-y-4">
                 
-                {/* Card de Status da Assinatura */}
-                <div className="p-5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl space-y-4 shadow-sm">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
-                    <div>
-                      <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#64748B] block">Plano Atual</span>
-                      <h3 className="text-base font-black text-[#181B22]">Assinatura Kaxxa</h3>
+                {/* Container Único do Plano (Sem caixas aninhadas) */}
+                <div className="bg-white border border-[#E5E7EB] rounded-2xl divide-y divide-[#F1F5F9] shadow-sm overflow-hidden">
+                  
+                  {/* Cabeçalho */}
+                  <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#FAFBFD]">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#64748B]">Plano Contratado</span>
+                      <h3 className="text-lg font-black text-[#181B22] tracking-tight">Kaxxa Finanças Pro</h3>
+                      <p className="text-xs text-[#64748B]">Acesso completo a todas as ferramentas e inteligência financeira.</p>
                     </div>
 
-                    <div className="text-right">
+                    <div>
                       <span className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full ${
                         subscription?.status === 'ACTIVE' 
-                          ? 'bg-emerald-100 text-emerald-800' 
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
                           : subscription?.status === 'CANCELED' 
-                            ? 'bg-amber-100 text-amber-800' 
-                            : 'bg-blue-100 text-[#1A44C8]'
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200' 
+                            : 'bg-blue-50 text-[#1A44C8] border border-blue-200'
                       }`}>
                         <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-                        {subscription?.status === 'ACTIVE' ? 'Ativa' : subscription?.status === 'CANCELED' ? 'Cancelada (Fim do Ciclo)' : 'Ativa'}
+                        {subscription?.status === 'ACTIVE' ? 'Assinatura Ativa' : subscription?.status === 'CANCELED' ? 'Cancelamento Agendado' : 'Ativa'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
-                      <span className="text-[10px] text-[#64748B] block mb-0.5">Valor do Plano</span>
-                      <strong className="text-sm font-black text-[#181B22]">R$ 39,90/mês</strong>
+                  {/* Informações Principais em Linha Limpa */}
+                  <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Valor do Plano</span>
+                      <div className="text-base font-black text-[#181B22]">
+                        R$ 39,90 <span className="text-xs font-normal text-[#64748B]">/ mês</span>
+                      </div>
                     </div>
 
-                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
-                      <span className="text-[10px] text-[#64748B] block mb-0.5">Forma de Pagamento</span>
-                      <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
-                        <CreditCard size={13} className="text-[#1A44C8]" />
-                        {subscription?.payment_method === 'PIX' ? 'PIX (Avulso)' : 'Cartão de Crédito (Recorrente)'}
-                      </strong>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Forma de Pagamento</span>
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#181B22]">
+                        <CreditCard size={14} className="text-[#1A44C8]" />
+                        <span>{subscription?.payment_method === 'PIX' ? 'PIX (Mensal Avulso)' : 'Cartão de Crédito (Recorrente)'}</span>
+                      </div>
                     </div>
 
-                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
-                      <span className="text-[10px] text-[#64748B] block mb-0.5">Vencimento do Ciclo</span>
-                      <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
-                        <Calendar size={13} className="text-[#059669]" />
-                        {subscription?.current_period_end 
-                          ? new Date(subscription.current_period_end).toLocaleDateString('pt-BR') 
-                          : 'Ativo por 30 dias'}
-                      </strong>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] block mb-1">Próxima Renovação</span>
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#181B22]">
+                        <Calendar size={14} className="text-[#059669]" />
+                        <span>
+                          {subscription?.current_period_end 
+                            ? new Date(subscription.current_period_end).toLocaleDateString('pt-BR') 
+                            : 'Ativo por 30 dias'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Banner Garantia de 7 Dias */}
-                  {isWithin7Days && subscription?.status !== 'CANCELED' && (
-                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck size={18} className="text-[#059669] shrink-0" />
-                        <div className="text-xs">
-                          <strong className="text-emerald-950 block">Garantia de 7 dias ativa ({daysRemainingRefund} dias restantes)</strong>
-                          <span className="text-emerald-800 text-[11px]">Você pode solicitar o cancelamento e reembolso de 100% caso não deseje continuar.</span>
-                        </div>
-                      </div>
+                  {/* Ações e Notificação de Ciclo */}
+                  <div className="p-5 sm:p-6 bg-[#FAFBFD] flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="text-xs text-[#64748B] w-full sm:w-auto">
+                      {subscription?.status === 'CANCELED' ? (
+                        <span className="text-amber-800 font-medium">
+                          Renovação cancelada. Seu acesso continuará liberado até o término do ciclo atual.
+                        </span>
+                      ) : subscription?.payment_method === 'PIX' ? (
+                        <span>Cobrança avulsa via Pix a cada ciclo. Você pode migrar para cartão a qualquer momento.</span>
+                      ) : (
+                        <span>Renovação automática mensal. Você tem autonomia para alterar ou cancelar a qualquer momento.</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                       <button
                         type="button"
-                        onClick={() => setIsRefundModalOpen(true)}
-                        className="text-[11px] font-bold text-[#059669] hover:underline shrink-0 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm"
+                        onClick={() => router.push('/planos')}
+                        className="flex-1 sm:flex-none py-2.5 px-4 bg-white hover:bg-slate-50 border border-[#E5E7EB] hover:border-[#1A44C8] text-[#181B22] rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
                       >
-                        Solicitar Reembolso
+                        <RefreshCw size={13} className="text-[#1A44C8]" />
+                        <span>Mudar Método</span>
                       </button>
+
+                      {subscription?.status !== 'CANCELED' && (
+                        <button
+                          type="button"
+                          onClick={() => setIsCancelModalOpen(true)}
+                          className="flex-1 sm:flex-none py-2.5 px-4 bg-white hover:bg-rose-50 border border-[#E5E7EB] hover:border-rose-200 text-rose-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
+                        >
+                          <X size={13} />
+                          <span>Cancelar Renovação</span>
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
+
                 </div>
 
-                {/* Card de Método de Pagamento e Recorrência */}
-                <div className="p-5 bg-white border border-[#E5E7EB] rounded-2xl space-y-3.5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
-                        <RefreshCw size={13} className="text-[#1A44C8]" />
-                        Método de Pagamento e Recorrência
-                      </h4>
-                      <p className="text-[11px] text-[#64748B] mt-0.5">
-                        {subscription?.payment_method === 'PIX'
-                          ? 'Seu plano atual é cobrado manualmente via Pix a cada ciclo de 30 dias.'
-                          : 'Sua assinatura conta com renovação automática mensal no cartão de crédito.'}
-                      </p>
-                    </div>
-
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                      subscription?.payment_method === 'PIX'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-emerald-100 text-emerald-800'
-                    }`}>
-                      {subscription?.payment_method === 'PIX' ? 'Pix Manual' : 'Recorrência Ativa'}
-                    </span>
-                  </div>
-
-                  {subscription?.payment_method === 'PIX' ? (
-                    <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <strong className="text-xs font-bold text-[#181B22] block">Deseja ativar renovação automática no Cartão?</strong>
-                        <span className="text-[11px] text-[#64748B]">
-                          Evite interrupções no acesso ativando o débito recorrente no cartão de crédito.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => router.push('/planos')}
-                        className="py-2 px-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center justify-center gap-1.5 active:scale-95"
-                      >
-                        <CreditCard size={13} />
-                        <span>Ativar Recorrência</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <strong className="text-xs font-bold text-[#181B22] block">Cartão de Crédito Cadastrado</strong>
-                        <span className="text-[11px] text-[#64748B]">
-                          Você pode atualizar os dados do seu cartão ou migrar para pagamento avulso via Pix.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => router.push('/planos')}
-                        className="py-2 px-3.5 bg-white hover:bg-slate-100 border border-[#E5E7EB] text-[#181B22] rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center justify-center gap-1.5 active:scale-95"
-                      >
-                        <RefreshCw size={13} className="text-[#1A44C8]" />
-                        <span>Alterar Cartão</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Ações de Gestão: Mudar Método ou Cancelar */}
-                  <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-[#F1F5F9]">
+                {/* Opção Discreta de Reembolso: Apenas visível nos primeiros 7 dias após contratação */}
+                {isWithin7Days && subscription?.status === 'ACTIVE' && (
+                  <div className="pt-2 text-center">
                     <button
                       type="button"
-                      onClick={() => router.push('/planos')}
-                      className="flex-1 py-2.5 px-4 bg-white hover:bg-gray-50 border border-[#E5E7EB] hover:border-[#1A44C8] text-[#181B22] rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                      onClick={() => setIsRefundModalOpen(true)}
+                      className="text-[11px] text-slate-400 hover:text-slate-600 hover:underline underline-offset-4 transition-colors font-medium"
                     >
-                      <RefreshCw size={14} className="text-[#1A44C8]" />
-                      <span>Mudar Método de Pagamento</span>
+                      Solicitar estorno da assinatura (garantia incondicional de 7 dias)
                     </button>
-
-                    {subscription?.status !== 'CANCELED' && (
-                      <button
-                        type="button"
-                        onClick={() => setIsCancelModalOpen(true)}
-                        className="py-2.5 px-4 bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
-                      >
-                        <X size={14} />
-                        <span>Cancelar Renovação</span>
-                      </button>
-                    )}
                   </div>
-                </div>
+                )}
 
               </div>
             )}
@@ -1028,26 +1022,25 @@ export default function SettingsPage() {
         </ModalWrapper>
       )}
 
-      {/* Modal Solicitar Reembolso (Garantia de 7 dias) */}
-      {isRefundModalOpen && (
+      {/* Modal Solicitar Reembolso (Apenas dentro da garantia legal de 7 dias) */}
+      {isRefundModalOpen && isWithin7Days && (
         <ModalWrapper title="Solicitar Reembolso (Garantia de 7 dias)" onClose={() => setIsRefundModalOpen(false)}>
           <form onSubmit={handleRequestRefund} className="space-y-4 text-xs">
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 flex items-start gap-2.5">
-              <ShieldCheck size={18} className="text-[#059669] shrink-0 mt-0.5" />
-              <div>
-                <strong className="block">Devolução Integral Garantida</strong>
-                <span>Dentro dos 7 dias, o valor de R$ 39,90 será estornado diretamente no Mercado Pago.</span>
-              </div>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[#64748B] space-y-1">
+              <strong className="block text-[#181B22]">Garantia Incondicional de 7 dias</strong>
+              <p className="text-[11px] leading-relaxed">
+                Você está dentro do período de 7 dias após a assinatura. Ao confirmar, seu acesso ao plano será desativado e o estorno de R$ 39,90 será enviado para processamento.
+              </p>
             </div>
 
             <div>
-              <label className="block text-[9px] text-[#94A3B8] uppercase tracking-widest mb-1 font-bold">Motivo (Opcional)</label>
+              <label className="block text-[9px] text-[#94A3B8] uppercase tracking-widest mb-1 font-bold">Motivo do Cancelamento (Opcional)</label>
               <textarea
                 value={refundReason}
                 onChange={e => setRefundReason(e.target.value)}
                 rows={2}
-                placeholder="Conte-nos o que podemos melhorar..."
-                className="w-full bg-[#F1F5F9] border border-[#E5E7EB] rounded-xl p-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] resize-none font-medium"
+                placeholder="Conte-nos brevemente o motivo..."
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] resize-none font-medium"
               />
             </div>
 
@@ -1059,8 +1052,8 @@ export default function SettingsPage() {
                   required
                   value={refundPixKey}
                   onChange={e => setRefundPixKey(e.target.value)}
-                  placeholder="Seu CPF, e-mail ou telefone"
-                  className="w-full bg-[#F1F5F9] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                  placeholder="Seu CPF, e-mail ou telefone cadastrado no Pix"
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
                 />
               </div>
             )}
@@ -1076,9 +1069,9 @@ export default function SettingsPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 py-2.5 bg-[#059669] hover:bg-[#047857] text-white font-bold rounded-xl transition-colors disabled:opacity-50 shadow-sm"
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 shadow-sm"
               >
-                {isSubmitting ? 'Enviando...' : 'Confirmar Reembolso'}
+                {isSubmitting ? 'Processando...' : 'Confirmar Reembolso'}
               </button>
             </div>
           </form>
@@ -1208,5 +1201,17 @@ function Alerts({ error, success }: { error: string, success: string }) {
       {error && <div className="flex items-center gap-2 text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-xl text-[10px] font-bold"><AlertCircle size={12} /> {error}</div>}
       {success && <div className="flex items-center gap-2 text-[#059669] bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-[10px] font-bold"><CheckCircle2 size={12} /> {success}</div>}
     </>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 max-w-5xl mx-auto flex items-center justify-center min-h-[300px]">
+        <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[#1A44C8]" />
+      </div>
+    }>
+      <SettingsContent />
+    </Suspense>
   );
 }

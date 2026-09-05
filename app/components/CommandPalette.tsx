@@ -15,7 +15,8 @@ import {
   ShieldCheck, 
   Ticket,
   ArrowRight,
-  PlusCircle
+  PlusCircle,
+  UserCircle2
 } from 'lucide-react';
 import { isAdminEmail } from '@/lib/admin';
 
@@ -31,7 +32,7 @@ interface PaletteItem {
   subtitle: string;
   icon: any;
   href: string;
-  category: 'Navegação' | 'Ações Rápidas' | 'Administração';
+  category: 'Navegação' | 'Ações Rápidas' | 'Configurações' | 'Administração';
   adminOnly?: boolean;
 }
 
@@ -50,7 +51,11 @@ export function CommandPalette({ isOpen, onClose, userEmail }: CommandPalettePro
     { id: 'nav-investimentos', title: 'Investimentos', subtitle: 'Renda fixa, ações, FIIs e criptoativos', icon: TrendingUp, href: '/dashboard/investimentos', category: 'Navegação' },
     { id: 'nav-terceiros', title: 'Terceiros', subtitle: 'Gastos e empréstimos com amigos ou parentes', icon: Users, href: '/dashboard/terceiros', category: 'Navegação' },
     { id: 'nav-dividas', title: 'Dívidas e Empréstimos', subtitle: 'Amortizações e simulação de quitação antecipada', icon: Landmark, href: '/dashboard/dividas', category: 'Navegação' },
-    { id: 'nav-config', title: 'Configurações', subtitle: 'Perfil, assinatura, contas, cartões e categorias', icon: Settings, href: '/dashboard/configuracoes', category: 'Navegação' },
+    
+    // Configurações
+    { id: 'nav-config-perfil', title: 'Perfil e Conta', subtitle: 'Foto, nome, e-mail, telefone e alteração de senha', icon: UserCircle2, href: '/dashboard/configuracoes?tab=perfil', category: 'Configurações' },
+    { id: 'nav-config-assinatura', title: 'Minha Assinatura', subtitle: 'Plano ativo, método de pagamento, ciclo e recorrência', icon: ShieldCheck, href: '/dashboard/configuracoes?tab=perfil', category: 'Configurações' },
+    { id: 'nav-config-sistema', title: 'Dados do Sistema', subtitle: 'Contas bancárias, cartões, categorias e pessoas', icon: Settings, href: '/dashboard/configuracoes?tab=sistema', category: 'Configurações' },
     
     // Ações Rápidas
     { id: 'act-transacao', title: 'Nova Transação', subtitle: 'Lançar nova receita ou despesa no extrato', icon: PlusCircle, href: '/dashboard/transacoes', category: 'Ações Rápidas' },
@@ -191,9 +196,11 @@ export function CommandPalette({ isOpen, onClose, userEmail }: CommandPalettePro
                         <span className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded uppercase tracking-wider ${
                           item.category === 'Administração'
                             ? 'bg-purple-100 text-purple-700'
-                            : item.category === 'Ações Rápidas'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-slate-100 text-slate-600'
+                            : item.category === 'Configurações'
+                              ? 'bg-blue-100 text-[#1A44C8]'
+                              : item.category === 'Ações Rápidas'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-slate-100 text-slate-600'
                         }`}>
                           {item.category}
                         </span>
