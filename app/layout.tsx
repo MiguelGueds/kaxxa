@@ -16,7 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Kaxxa — Domine seu Dinheiro e Construa seu Capital Definitivo',
+  title: 'Kaxxa Finanças',
   description: 'Plataforma inteligente de gestão financeira, consolidação de investimentos, blindagem de terceiros e liquidação estratégica de dívidas.',
   icons: {
     icon: '/icon.svg',
