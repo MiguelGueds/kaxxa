@@ -24,6 +24,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
+import { PixIcon, PixBadge } from '@/app/components/PixLogo';
 import { supabase } from '@/lib/supabase';
 import { subscriptionService } from '@/lib/services/subscription';
 
@@ -759,7 +760,7 @@ export default function PlanosCheckoutPage() {
                 /* FLUXO NORMAL OU COM CUPOM DE DESCONTO (% / R$) */
                 <>
                   <div className="grid grid-cols-2 gap-3">
-                    {/* BOTÃO PIX */}
+                    {/* BOTÃO PIX COM LOGO OFICIAL */}
                     <button
                       type="button"
                       onClick={() => {
@@ -768,21 +769,24 @@ export default function PlanosCheckoutPage() {
                       }}
                       className={`p-3 rounded-xl border-2 text-left transition-all relative ${
                         paymentMethod === 'PIX'
-                          ? 'border-[#059669] bg-emerald-50/35 shadow-sm ring-2 ring-[#059669]/10'
+                          ? 'border-[#32BCAD] bg-teal-50/40 shadow-sm ring-2 ring-[#32BCAD]/15'
                           : 'border-[#E2E8F0] hover:border-slate-300 bg-white'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                          paymentMethod === 'PIX' ? 'bg-[#059669] text-white' : 'bg-slate-100 text-slate-500'
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                          paymentMethod === 'PIX' ? 'bg-[#32BCAD] text-white shadow-xs' : 'bg-slate-100 text-slate-500'
                         }`}>
-                          <Zap size={15} />
+                          <PixIcon size={15} color={paymentMethod === 'PIX' ? '#FFFFFF' : '#32BCAD'} />
                         </div>
-                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-[#059669]">
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-teal-100/80 text-[#008A7C]">
                           Instantâneo
                         </span>
                       </div>
-                      <h3 className="text-xs font-extrabold text-[#181B22]">PIX</h3>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="text-xs font-extrabold text-[#181B22]">PIX</h3>
+                        <PixIcon size={13} color="#32BCAD" />
+                      </div>
                       <p className="text-[10px] text-[#64748B] mt-0.5">QR Code ou Copia e Cola</p>
                     </button>
 
@@ -886,8 +890,9 @@ export default function PlanosCheckoutPage() {
                       {pixData ? (
                         <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-center space-y-3">
                           <div className="flex items-center justify-between pb-2 border-b border-[#E2E8F0] text-xs font-bold">
-                            <span className="text-[#059669] flex items-center gap-1">
-                              <Clock size={13} />
+                            <span className="text-[#008A7C] flex items-center gap-1.5 font-bold">
+                              <PixIcon size={15} color="#32BCAD" />
+                              <Clock size={13} className="text-[#64748B]" />
                               Expira em {formatTime(countdown)}
                             </span>
                             <span>Total: R$ {displayPrice.toFixed(2).replace('.', ',')}</span>
@@ -999,7 +1004,7 @@ export default function PlanosCheckoutPage() {
                               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
                               <>
-                                <Zap size={14} />
+                                <PixIcon size={16} color="#FFFFFF" />
                                 <span>PAGAR COM PIX • R$ {displayPrice.toFixed(2).replace('.', ',')}</span>
                               </>
                             )}

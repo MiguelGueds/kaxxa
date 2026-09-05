@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { PixIcon } from './PixLogo';
 
 interface BankLogoProps {
   name: string;
@@ -90,6 +91,25 @@ export function BankLogo({ name, size = 'md', className = '' }: BankLogoProps) {
     lg: { wrapper: 'w-12 h-12 min-w-[48px] min-h-[48px] p-2', text: 'text-sm' },
     xl: { wrapper: 'w-16 h-16 min-w-[64px] min-h-[64px] p-2.5', text: 'text-base' },
   }[size];
+
+  // Se o método for PIX, renderiza o logo oficial vetorial do Banco Central
+  if ((name || '').toLowerCase().includes('pix')) {
+    const iconSize = {
+      xs: 12,
+      sm: 16,
+      md: 20,
+      lg: 24,
+      xl: 32,
+    }[size];
+    return (
+      <div 
+        className={`rounded-full aspect-square shrink-0 flex items-center justify-center bg-[#32BCAD]/15 border border-[#32BCAD]/30 shadow-2xs ${sizeConfig.wrapper} ${className}`}
+        title={name}
+      >
+        <PixIcon size={iconSize} color="#008A7C" />
+      </div>
+    );
+  }
 
   // 1. Se existir imagem PNG na pasta /logos/bancos/, renderiza em container 100% arredondado com encaixe total (object-contain)
   if (!imgError && slug) {
