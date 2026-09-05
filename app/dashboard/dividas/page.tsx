@@ -209,7 +209,54 @@ const CATEGORY_MAP: Record<string, { label: string; color: string }> = {
 export default function DividasPage() {
   const { isConcealed } = usePrivacy();
 
-  const [debts, setDebts] = useState<DebtItem[]>(INITIAL_DEBTS);
+  // Lista de Dívidas (inicia vazio para novos usuários)
+  const [debts, setDebts] = useState<DebtItem[]>([]);
+
+  useEffect(() => {
+    async function loadDebts() {
+      try {
+        const dbDebts = await debtsService.fetchDebts();
+        if (dbDebts && dbDebts.length > 0) {
+          setDebts(dbDebts.map(d => ({
+            id: d.id,
+            name: d.name,
+            creditorType: d.creditor_type,
+            bank: d.bank,
+            category: (d.category as any) || 'EMPRESTIMO',
+            originalAmount: d.original_amount,
+            currentBalance: d.current_balance,
+            totalPaid: d.total_paid,
+            totalDiscounts: d.total_discounts,
+            monthlyPayment: d.monthly_payment,
+            interestRate: d.interest_rate,
+            interestNumeric: d.interest_numeric,
+            totalInstallments: d.total_installments,
+            paidInstallments: d.paid_installments,
+            dueDay: d.due_day,
+            startDate: d.start_date || '',
+            estimatedEndDate: d.estimated_end_date || '',
+            status: d.status,
+            isThirdPartyResponsibility: d.is_third_party_responsibility,
+            thirdPartyDebtorName: d.third_party_debtor_name,
+            amortizations: (d.amortizations || []).map(a => ({
+              id: a.id,
+              date: a.date,
+              type: a.type,
+              amountPaid: a.amount_paid,
+              discountOrSavedInterest: a.discount_or_saved_interest,
+              notes: a.notes
+            }))
+          })));
+        } else {
+          setDebts([]);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar dívidas do Supabase:', err);
+      }
+    }
+    loadDebts();
+  }, []);
+
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'PAID_OFF' | 'THIRD_PARTY'>('ALL');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -843,8 +890,27 @@ export default function DividasPage() {
             4. LISTAGEM COMPLETA DAS DÍVIDAS (CARDS COMPACTOS & MODERNOS)
         ========================================================================= */}
         {viewMode === 'GRID' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {filteredDebts.map(debt => {
+          filteredDebts.length === 0 ? (
+            <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-10 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-[#059669]/10 text-[#059669] flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 size={24} />
+              </div>
+              <h4 className="text-sm font-bold text-[#181B22]">Nenhuma dívida ou financiamento registrado</h4>
+              <p className="text-xs text-[#64748B] mt-1 mb-4 max-w-sm mx-auto">
+                Suas finanças estão limpas e sem pendências ativas.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsNewDebtModalOpen(true)}
+                className="px-4 py-2 bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-bold rounded-xl transition-all shadow-sm inline-flex items-center gap-2"
+              >
+                <Plus size={14} />
+                <span>Cadastrar Financiamento ou Dívida</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {filteredDebts.map(debt => {
               const progress = debt.originalAmount > 0 ? (debt.totalPaid / debt.originalAmount) * 100 : 0;
               const isPaidOff = debt.status === 'PAID_OFF';
               const isHighPriority = debt.interestNumeric >= 15 && !isPaidOff;
@@ -989,6 +1055,7 @@ export default function DividasPage() {
               );
             })}
           </div>
+          )
         ) : (
           /* MODO TABELA */
           <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-[24px] overflow-hidden shadow-sm">
@@ -1007,85 +1074,93 @@ export default function DividasPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
-                  {filteredDebts.map(debt => {
-                    const isPaidOff = debt.status === 'PAID_OFF';
-                    const isPerson = debt.creditorType === 'PERSON';
+                  {filteredDebts.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-10 text-[#94A3B8] text-xs font-medium">
+                        Nenhuma dívida ou financiamento registrado.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDebts.map(debt => {
+                      const isPaidOff = debt.status === 'PAID_OFF';
+                      const isPerson = debt.creditorType === 'PERSON';
 
-                    return (
-                      <tr key={debt.id} className="hover:bg-[#F8FAFC] transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2.5">
-                            {isPerson ? (
-                              <div className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
-                                <User size={12} />
+                      return (
+                        <tr key={debt.id} className="hover:bg-[#F8FAFC] transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2.5">
+                              {isPerson ? (
+                                <div className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
+                                  <User size={12} />
+                                </div>
+                              ) : (
+                                <BankLogo name={debt.bank} size="xs" />
+                              )}
+                              <div>
+                                <p className="font-bold text-[#181B22]">{debt.name}</p>
+                                <p className="text-[10px] text-[#64748B]">{debt.bank}</p>
                               </div>
-                            ) : (
-                              <BankLogo name={debt.bank} size="xs" />
-                            )}
-                            <div>
-                              <p className="font-bold text-[#181B22]">{debt.name}</p>
-                              <p className="text-[10px] text-[#64748B]">{debt.bank}</p>
                             </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-[#181B22] font-medium">
-                          {CATEGORY_MAP[debt.category]?.label || debt.category}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={debt.interestNumeric === 0 ? 'text-[#1A44C8] font-bold' : 'text-amber-700 font-bold'}>
+                          </td>
+                          <td className="py-3 px-4 text-[#181B22] font-medium">
+                            {CATEGORY_MAP[debt.category]?.label || debt.category}
+                          </td>
+                          <td className="py-3 px-4 text-[#64748B]">
                             {debt.interestRate}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-[#64748B] font-medium">
-                          {debt.paidInstallments} / {debt.totalInstallments}
-                        </td>
-                        <td className="py-3 px-4 text-right font-extrabold text-[#181B22]">
-                          R$ {formatCurrency(debt.currentBalance)}
-                        </td>
-                        <td className="py-3 px-4 text-right font-extrabold text-[#1A44C8]">
-                          R$ {formatCurrency(debt.totalPaid)}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <span className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full border ${
-                            isPaidOff 
-                              ? 'bg-[#1A44C8]/10 text-[#1A44C8] border-[#1A44C8]/20' 
-                              : 'bg-amber-50 text-amber-700 border-amber-200'
-                          }`}>
-                            {isPaidOff ? 'Quitado' : 'Ativo'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {!isPaidOff && (
-                              <button
-                                onClick={() => {
-                                  setSelectedDebtForAmortize(debt);
-                                  setIsAmortizeModalOpen(true);
-                                }}
-                                className="px-2.5 py-1 rounded-lg bg-[#1A44C8] hover:bg-[#1538A5] text-white text-[10px] font-semibold transition-all shadow-sm"
-                              >
-                                Pagar
-                              </button>
+                          </td>
+                          <td className="py-3 px-4 text-[#64748B]">
+                            {debt.paidInstallments}/{debt.totalInstallments}
+                          </td>
+                          <td className="py-3 px-4 text-right font-extrabold text-[#181B22]">
+                            R$ {formatCurrency(debt.currentBalance)}
+                          </td>
+                          <td className="py-3 px-4 text-right font-semibold text-[#64748B]">
+                            R$ {formatCurrency(debt.totalPaid)}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {isPaidOff ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20">
+                                Quitada
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                Em Aberto
+                              </span>
                             )}
-                            <button
-                              onClick={() => handleOpenEditDebt(debt)}
-                              className="p-1 rounded-lg text-[#64748B] hover:text-[#181B22] hover:bg-[#F1F3F7] transition-colors"
-                              title="Editar"
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            <button
-                              onClick={() => setDeleteCandidate(debt)}
-                              className="p-1 rounded-lg text-[#64748B] hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                              title="Excluir"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {!isPaidOff && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedDebtForAmortize(debt);
+                                    setIsAmortizeModalOpen(true);
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-[#1A44C8] hover:bg-[#1538A5] text-white text-[10px] font-semibold transition-all shadow-sm"
+                                >
+                                  Pagar
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleOpenEditDebt(debt)}
+                                className="p-1 rounded-lg text-[#64748B] hover:text-[#181B22] hover:bg-[#F1F3F7] transition-colors"
+                                title="Editar"
+                              >
+                                <Pencil size={12} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteCandidate(debt)}
+                                className="p-1 rounded-lg text-[#64748B] hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                title="Excluir"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

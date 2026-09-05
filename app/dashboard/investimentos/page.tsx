@@ -303,7 +303,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
 
 export default function InvestimentosPage() {
   const { isConcealed } = usePrivacy();
-  const [investments, setInvestments] = useState<InvestmentItem[]>(INITIAL_INVESTMENTS);
+  // Lista de Investimentos (inicia vazio para novos usuários)
+  const [investments, setInvestments] = useState<InvestmentItem[]>([]);
   const [viewMode, setViewMode] = useState<'CONSOLIDADO' | 'LANCAMENTOS'>('CONSOLIDADO');
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
   const [consolidatedFilter, setConsolidatedFilter] = useState<'ALL' | 'FIIS' | 'ACOES' | 'FIXA' | 'BDRS' | 'CRIPTO'>('ALL');
@@ -336,6 +337,8 @@ export default function InvestimentosPage() {
             totalDividendsReceived: 0,
             isFgcProtected: inv.category !== 'TESOURO_DIRETO'
           })));
+        } else {
+          setInvestments([]);
         }
       } catch (e) {
         console.error('Erro ao carregar investimentos do Supabase:', e);

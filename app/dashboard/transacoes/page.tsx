@@ -114,15 +114,8 @@ export default function SaldoExtratoPage() {
   const [payAmount, setPayAmount] = useState('2450.00');
   const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Lista de Bancos
-  const [banks, setBanks] = useState<BankAccount[]>([
-    { id: '1', name: 'BTG Pactual', balance: 25300.00 },
-    { id: '2', name: 'Santander', balance: 12450.75 },
-    { id: '3', name: 'Banco Inter', balance: 8900.00 },
-    { id: '4', name: 'Nubank', balance: 5400.00 },
-    { id: '5', name: 'Mercado Pago', balance: 4180.20 },
-    { id: '6', name: 'Bradesco', balance: 3200.50 },
-  ]);
+  // Lista de Bancos (inicia vazio para novos usuários)
+  const [banks, setBanks] = useState<BankAccount[]>([]);
 
   // Carrossel de Bancos
   const [bankCarouselIndex, setBankCarouselIndex] = useState(0);
@@ -137,17 +130,8 @@ export default function SaldoExtratoPage() {
     setBankCarouselIndex(prev => Math.max(0, prev - visibleBanksCount));
   };
 
-  // Lista de Transações
-  const [transactions, setTransactions] = useState<TransactionItem[]>([
-    { id: 1, name: 'Mercado Livre - Eletrônicos', date: 'Hoje, 14:30', rawDate: '2026-10-14', amount: -124.90, bank: 'Nubank', category: 'Lazer & Assinaturas', type: 'EXPENSE' },
-    { id: 2, name: 'Pix Recebido - Consultoria', date: 'Hoje, 11:15', rawDate: '2026-10-14', amount: 1500.00, bank: 'Mercado Pago', category: 'Vendas / Freelance', type: 'INCOME' },
-    { id: 3, name: 'Pagamento de Fatura Santander', date: 'Ontem, 16:20', rawDate: '2026-10-13', amount: -4428.00, bank: 'Santander', category: 'Pagamento de Cartão / Fatura', type: 'EXPENSE' },
-    { id: 4, name: 'Empréstimo PIX (Conserto Carro)', date: '08/10, 15:00', rawDate: '2026-10-08', amount: -450.00, bank: 'Itaú', category: 'Empréstimo a Terceiro', type: 'EXPENSE', isThirdParty: true, thirdPartyName: 'Carlos Eduardo' },
-    { id: 5, name: 'Salário Mensal & Bônus', date: '05/10, 09:00', rawDate: '2026-10-05', amount: 8500.00, bank: 'Santander', category: 'Salário & Remuneração', type: 'INCOME' },
-    { id: 6, name: 'Supermercado Pão de Açúcar', date: '04/10, 18:40', rawDate: '2026-10-04', amount: -389.90, bank: 'Nubank', category: 'Alimentação & Supermercado', type: 'EXPENSE' },
-    { id: 7, name: 'Netflix & Spotify Mensal', date: '02/10, 04:12', rawDate: '2026-10-02', amount: -55.90, bank: 'Nubank', category: 'Lazer & Assinaturas', type: 'EXPENSE' },
-    { id: 8, name: 'Dividendos Recebidos FIIs', date: '01/10, 10:00', rawDate: '2026-10-01', amount: 1440.00, bank: 'BTG Pactual', category: 'Dividendos & Rendimentos', type: 'INCOME' },
-  ]);
+  // Lista de Transações (inicia vazio para novos usuários)
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
 
   const [expenseCategories, setExpenseCategories] = useState<string[]>(EXPENSE_CATEGORIES);
   const [incomeCategories, setIncomeCategories] = useState<string[]>(INCOME_CATEGORIES);
@@ -179,6 +163,8 @@ export default function SaldoExtratoPage() {
             name: a.name,
             balance: a.balance
           })));
+        } else {
+          setBanks([]);
         }
 
         if (dbTransactions && dbTransactions.length > 0) {
@@ -194,6 +180,8 @@ export default function SaldoExtratoPage() {
             isThirdParty: !!t.third_party_name,
             thirdPartyName: t.third_party_name
           })));
+        } else {
+          setTransactions([]);
         }
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);
@@ -589,50 +577,64 @@ export default function SaldoExtratoPage() {
             </div>
 
             {/* Grid dos 3 Bancos */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {banks.slice(bankCarouselIndex, bankCarouselIndex + visibleBanksCount).map((bank) => {
-                const pct = totalBalance > 0 ? (bank.balance / totalBalance) * 100 : 0;
-                const isSelected = selectedBankFilter === bank.name;
+            {banks.length === 0 ? (
+              <div className="rounded-2xl p-6 border border-dashed border-[#CBD5E1] bg-[#F8FAFC] text-center">
+                <p className="text-xs font-semibold text-[#64748B] mb-2">Nenhuma conta bancária conectada ainda.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-3 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-bold rounded-xl transition-all shadow-sm inline-flex items-center gap-1.5"
+                >
+                  <Plus size={13} />
+                  <span>Novo Lançamento</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {banks.slice(bankCarouselIndex, bankCarouselIndex + visibleBanksCount).map((bank) => {
+                  const pct = totalBalance > 0 ? (bank.balance / totalBalance) * 100 : 0;
+                  const isSelected = selectedBankFilter === bank.name;
 
-                return (
-                  <div 
-                    key={bank.id} 
-                    onClick={() => setSelectedBankFilter(isSelected ? null : bank.name)}
-                    className={`rounded-2xl p-3.5 border transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden shadow-sm ${
-                      isSelected 
-                        ? 'ring-2 ring-[#1A44C8] border-[#1A44C8] bg-[#1A44C8]/[0.06]' 
-                        : 'bg-[#F8FAFC] border-[#E5E7EB] hover:border-[#1A44C8]/30 hover:bg-[#F1F3F7]'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <BankLogo name={bank.name} size="sm" />
-                          <h4 className="text-xs font-bold text-[#181B22] leading-tight truncate">{bank.name}</h4>
+                  return (
+                    <div 
+                      key={bank.id} 
+                      onClick={() => setSelectedBankFilter(isSelected ? null : bank.name)}
+                      className={`rounded-2xl p-3.5 border transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden shadow-sm ${
+                        isSelected 
+                          ? 'ring-2 ring-[#1A44C8] border-[#1A44C8] bg-[#1A44C8]/[0.06]' 
+                          : 'bg-[#F8FAFC] border-[#E5E7EB] hover:border-[#1A44C8]/30 hover:bg-[#F1F3F7]'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <BankLogo name={bank.name} size="sm" />
+                            <h4 className="text-xs font-bold text-[#181B22] leading-tight truncate">{bank.name}</h4>
+                          </div>
+                          <span className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-[#E2E8F0] text-[#64748B]">
+                            {pct.toFixed(0)}%
+                          </span>
                         </div>
-                        <span className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-[#E2E8F0] text-[#64748B]">
-                          {pct.toFixed(0)}%
-                        </span>
+
+                        <p className="text-[9px] text-[#64748B] mb-0.5 font-medium">Saldo Disponível</p>
+                        <p className="text-sm font-extrabold text-[#181B22] tracking-tight">
+                          R$ {formatCurrency(bank.balance)}
+                        </p>
                       </div>
 
-                      <p className="text-[9px] text-[#64748B] mb-0.5 font-medium">Saldo Disponível</p>
-                      <p className="text-sm font-extrabold text-[#181B22] tracking-tight">
-                        R$ {formatCurrency(bank.balance)}
-                      </p>
-                    </div>
-
-                    <div className="pt-2">
-                      <div className="w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-[#1A44C8] rounded-full transition-all duration-500 shadow-sm" 
-                          style={{ width: `${Math.min(100, pct)}%` }}
-                        ></div>
+                      <div className="pt-2">
+                        <div className="w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-[#1A44C8] rounded-full transition-all duration-500 shadow-sm" 
+                            style={{ width: `${Math.min(100, pct)}%` }}
+                          ></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
         </div>

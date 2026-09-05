@@ -137,123 +137,14 @@ export default function MinhasFaturasPage() {
   const [isLimitPopupOpen, setIsLimitPopupOpen] = useState(false);
 
   // Cartões Cadastrados
-  const [cards, setCards] = useState<CardItem[]>([
-    {
-      id: 'card-1',
-      name: 'Nubank Ultravioleta',
-      brand: 'Mastercard Black',
-      bank: 'Nubank',
-      lastDigits: '4092',
-      limitTotal: 28000,
-      limitUsed: 2295.50,
-      closingDay: 28,
-      dueDay: 5,
-      color: '#A855F7' // Nubank Roxo
-    },
-    {
-      id: 'card-2',
-      name: 'Itaú Personnalité',
-      brand: 'Visa Infinite',
-      bank: 'Itaú',
-      lastDigits: '8812',
-      limitTotal: 45000,
-      limitUsed: 1652.50,
-      closingDay: 18,
-      dueDay: 25,
-      color: '#F97316' // Itaú Laranja
-    },
-    {
-      id: 'card-3',
-      name: 'XP Visa Infinite',
-      brand: 'Visa Infinite',
-      bank: 'XP Investimentos',
-      lastDigits: '6741',
-      limitTotal: 35000,
-      limitUsed: 480.00,
-      closingDay: 12,
-      dueDay: 20,
-      color: '#FFFFFF' // XP Branco
-    },
-    {
-      id: 'card-4',
-      name: 'C6 Carbon Black',
-      brand: 'Mastercard Black',
-      bank: 'C6 Bank',
-      lastDigits: '1944',
-      limitTotal: 25000,
-      limitUsed: 890.00,
-      closingDay: 20,
-      dueDay: 1,
-      color: '#FFFFFF' // C6 Branco
-    },
-    {
-      id: 'card-5',
-      name: 'Bradesco Elo Nanquim',
-      brand: 'Elo Nanquim',
-      bank: 'Bradesco',
-      lastDigits: '3302',
-      limitTotal: 30000,
-      limitUsed: 620.00,
-      closingDay: 8,
-      dueDay: 15,
-      color: '#EF4444' // Bradesco Vermelho
-    },
-    {
-      id: 'card-6',
-      name: 'Inter Black',
-      brand: 'Mastercard Black',
-      bank: 'Banco Inter',
-      lastDigits: '9150',
-      limitTotal: 20000,
-      limitUsed: 310.00,
-      closingDay: 3,
-      dueDay: 10,
-      color: '#F97316' // Inter Laranja
-    }
-  ]);
+  // Lista de Cartões (inicia vazio para novos usuários)
+  const [cards, setCards] = useState<CardItem[]>([]);
 
   // Registro de Pagamentos
-  const [payments, setPayments] = useState<CardPaymentRecord[]>([
-    { cardId: 'card-3', month: '2026-07', amountPaid: 480.00 },
-    { cardId: 'card-1', month: '2026-07', amountPaid: 1000.00 },
-    { cardId: 'card-6', month: '2026-07', amountPaid: 310.00 }
-  ]);
+  const [payments, setPayments] = useState<CardPaymentRecord[]>([]);
 
-  // Lançamentos das Faturas
-  const [expenses, setExpenses] = useState<CardExpense[]>([
-    { id: 'exp-1', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'Supermercado Pão de Açúcar', amount: 489.90, date: '2026-07-02', category: 'Alimentação & Supermercado', month: '2026-07', isInstallment: false },
-    { id: 'exp-2', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'Posto Shell Combustível', amount: 280.00, date: '2026-07-04', category: 'Transporte & Combustível', month: '2026-07', isInstallment: false },
-    { id: 'exp-3', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'iPhone 15 Pro Max', amount: 749.90, date: '2026-07-05', category: 'Vestuário & Moda', month: '2026-07', isInstallment: true, currentInstallment: 4, totalInstallments: 10 },
-    { id: 'exp-4', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'Netflix & Spotify Premium', amount: 89.90, date: '2026-07-06', category: 'Lazer & Assinaturas (Streaming)', month: '2026-07', isInstallment: false },
-    { id: 'exp-5', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'Restaurante Fogo de Chão', amount: 350.00, date: '2026-07-08', category: 'Restaurante & Delivery', month: '2026-07', isInstallment: false },
-    { id: 'exp-6', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'Farmácia Drogasil', amount: 135.80, date: '2026-07-09', category: 'Saúde & Farmácia', month: '2026-07', isInstallment: false },
-    { id: 'exp-7', cardId: 'card-2', cardName: 'Itaú Personnalité', description: 'Passagens Aéreas Latam', amount: 850.00, date: '2026-07-03', category: 'Transporte & Combustível', month: '2026-07', isInstallment: true, currentInstallment: 2, totalInstallments: 6 },
-    { id: 'exp-8', cardId: 'card-2', cardName: 'Itaú Personnalité', description: 'Zara Vestuário', amount: 480.00, date: '2026-07-07', category: 'Vestuário & Moda', month: '2026-07', isInstallment: false },
-    { id: 'exp-9', cardId: 'card-2', cardName: 'Itaú Personnalité', description: 'iFood Delivery Fim de Semana', amount: 322.50, date: '2026-07-10', category: 'Restaurante & Delivery', month: '2026-07', isInstallment: false },
-    { id: 'exp-10', cardId: 'card-3', cardName: 'XP Visa Infinite', description: 'Amazon Prime & Livros', amount: 480.00, date: '2026-07-01', category: 'Educação & Livros', month: '2026-07', isInstallment: false },
-    { id: 'exp-11', cardId: 'card-4', cardName: 'C6 Carbon Black', description: 'Apple Watch Series 9', amount: 440.00, date: '2026-07-04', category: 'Compras Pessoais & Outros', month: '2026-07', isInstallment: true, currentInstallment: 3, totalInstallments: 8 },
-    { id: 'exp-12', cardId: 'card-4', cardName: 'C6 Carbon Black', description: 'Outback Steakhouse', amount: 450.00, date: '2026-07-08', category: 'Restaurante & Delivery', month: '2026-07', isInstallment: false },
-    { id: 'exp-13', cardId: 'card-5', cardName: 'Bradesco Elo Nanquim', description: 'Supermercado Carrefour', amount: 620.00, date: '2026-07-06', category: 'Alimentação & Supermercado', month: '2026-07', isInstallment: false },
-    { id: 'exp-14', cardId: 'card-6', cardName: 'Inter Black', description: 'Uber Viagens Corporativas', amount: 310.00, date: '2026-07-02', category: 'Transporte & Combustível', month: '2026-07', isInstallment: false },
-    
-    // Projeções Futuras (Parcelas Contratadas)
-    { id: 'fut-1', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'iPhone 15 Pro Max', amount: 749.90, date: '2026-08-05', category: 'Vestuário & Moda', month: '2026-08', isInstallment: true, currentInstallment: 5, totalInstallments: 10 },
-    { id: 'fut-2', cardId: 'card-2', cardName: 'Itaú Personnalité', description: 'Passagens Aéreas Latam', amount: 850.00, date: '2026-08-03', category: 'Transporte & Combustível', month: '2026-08', isInstallment: true, currentInstallment: 3, totalInstallments: 6 },
-    { id: 'fut-3', cardId: 'card-4', cardName: 'C6 Carbon Black', description: 'Apple Watch Series 9', amount: 440.00, date: '2026-08-04', category: 'Compras Pessoais & Outros', month: '2026-08', isInstallment: true, currentInstallment: 4, totalInstallments: 8 },
-
-    { id: 'fut-4', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'iPhone 15 Pro Max', amount: 749.90, date: '2026-09-05', category: 'Vestuário & Moda', month: '2026-09', isInstallment: true, currentInstallment: 6, totalInstallments: 10 },
-    { id: 'fut-5', cardId: 'card-2', cardName: 'Itaú Personnalité', description: 'Passagens Aéreas Latam', amount: 850.00, date: '2026-09-03', category: 'Transporte & Combustível', month: '2026-09', isInstallment: true, currentInstallment: 4, totalInstallments: 6 },
-    { id: 'fut-6', cardId: 'card-4', cardName: 'C6 Carbon Black', description: 'Apple Watch Series 9', amount: 440.00, date: '2026-09-04', category: 'Compras Pessoais & Outros', month: '2026-09', isInstallment: true, currentInstallment: 5, totalInstallments: 8 },
-
-    { id: 'fut-7', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'iPhone 15 Pro Max', amount: 749.90, date: '2026-10-05', category: 'Vestuário & Moda', month: '2026-10', isInstallment: true, currentInstallment: 7, totalInstallments: 10 },
-    { id: 'fut-8', cardId: 'card-2', cardName: 'Itaú Personnalité', description: 'Passagens Aéreas Latam', amount: 850.00, date: '2026-10-03', category: 'Transporte & Combustível', month: '2026-10', isInstallment: true, currentInstallment: 5, totalInstallments: 6 },
-    { id: 'fut-9', cardId: 'card-4', cardName: 'C6 Carbon Black', description: 'Apple Watch Series 9', amount: 440.00, date: '2026-10-04', category: 'Compras Pessoais & Outros', month: '2026-10', isInstallment: true, currentInstallment: 6, totalInstallments: 8 },
-
-    { id: 'fut-10', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'iPhone 15 Pro Max', amount: 749.90, date: '2026-11-05', category: 'Vestuário & Moda', month: '2026-11', isInstallment: true, currentInstallment: 8, totalInstallments: 10 },
-    { id: 'fut-11', cardId: 'card-2', cardName: 'Itaú Personnalité', description: 'Passagens Aéreas Latam', amount: 850.00, date: '2026-11-03', category: 'Transporte & Combustível', month: '2026-11', isInstallment: true, currentInstallment: 6, totalInstallments: 6 },
-
-    { id: 'fut-12', cardId: 'card-1', cardName: 'Nubank Ultravioleta', description: 'iPhone 15 Pro Max', amount: 749.90, date: '2026-12-05', category: 'Vestuário & Moda', month: '2026-12', isInstallment: true, currentInstallment: 9, totalInstallments: 10 },
-  ]);
+  // Lançamentos das Faturas (inicia vazio para novos usuários)
+  const [expenses, setExpenses] = useState<CardExpense[]>([]);
 
   // Form Manual de Compra
   const [formCardId, setFormCardId] = useState('card-1');
@@ -315,6 +206,8 @@ export default function MinhasFaturasPage() {
             dueDay: c.due_day,
             color: c.color || '#3B6CF0'
           })));
+        } else {
+          setCards([]);
         }
 
         if (dbExpenses && dbExpenses.length > 0) {
@@ -334,6 +227,8 @@ export default function MinhasFaturasPage() {
             isThirdParty: !!e.third_party_name,
             thirdPartyName: e.third_party_name
           })));
+        } else {
+          setExpenses([]);
         }
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);

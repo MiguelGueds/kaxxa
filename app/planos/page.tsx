@@ -173,6 +173,35 @@ export default function PlanosCheckoutPage() {
     }
   };
 
+  const handleCardSubscription = async () => {
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      const res = await fetch('/api/checkout/card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail || user?.email,
+          name: userName || 'Cliente Kaxxa',
+          userId: user?.id,
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Não foi possível iniciar a assinatura');
+      }
+
+      if (data.initPoint) {
+        window.location.href = data.initPoint;
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erro ao processar assinatura no cartão.');
+      setLoading(false);
+    }
+  };
+
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
@@ -374,7 +403,52 @@ export default function PlanosCheckoutPage() {
               <div className="space-y-5">
                 <div>
                   <h2 className="text-lg font-bold text-[#181B22]">Finalizar Pagamento</h2>
-                  <p className="text-xs text-[#64748B] mt-0.5">Preencha seus dados para gerar o PIX de liberação imediata.</p>
+                  <p className="text-xs text-[#64748B] mt-0.5">Escolha como prefere assinar o Kaxxa Finanças (R$ 39,90/mês).</p>
+                </div>
+
+                {/* Seletor de Forma de Pagamento */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('PIX')}
+                    className={`p-3 rounded-2xl border-2 text-left transition-all flex flex-col justify-between ${
+                      paymentMethod === 'PIX'
+                        ? 'border-[#1A44C8] bg-[#1A44C8]/[0.03] shadow-sm'
+                        : 'border-[#E5E7EB] hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <QrCode size={16} className={paymentMethod === 'PIX' ? 'text-[#059669]' : 'text-gray-400'} />
+                        <span className="text-xs font-bold text-[#181B22]">PIX</span>
+                      </div>
+                      <span className="text-[9px] font-bold text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded-full">
+                        Instantâneo
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#64748B] leading-tight">Pagamento mensal avulso via QR Code</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('CREDIT_CARD')}
+                    className={`p-3 rounded-2xl border-2 text-left transition-all flex flex-col justify-between ${
+                      paymentMethod === 'CREDIT_CARD'
+                        ? 'border-[#1A44C8] bg-[#1A44C8]/[0.03] shadow-sm'
+                        : 'border-[#E5E7EB] hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <CreditCard size={16} className={paymentMethod === 'CREDIT_CARD' ? 'text-[#1A44C8]' : 'text-gray-400'} />
+                        <span className="text-xs font-bold text-[#181B22]">Cartão</span>
+                      </div>
+                      <span className="text-[9px] font-bold text-[#1A44C8] bg-[#1A44C8]/10 px-1.5 py-0.5 rounded-full">
+                        Recorrente
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#64748B] leading-tight">Cobrança automática mensal no cartão</p>
+                  </button>
                 </div>
 
                 {/* Campos do Pagante */}
@@ -402,16 +476,27 @@ export default function PlanosCheckoutPage() {
                   </div>
                 </div>
 
-                {/* Forma de Pagamento: PIX em destaque */}
-                <div className="flex items-center justify-between p-3.5 rounded-xl border-2 border-[#1A44C8] bg-[#1A44C8]/[0.03]">
-                  <div className="flex items-center gap-2.5">
-                    <QrCode size={18} className="text-[#059669]" />
-                    <span className="text-xs font-bold text-[#181B22]">PIX</span>
+                {paymentMethod === 'CREDIT_CARD' ? (
+                  <div className="p-3.5 rounded-xl bg-blue-50/60 border border-blue-200/70 text-xs text-[#1E3A8A] space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <Sparkles size={14} className="text-[#1A44C8]" />
+                      <span>Cobrança Automática Mensal</span>
+                    </p>
+                    <p className="text-[11px] text-[#334155] leading-relaxed">
+                      O valor de <strong>R$ 39,90</strong> será cobrado todo mês diretamente no seu cartão, sem você se preocupar com vencimento. Cancele quando quiser a qualquer momento.
+                    </p>
                   </div>
-                  <span className="text-[10px] font-extrabold text-[#059669] bg-[#059669]/10 px-2 py-0.5 rounded-full">
-                    Aprovação em 3 segundos
-                  </span>
-                </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200/70 text-xs text-[#065F46] space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <Zap size={14} className="text-[#059669]" />
+                      <span>Liberação em 3 segundos</span>
+                    </p>
+                    <p className="text-[11px] text-[#334155] leading-relaxed">
+                      Gere o código PIX e pague no app do seu banco para o seu acesso ser liberado imediatamente.
+                    </p>
+                  </div>
+                )}
 
                 {errorMsg && (
                   <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold text-center">
@@ -420,21 +505,39 @@ export default function PlanosCheckoutPage() {
                 )}
 
                 {/* Botão Principal */}
-                <button
-                  type="button"
-                  onClick={handleGeneratePix}
-                  disabled={loading}
-                  className="w-full py-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
-                >
-                  {loading ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Lock size={14} />
-                      <span>GERAR PIX • R$ 39,90</span>
-                    </>
-                  )}
-                </button>
+                {paymentMethod === 'PIX' ? (
+                  <button
+                    type="button"
+                    onClick={handleGeneratePix}
+                    disabled={loading}
+                    className="w-full py-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Lock size={14} />
+                        <span>GERAR PIX • R$ 39,90</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleCardSubscription}
+                    disabled={loading}
+                    className="w-full py-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Lock size={14} />
+                        <span>ASSINAR COM CARTÃO • R$ 39,90/MÊS</span>
+                      </>
+                    )}
+                  </button>
+                )}
 
                 <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#94A3B8]">
                   <ShieldCheck size={12} className="text-[#059669]" />

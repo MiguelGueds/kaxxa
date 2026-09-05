@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
       if (mpResponse.ok) {
         const payment = await mpResponse.json();
-        const userId = payment.metadata?.user_id;
+        const userId = payment.metadata?.user_id || payment.external_reference;
         const planType = payment.metadata?.plan_type || 'MENSAL';
 
         if (payment.status === 'approved' && userId) {
@@ -47,6 +47,46 @@ export async function POST(req: Request) {
           }).eq('user_id', userId);
 
           console.log(`[Webhook Mercado Pago] Assinatura cancelada/estornada para usuário: ${userId} (status: ${payment.status})`);
+        }
+      }
+    }
+
+    // Processamento de Assinatura Recorrente no Cartão (Preapproval)
+    if (paymentId && accessToken && (topic === 'subscription_preapproval' || topic?.includes('preapproval'))) {
+      const mpResponse = await fetch(`https://api.mercadopago.com/preapproval/${paymentId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (mpResponse.ok) {
+        const sub = await mpResponse.json();
+        const userId = sub.external_reference;
+
+        if (userId && userId !== 'anonymous') {
+          if (sub.status === 'authorized') {
+            const periodEnd = sub.next_payment_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+            await supabase.from('subscriptions').upsert({
+              user_id: userId,
+              status: 'ACTIVE',
+              plan_type: 'MENSAL',
+              payment_method: 'CREDIT_CARD',
+              payment_id: String(sub.id),
+              amount: Number(sub.auto_recurring?.transaction_amount || 39.90),
+              current_period_end: periodEnd,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+
+            console.log(`[Webhook Mercado Pago] Assinatura recorrente de cartão ativada para usuário: ${userId}`);
+          } else if (sub.status === 'cancelled') {
+            await supabase.from('subscriptions').update({
+              status: 'CANCELED',
+              updated_at: new Date().toISOString()
+            }).eq('user_id', userId);
+
+            console.log(`[Webhook Mercado Pago] Assinatura recorrente cancelada para usuário: ${userId}`);
+          }
         }
       }
     }

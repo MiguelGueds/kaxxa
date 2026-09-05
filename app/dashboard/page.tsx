@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { accountsService } from '@/lib/services/accounts';
 import { debtsService } from '@/lib/services/debts';
 import { investmentsService } from '@/lib/services/investments';
+import { transactionsService } from '@/lib/services/transactions';
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
@@ -56,41 +57,42 @@ export default function DashboardPage() {
     palette: { color: string; hex: string; bg: string };
   } | null>(null);
 
-  // Dados consolidados da visão geral conectados aos módulos de investimentos, contas e dívidas
-  const [patrimonio, setPatrimonio] = useState(84300.50);
-  const [saldoEmContas, setSaldoEmContas] = useState(22450.00);
-  const [dividasAtivas, setDividasAtivas] = useState(160500.00);
+  // Dados consolidados da visão geral - inicializados com 0 para novos usuários
+  const [patrimonio, setPatrimonio] = useState(0);
+  const [saldoEmContas, setSaldoEmContas] = useState(0);
+  const [dividasAtivas, setDividasAtivas] = useState(0);
   const valorDiferido = 0;
-  const ganhoCapital = 12800.00;
-  const aportesMes = 48200.00;
-  const despesasMes = 23000.00;
+  const [ganhoCapital, setGanhoCapital] = useState(0);
+  const [aportesMes, setAportesMes] = useState(0);
+  const [despesasMes, setDespesasMes] = useState(0);
   const patrimonioLiquidoTotal = patrimonio + saldoEmContas + valorDiferido - dividasAtivas;
 
-  const [investmentBreakdown, setInvestmentBreakdown] = useState([
-    { label: 'Renda fixa', value: 28000, color: '#1A44C8' },
-    { label: 'Ações', value: 19650, color: '#60A5FA' },
-    { label: 'FIIs', value: 16820, color: '#0EA5E9' },
-    { label: 'Internacional', value: 10450, color: '#8B5CF6' },
-    { label: 'Cripto', value: 6380, color: '#F59E0B' }
-  ]);
+  const [investmentBreakdown, setInvestmentBreakdown] = useState<
+    { label: string; value: number; color: string }[]
+  >([]);
 
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const [dbAccounts, dbDebts, dbInvestments] = await Promise.all([
+        const [dbAccounts, dbDebts, dbInvestments, dbTransactions] = await Promise.all([
           accountsService.fetchAccounts(),
           debtsService.fetchDebts(),
           investmentsService.fetchInvestments(),
+          transactionsService.fetchTransactions(200)
         ]);
 
         if (dbAccounts && dbAccounts.length > 0) {
           const totalSaldo = dbAccounts.reduce((acc, a) => acc + (a.balance || 0), 0);
           setSaldoEmContas(totalSaldo);
+        } else {
+          setSaldoEmContas(0);
         }
 
         if (dbDebts && dbDebts.length > 0) {
           const totalDebts = dbDebts.reduce((acc, d) => acc + (d.current_balance || 0), 0);
           setDividasAtivas(totalDebts);
+        } else {
+          setDividasAtivas(0);
         }
 
         if (dbInvestments && dbInvestments.length > 0) {
@@ -109,7 +111,24 @@ export default function DashboardPage() {
             { label: 'FIIs', value: fiis, color: '#0EA5E9' },
             { label: 'Internacional', value: inter, color: '#8B5CF6' },
             { label: 'Cripto', value: cripto, color: '#F59E0B' },
-          ]);
+          ].filter(item => item.value > 0));
+        } else {
+          setPatrimonio(0);
+          setInvestmentBreakdown([]);
+        }
+
+        if (dbTransactions && dbTransactions.length > 0) {
+          const totalExp = dbTransactions
+            .filter(t => t.type === 'EXPENSE')
+            .reduce((acc, t) => acc + Math.abs(t.amount || 0), 0);
+          const totalInc = dbTransactions
+            .filter(t => t.type === 'INCOME')
+            .reduce((acc, t) => acc + Math.abs(t.amount || 0), 0);
+          setDespesasMes(totalExp);
+          setAportesMes(totalInc);
+        } else {
+          setDespesasMes(0);
+          setAportesMes(0);
         }
       } catch (err) {
         console.error('Erro ao carregar métricas consolidadas do Supabase:', err);
@@ -125,21 +144,21 @@ export default function DashboardPage() {
     return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  // Dados da Evolução Anual de Gastos
+  // Dados da Evolução Anual de Gastos (zerados para novos usuários)
   const annualSpendingData = useMemo(() => {
     const months = [
-      { month: 'Jan', amount: 3200 },
-      { month: 'Fev', amount: 2850 },
-      { month: 'Mar', amount: 4100 },
-      { month: 'Abr', amount: 3600 },
-      { month: 'Mai', amount: 3950 },
-      { month: 'Jun', amount: 4800 },
-      { month: 'Jul', amount: 4428 },
-      { month: 'Ago', amount: 3100 },
-      { month: 'Set', amount: 2450 },
-      { month: 'Out', amount: 1800 },
-      { month: 'Nov', amount: 1200 },
-      { month: 'Dez', amount: 850 },
+      { month: 'Jan', amount: 0 },
+      { month: 'Fev', amount: 0 },
+      { month: 'Mar', amount: 0 },
+      { month: 'Abr', amount: 0 },
+      { month: 'Mai', amount: 0 },
+      { month: 'Jun', amount: 0 },
+      { month: 'Jul', amount: 0 },
+      { month: 'Ago', amount: 0 },
+      { month: 'Set', amount: 0 },
+      { month: 'Out', amount: 0 },
+      { month: 'Nov', amount: 0 },
+      { month: 'Dez', amount: 0 },
     ];
 
     return months;
@@ -170,55 +189,15 @@ export default function DashboardPage() {
 
   const areaD = `${pathD} L ${points[points.length - 1].x},${svgHeight - paddingY} L ${points[0].x},${svgHeight - paddingY} Z`;
 
-  // Dados de Gastos por Categoria
+  // Dados de Gastos por Categoria (zerados para novos usuários)
   const categoryData = useMemo(() => {
-    const rawCategories = [
-      {
-        category: 'Alimentação',
-        total: 1930.20,
-        subcategories: [
-          { name: 'Supermercado', amount: 1450.20, pct: 75.1 },
-          { name: 'Restaurante / Delivery', amount: 480.00, pct: 24.9 }
-        ]
-      },
-      {
-        category: 'Lazer & Assinaturas',
-        total: 719.80,
-        subcategories: [
-          { name: 'Eletrônicos & Gadgets', amount: 629.90, pct: 87.5 },
-          { name: 'Streaming (Netflix, Spotify)', amount: 89.90, pct: 12.5 }
-        ]
-      },
-      {
-        category: 'Transporte',
-        total: 380.00,
-        subcategories: [
-          { name: 'Passagens Aéreas', amount: 380.00, pct: 100 }
-        ]
-      },
-      {
-        category: 'Saúde & Bem-estar',
-        total: 215.40,
-        subcategories: [
-          { name: 'Farmácia', amount: 215.40, pct: 100 }
-        ]
-      },
-      {
-        category: 'Moradia',
-        total: 450.00,
-        subcategories: [
-          { name: 'Energia Elétrica', amount: 450.00, pct: 100 }
-        ]
-      }
-    ];
-
-    const totalOverall = rawCategories.reduce((acc, c) => acc + c.total, 0);
-
-    return rawCategories.map(cat => ({
-      ...cat,
-      percentage: totalOverall > 0 ? (cat.total / totalOverall) * 100 : 0,
-      palette: CATEGORY_PALETTE[cat.category] || { color: 'text-[#64748B]', hex: '#64748B', bg: 'bg-[#64748B]' }
-    }));
+    return [] as {
+      category: string;
+      total: number;
+      subcategories: { name: string; amount: number; pct: number }[];
+      percentage: number;
+      palette: { color: string; hex: string; bg: string };
+    }[];
   }, []);
 
   const totalDespesasGerais = categoryData.reduce((acc, c) => acc + c.total, 0);
@@ -499,20 +478,29 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-4 space-y-3">
-            {investmentBreakdown.map((segment) => {
-              const segmentPct = (segment.value / investmentBreakdownTotal) * 100;
-              return (
-                <div key={segment.label}>
-                  <div className="flex justify-between items-center text-[10px] text-[#64748B] mb-1">
-                    <span>{segment.label}</span>
-                    <span className="font-bold text-[#181B22]">{segmentPct.toFixed(1)}%</span>
+            {investmentBreakdown.length === 0 ? (
+              <div className="py-6 text-center text-xs text-[#94A3B8]">
+                Nenhum investimento registrado.
+                <Link href="/dashboard/investimentos" className="block mt-1 text-[#1A44C8] font-bold hover:underline">
+                  + Cadastrar primeiro ativo
+                </Link>
+              </div>
+            ) : (
+              investmentBreakdown.map((segment) => {
+                const segmentPct = investmentBreakdownTotal > 0 ? (segment.value / investmentBreakdownTotal) * 100 : 0;
+                return (
+                  <div key={segment.label}>
+                    <div className="flex justify-between items-center text-[10px] text-[#64748B] mb-1">
+                      <span>{segment.label}</span>
+                      <span className="font-bold text-[#181B22]">{segmentPct.toFixed(1)}%</span>
+                    </div>
+                    <div className="h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${segmentPct}%`, background: segment.color }} />
+                    </div>
                   </div>
-                  <div className="h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${segmentPct}%`, background: segment.color }} />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -530,20 +518,29 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-4 space-y-3">
-            {categoryData.map((cat) => (
-              <div key={cat.category}>
-                <div className="flex justify-between items-center text-[10px] text-[#64748B] mb-1">
-                  <span className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${cat.palette.bg}`} />
-                    {cat.category}
-                  </span>
-                  <span className="font-bold text-[#181B22]">R$ {formatCurrency(cat.total)}</span>
-                </div>
-                <div className="h-2.5 bg-[#E2E8F0] rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${cat.palette.bg}`} style={{ width: `${Math.min(cat.percentage, 100)}%` }} />
-                </div>
+            {categoryData.length === 0 ? (
+              <div className="py-6 text-center text-xs text-[#94A3B8]">
+                Nenhum gasto registrado neste período.
+                <Link href="/dashboard/transacoes" className="block mt-1 text-[#1A44C8] font-bold hover:underline">
+                  + Registrar primeira despesa
+                </Link>
               </div>
-            ))}
+            ) : (
+              categoryData.map((cat) => (
+                <div key={cat.category}>
+                  <div className="flex justify-between items-center text-[10px] text-[#64748B] mb-1">
+                    <span className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${cat.palette.bg}`} />
+                      {cat.category}
+                    </span>
+                    <span className="font-bold text-[#181B22]">R$ {formatCurrency(cat.total)}</span>
+                  </div>
+                  <div className="h-2.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${cat.palette.bg}`} style={{ width: `${Math.min(cat.percentage, 100)}%` }} />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
