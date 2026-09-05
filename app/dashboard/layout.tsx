@@ -28,6 +28,7 @@ import {
 
 import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
 import { subscriptionService } from '@/lib/services/subscription';
+import { isAdminEmail } from '@/lib/admin';
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -257,14 +258,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-[#181B22] truncate leading-tight">{userInfo.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-bold text-[#181B22] truncate leading-tight">{userInfo.name}</p>
+                        {isAdminEmail(userInfo.email) && (
+                          <span className="px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider bg-blue-100 text-[#1A44C8] rounded border border-blue-200 shrink-0">
+                            Admin
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[8.5px] text-[#64748B] truncate">{userInfo.email || 'kaxxa // pro'}</p>
                     </div>
                   </div>
                   <Settings size={12} className="text-[#1A44C8] shrink-0" />
                 </div>
               ) : (
-                <div className="flex justify-center" title={`${userInfo.name} • Perfil`}>
+                <div className="flex justify-center" title={`${userInfo.name} ${isAdminEmail(userInfo.email) ? '(Admin)' : ''} • Perfil`}>
                   <div className="w-7 h-7 rounded-lg overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
                     {userInfo.avatar ? (
                       <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />

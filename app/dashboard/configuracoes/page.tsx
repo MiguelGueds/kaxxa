@@ -33,6 +33,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { subscriptionService, DbSubscription } from '@/lib/services/subscription';
+import { isAdminEmail } from '@/lib/admin';
 
 type Category = { id: string; name: string; type: string; parent_id: string | null; };
 type Account = { id: string; name: string; type: string; balance: number; };
@@ -74,7 +75,11 @@ export default function SettingsPage() {
   const [newCouponMaxUses, setNewCouponMaxUses] = useState(1);
   const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
 
-  const fetchCoupons = async () => {
+  const isAdmin = isAdminEmail(userEmail);
+
+  const fetchCoupons = async (emailOverride?: string) => {
+    const targetEmail = typeof emailOverride === 'string' ? emailOverride : userEmail;
+    if (!isAdminEmail(targetEmail)) return;
     setLoadingCoupons(true);
     try {
       const res = await fetch('/api/coupons');
@@ -180,7 +185,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchData();
-    fetchCoupons();
   }, []);
 
   const fetchData = async () => {
@@ -194,6 +198,11 @@ export default function SettingsPage() {
     setUserName(u.user_metadata?.full_name || u.email?.split('@')[0] || '');
     setUserPhone(u.user_metadata?.phone || '');
     setUserAvatar(u.user_metadata?.avatar_url || null);
+
+    // Carregar cupons apenas se for administrador
+    if (isAdminEmail(u.email)) {
+      fetchCoupons(u.email);
+    }
 
     // Assinatura
     try {
@@ -416,7 +425,9 @@ export default function SettingsPage() {
       <div className="flex border-b border-[#E5E7EB] overflow-x-auto custom-scrollbar">
         <TabButton active={activeTab === 'PERFIL'} onClick={() => setActiveTab('PERFIL')} icon={<User size={14} />} label="Meu Perfil" />
         <TabButton active={activeTab === 'ASSINATURA'} onClick={() => setActiveTab('ASSINATURA')} icon={<ShieldCheck size={14} />} label="Assinatura & Pagamentos" />
-        <TabButton active={activeTab === 'CUPONS'} onClick={() => { setActiveTab('CUPONS'); fetchCoupons(); }} icon={<Ticket size={14} />} label="Cupons & Testes" badge="Admin" />
+        {isAdmin && (
+          <TabButton active={activeTab === 'CUPONS'} onClick={() => { setActiveTab('CUPONS'); fetchCoupons(); }} icon={<Ticket size={14} />} label="Cupons & Testes" badge="Admin" />
+        )}
         <TabButton active={activeTab === 'CONTAS'} onClick={() => setActiveTab('CONTAS')} icon={<Landmark size={14} />} label="Contas" />
         <TabButton active={activeTab === 'CARTOES'} onClick={() => setActiveTab('CARTOES')} icon={<CreditCard size={14} />} label="Cartões" />
         <TabButton active={activeTab === 'CATEGORIAS'} onClick={() => setActiveTab('CATEGORIAS')} icon={<ListTree size={14} />} label="Categorias" />
@@ -561,6 +572,77 @@ export default function SettingsPage() {
                 <div className="w-32 h-4 bg-slate-200 rounded" />
                 <div className="w-48 h-3 bg-slate-200 rounded" />
               </div>
+            ) : isAdmin ? (
+              <div className="space-y-4">
+                {/* Card de Status da Assinatura para Master Developer */}
+                <div className="p-5 bg-gradient-to-br from-[#F8FAFC] to-blue-50/40 border border-blue-200/80 rounded-2xl space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between pb-3 border-b border-blue-100">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#1A44C8] block">Nível de Acesso</span>
+                        <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-[#1A44C8] text-white rounded-md shadow-sm">
+                          Master Developer
+                        </span>
+                      </div>
+                      <h3 className="text-base font-black text-[#181B22] mt-0.5">Conta Oficial Kaxxa ({userEmail})</h3>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Acesso Vitalício Ativo
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
+                      <span className="text-[10px] text-[#64748B] block mb-0.5">Status de Cobrança</span>
+                      <strong className="text-sm font-black text-emerald-600">Isento Permanente</strong>
+                    </div>
+
+                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
+                      <span className="text-[10px] text-[#64748B] block mb-0.5">Permissões de Sistema</span>
+                      <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
+                        <ShieldCheck size={13} className="text-[#1A44C8]" />
+                        Acesso Total & Gerador
+                      </strong>
+                    </div>
+
+                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
+                      <span className="text-[10px] text-[#64748B] block mb-0.5">Expiração</span>
+                      <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
+                        <Sparkles size={13} className="text-[#059669]" />
+                        Vitalício (100 Anos)
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-white border border-blue-100 rounded-xl space-y-2 text-xs">
+                    <h4 className="font-bold text-[#181B22] flex items-center gap-1.5">
+                      <KeyRound size={14} className="text-[#1A44C8]" />
+                      Como testar a experiência real de novos clientes?
+                    </h4>
+                    <p className="text-[11px] text-[#64748B] leading-relaxed">
+                      Esta conta oficial (<code className="text-[#1A44C8] font-bold">{userEmail}</code>) tem passe livre permanente para você desenvolver, auditar relatórios e gerar cupons na aba <strong>Cupons & Testes</strong>.
+                    </p>
+                    <p className="text-[11px] text-[#64748B] leading-relaxed">
+                      Para testar o fluxo exato de novos clientes (bloqueio do paywall ao acessar <code className="text-[#181B22] font-semibold">/dashboard</code>, tela de pagamento <code className="text-[#181B22] font-semibold">/planos</code>, resgate de cupons de degustação, Pix com QR Code e cancelamento), utilize uma <strong>segunda conta pessoal</strong> ou abra em aba anônima.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('CUPONS'); fetchCoupons(); }}
+                      className="flex-1 py-2.5 px-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                    >
+                      <Ticket size={14} />
+                      <span>Abrir Gerador de Cupons & Degustação</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="space-y-4">
                 
@@ -669,7 +751,7 @@ export default function SettingsPage() {
         {/* ======================================================== */}
         {/* --- ABA CUPONS & TESTES (ADMIN) --- */}
         {/* ======================================================== */}
-        {activeTab === 'CUPONS' && (
+        {isAdmin && activeTab === 'CUPONS' && (
           <div className="animate-fade-in-up space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E5E7EB]">
               <div>
@@ -848,7 +930,7 @@ export default function SettingsPage() {
                 </h3>
                 <button
                   type="button"
-                  onClick={fetchCoupons}
+                  onClick={() => fetchCoupons()}
                   className="text-[11px] text-[#1A44C8] hover:underline font-bold flex items-center gap-1"
                 >
                   <RefreshCw size={11} className={loadingCoupons ? 'animate-spin' : ''} />

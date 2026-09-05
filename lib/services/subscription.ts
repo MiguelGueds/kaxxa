@@ -1,4 +1,5 @@
 import { supabase, getAuthenticatedUser, isSupabaseConfigured } from '@/lib/supabase';
+import { isAdminEmail } from '@/lib/admin';
 
 export interface DbSubscription {
   id: string;
@@ -20,6 +21,20 @@ export const subscriptionService = {
   async getSubscription(): Promise<DbSubscription | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
+
+    // Se for administrador (somoskaxxa@gmail.com), acesso vitalício de desenvolvedor
+    if (isAdminEmail(user.email)) {
+      return {
+        id: 'admin-master',
+        user_id: user.id,
+        status: 'ACTIVE',
+        plan_type: 'ANUAL',
+        payment_method: 'CREDIT_CARD',
+        amount: 0,
+        current_period_end: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+      };
+    }
 
     const { data, error } = await supabase
       .from('subscriptions')
@@ -50,6 +65,21 @@ export const subscriptionService = {
     const user = await getAuthenticatedUser();
     if (!user) {
       return { granted: false, subscription: null };
+    }
+
+    // Administradores Master têm acesso irrestrito garantido
+    if (isAdminEmail(user.email)) {
+      const adminSub: DbSubscription = {
+        id: 'admin-master',
+        user_id: user.id,
+        status: 'ACTIVE',
+        plan_type: 'ANUAL',
+        payment_method: 'CREDIT_CARD',
+        amount: 0,
+        current_period_end: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      return { granted: true, subscription: adminSub };
     }
 
     const sub = await this.getSubscription();
