@@ -365,7 +365,7 @@ export default function InvestimentosPage() {
   // States Modal Renda Fixa
   const [rfCategory, setRfCategory] = useState<AssetCategory>('CAIXINHA_PORQUINHO');
   const [rfName, setRfName] = useState('');
-  const [rfInstitution, setRfInstitution] = useState('Nubank');
+  const [rfInstitution, setRfInstitution] = useState('');
   const [rfRate, setRfRate] = useState('100% do CDI');
   const [rfLiquidity, setRfLiquidity] = useState<'DIARIA' | 'D+1' | 'VENCIMENTO'>('DIARIA');
   const [rfDueDate, setRfDueDate] = useState('');
@@ -374,7 +374,7 @@ export default function InvestimentosPage() {
   // States Modal Renda Variável
   const [rvCategory, setRvCategory] = useState<'Ações' | 'FIIs' | 'BDRs' | 'ETFs' | 'Criptomoedas' | 'Stocks'>('Ações');
   const [rvSearchTicker, setRvSearchTicker] = useState('');
-  const [rvInstitution, setRvInstitution] = useState('XP Investimentos');
+  const [rvInstitution, setRvInstitution] = useState('');
   const [rvQuantity, setRvQuantity] = useState('');
   const [rvPrice, setRvPrice] = useState('');
   const [rvYieldRate, setRvYieldRate] = useState('');
@@ -715,14 +715,14 @@ export default function InvestimentosPage() {
     setEditingInvestment(null);
     setRfCategory('CAIXINHA_PORQUINHO');
     setRfName('');
-    setRfInstitution('Nubank');
+    setRfInstitution('');
     setRfRate('100% do CDI');
     setRfLiquidity('DIARIA');
     setRfDueDate('');
     setRfAmount('');
     setRvCategory('Ações');
     setRvSearchTicker('');
-    setRvInstitution('XP Investimentos');
+    setRvInstitution('');
     setRvQuantity('');
     setRvPrice('');
     setRvYieldRate('');
@@ -1645,12 +1645,16 @@ export default function InvestimentosPage() {
 
                                   {/* Instituição / Banco */}
                                   <td className="py-2.5 px-2">
-                                    <div className="flex items-center gap-1.5">
-                                      <BankLogo name={asset.institutions[0]} size="xs" />
-                                      <span className="text-[#181B22] font-semibold truncate max-w-[100px] text-[10px]">
-                                        {asset.institutions.join(', ')}
-                                      </span>
-                                    </div>
+                                    {asset.institutions.filter(i => i && i.trim()).length > 0 ? (
+                                      <div className="flex items-center gap-1.5">
+                                        <BankLogo name={asset.institutions.filter(i => i && i.trim())[0]} size="xs" />
+                                        <span className="text-[#181B22] font-semibold truncate max-w-[100px] text-[10px]">
+                                          {asset.institutions.filter(i => i && i.trim()).join(', ')}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[#94A3B8] text-[10px]">-</span>
+                                    )}
                                   </td>
 
                                   {/* Colunas específicas Fixa vs Variável */}
@@ -1774,10 +1778,14 @@ export default function InvestimentosPage() {
 
                             {/* Instituição */}
                             <td className="py-2.5 px-2 whitespace-nowrap">
-                              <div className="flex items-center gap-1.5">
-                                <BankLogo name={item.institution} size="xs" />
-                                <span className="text-[#181B22] font-semibold text-[10px]">{item.institution}</span>
-                              </div>
+                              {item.institution && item.institution.trim() ? (
+                                <div className="flex items-center gap-1.5">
+                                  <BankLogo name={item.institution} size="xs" />
+                                  <span className="text-[#181B22] font-semibold text-[10px]">{item.institution}</span>
+                                </div>
+                              ) : (
+                                <span className="text-[#94A3B8] text-[10px]">-</span>
+                              )}
                             </td>
 
                             {/* Taxa */}
@@ -1948,21 +1956,14 @@ export default function InvestimentosPage() {
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Instituição</label>
-                      <select 
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Instituição / Banco (Opcional)</label>
+                      <input 
+                        type="text" 
                         value={rfInstitution}
                         onChange={(e) => setRfInstitution(e.target.value)}
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                      >
-                        <option value="Nubank">Nubank</option>
-                        <option value="Banco Inter">Banco Inter</option>
-                        <option value="Itaú">Itaú</option>
-                        <option value="Bradesco">Bradesco</option>
-                        <option value="Santander">Santander</option>
-                        <option value="C6 Bank">C6 Bank</option>
-                        <option value="XP Investimentos">XP</option>
-                        <option value="Tesouro Direto">Tesouro Nacional</option>
-                      </select>
+                        placeholder="Ex: Nubank, Inter, Itaú (Opcional)"
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
+                      />
                     </div>
 
                     <div>
@@ -2058,6 +2059,17 @@ export default function InvestimentosPage() {
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Corretora / Instituição (Opcional)</label>
+                    <input 
+                      type="text" 
+                      value={rvInstitution}
+                      onChange={(e) => setRvInstitution(e.target.value)}
+                      placeholder="Ex: XP, NuInvest, BTG, Inter (Opcional)"
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
+                    />
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
