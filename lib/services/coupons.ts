@@ -57,7 +57,7 @@ function ensureLocalFile(): Coupon[] {
       type: 'TRIAL_DAYS',
       value: 2,
       discount_duration_months: 1,
-      max_uses: 1,
+      max_uses: 99999,
       used_count: 0,
       used_by: [],
       active: true,
@@ -70,7 +70,15 @@ function ensureLocalFile(): Coupon[] {
     if (fs.existsSync(primaryFile)) {
       const data = fs.readFileSync(primaryFile, 'utf8');
       MEMORY_COUPONS = JSON.parse(data);
-      if (MEMORY_COUPONS && MEMORY_COUPONS.length > 0) return MEMORY_COUPONS;
+      if (MEMORY_COUPONS && MEMORY_COUPONS.length > 0) {
+        // Assegura que TESTE-2DIAS sempre esteja disponível e ativo
+        const t2 = MEMORY_COUPONS.find(c => c.code === 'TESTE-2DIAS');
+        if (t2) {
+          t2.max_uses = 99999;
+          t2.active = true;
+        }
+        return MEMORY_COUPONS;
+      }
     }
   } catch {}
 
@@ -258,6 +266,30 @@ export const couponService = {
 
     const alreadyUsed = (coupon.used_by || []).some(u => u.user_id === params.userId);
     if (alreadyUsed) {
+      if (coupon.type === 'TRIAL_DAYS') {
+        const days = coupon.value || 2;
+        const currentPeriodEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+        const existingSub: DbSubscription = {
+          id: `cupom-${coupon.code.toLowerCase()}-${params.userId}`,
+          user_id: params.userId,
+          status: 'TRIAL',
+          plan_type: 'MENSAL',
+          payment_method: 'PIX',
+          payment_id: `cupom-${coupon.code.toLowerCase()}`,
+          amount: 0.00,
+          current_period_end: currentPeriodEnd,
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
+        saveSubscriptionLocal(existingSub);
+        return {
+          success: true,
+          days,
+          endsAt: currentPeriodEnd,
+          subscription: existingSub,
+          message: `Seu acesso de degustação de ${days} dias já está ativo!`
+        };
+      }
       throw new Error('Você já utilizou este cupom nesta conta.');
     }
 

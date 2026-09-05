@@ -87,17 +87,18 @@ export default function PlanosCheckoutPage() {
 
     async function checkCurrentSession() {
       try {
+        // Se já possui acesso liberado (por assinatura ou degustação ativa no navegador), redireciona direto
+        const access = await subscriptionService.isAccessGranted();
+        if (access.granted && isMounted) {
+          router.push('/dashboard');
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && isMounted) {
           setUser(session.user);
           setUserEmail(session.user.email || '');
           setUserName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
-
-          const access = await subscriptionService.isAccessGranted();
-          if (access.granted && isMounted) {
-            router.push('/dashboard');
-            return;
-          }
         }
       } catch (err) {
         console.error('Erro ao verificar sessão:', err);
@@ -417,15 +418,24 @@ export default function PlanosCheckoutPage() {
 
   // Resgatar Cupom de Degustação (100% Grátis)
   const handleRedeemTrialCoupon = async (currentUser?: any) => {
-    const activeUser = currentUser || user;
+    let activeUser = currentUser || user;
 
     if (!activeUser) {
-      setAuthWarning(true);
-      if (appliedCoupon) {
-        localStorage.setItem('kaxxa_pending_coupon', appliedCoupon.code);
-      }
-      handleGoogleClick();
-      return;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          activeUser = session.user;
+          setUser(session.user);
+          setUserEmail(session.user.email || '');
+          setUserName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
+        }
+      } catch {}
+    }
+
+    if (!activeUser) {
+      // Se não há sessão iniciada, gera identificador de teste para liberar a degustação imediatamente
+      const tempId = `trial_${Date.now()}`;
+      activeUser = { id: tempId, email: 'degustacao@kaxxa.com.br' };
     }
 
     if (!appliedCoupon) return;
@@ -455,19 +465,21 @@ export default function PlanosCheckoutPage() {
         const days = data.days || appliedCoupon.value || 2;
         const endsAt = data.endsAt || (data.subscription ? data.subscription.current_period_end : new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString());
         localStorage.setItem('kaxxa_trial_active', JSON.stringify({
+          id: data.subscription?.id || `trial-${Date.now()}`,
           userId: activeUser.id,
           code: appliedCoupon.code,
           days,
           endsAt,
           subscription: data.subscription
         }));
+        localStorage.setItem('kaxxa_access_granted', 'true');
         localStorage.removeItem('kaxxa_pending_coupon');
       }
 
       setIsApproved(true);
       setTimeout(() => {
         router.push('/dashboard');
-      }, 1200);
+      }, 1000);
     } catch (err: any) {
       console.error('Erro ao ativar cupom:', err);
       setErrorMsg(err.message || 'Erro ao ativar cupom.');

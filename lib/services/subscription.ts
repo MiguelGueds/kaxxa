@@ -107,6 +107,32 @@ export const subscriptionService = {
    * Retorna a assinatura ativa do usuário, com fallback resiliente.
    */
   async getSubscription(): Promise<DbSubscription | null> {
+    // 1. Verificação no localStorage (no navegador) para resposta instantânea
+    if (typeof window !== 'undefined') {
+      try {
+        const localTrial = localStorage.getItem('kaxxa_trial_active');
+        if (localTrial) {
+          const parsed = JSON.parse(localTrial);
+          const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
+          if (endsAt) {
+            const isExpired = new Date(endsAt).getTime() < Date.now();
+            if (!isExpired) {
+              return {
+                id: parsed.id || parsed.subscription?.id || 'trial-local',
+                user_id: parsed.userId || parsed.subscription?.user_id || 'trial-user',
+                status: 'TRIAL',
+                plan_type: 'MENSAL',
+                payment_method: 'PIX',
+                amount: 0,
+                current_period_end: endsAt,
+                created_at: parsed.createdAt || new Date().toISOString()
+              };
+            }
+          }
+        }
+      } catch {}
+    }
+
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
@@ -122,31 +148,6 @@ export const subscriptionService = {
         current_period_end: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString(),
         created_at: new Date().toISOString(),
       };
-    }
-
-    // 1. Verificação no localStorage (no navegador) para resposta instantânea
-    if (typeof window !== 'undefined') {
-      try {
-        const localTrial = localStorage.getItem('kaxxa_trial_active');
-        if (localTrial) {
-          const parsed = JSON.parse(localTrial);
-          if (parsed.userId === user.id && parsed.endsAt) {
-            const isExpired = new Date(parsed.endsAt).getTime() < Date.now();
-            if (!isExpired) {
-              return {
-                id: parsed.id || 'trial-local',
-                user_id: user.id,
-                status: 'TRIAL',
-                plan_type: 'MENSAL',
-                payment_method: 'PIX',
-                amount: 0,
-                current_period_end: parsed.endsAt,
-                created_at: parsed.createdAt || new Date().toISOString()
-              };
-            }
-          }
-        }
-      } catch {}
     }
 
     // 2. Consulta ao Supabase
@@ -178,6 +179,35 @@ export const subscriptionService = {
    * Verifica se o usuário possui acesso liberado ao sistema.
    */
   async isAccessGranted(): Promise<{ granted: boolean; subscription: DbSubscription | null }> {
+    // 1. Verificação PRIORITÁRIA no navegador para trials recém-ativados (não depende de rede/banco)
+    if (typeof window !== 'undefined') {
+      try {
+        const localTrial = localStorage.getItem('kaxxa_trial_active');
+        if (localTrial) {
+          const parsed = JSON.parse(localTrial);
+          const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
+          if (endsAt) {
+            const isExpired = new Date(endsAt).getTime() < Date.now();
+            if (!isExpired) {
+              const trialSub: DbSubscription = {
+                id: parsed.id || parsed.subscription?.id || 'trial-local',
+                user_id: parsed.userId || parsed.subscription?.user_id || 'trial-user',
+                status: 'TRIAL',
+                plan_type: 'MENSAL',
+                payment_method: 'PIX',
+                amount: 0,
+                current_period_end: endsAt,
+                created_at: parsed.createdAt || new Date().toISOString()
+              };
+              return { granted: true, subscription: trialSub };
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Erro ao ler kaxxa_trial_active do localStorage:', e);
+      }
+    }
+
     const user = await getAuthenticatedUser();
     if (!user) {
       return { granted: false, subscription: null };
@@ -196,32 +226,6 @@ export const subscriptionService = {
         created_at: new Date().toISOString(),
       };
       return { granted: true, subscription: adminSub };
-    }
-
-    // Verificação rápida no navegador para trials recém-ativados
-    if (typeof window !== 'undefined') {
-      try {
-        const localTrial = localStorage.getItem('kaxxa_trial_active');
-        if (localTrial) {
-          const parsed = JSON.parse(localTrial);
-          if (parsed.userId === user.id && parsed.endsAt) {
-            const isExpired = new Date(parsed.endsAt).getTime() < Date.now();
-            if (!isExpired) {
-              const trialSub: DbSubscription = {
-                id: parsed.id || 'trial-local',
-                user_id: user.id,
-                status: 'TRIAL',
-                plan_type: 'MENSAL',
-                payment_method: 'PIX',
-                amount: 0,
-                current_period_end: parsed.endsAt,
-                created_at: parsed.createdAt || new Date().toISOString()
-              };
-              return { granted: true, subscription: trialSub };
-            }
-          }
-        }
-      } catch {}
     }
 
     const sub = await this.getSubscription();
