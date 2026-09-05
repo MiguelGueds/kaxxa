@@ -43,6 +43,7 @@ type ThirdParty = { id: string; name: string; type: string; };
 export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'PERFIL' | 'ASSINATURA' | 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS'>('PERFIL');
+  const [section, setSection] = useState<'CONTA' | 'SISTEMA'>('CONTA');
   
   // Shared States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -322,20 +323,118 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto animate-fade-in-up w-full space-y-5">
-      <header className="mb-2">
-        <h1 className="text-xl font-extrabold text-[#181B22] mb-1">Configurações & Perfil</h1>
-        <p className="text-xs text-[#64748B] font-medium">Gerencie seus dados pessoais, assinatura, contas e cartões.</p>
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto animate-fade-in-up w-full space-y-6">
+      <header className="mb-1">
+        <h1 className="text-xl font-extrabold text-[#181B22]">Configurações</h1>
+        <p className="text-xs text-[#64748B]">Gerencie seus dados pessoais, assinatura e a estrutura financeira do sistema.</p>
       </header>
 
-      {/* Tabs Principais */}
+      {/* 1. SELETOR PRINCIPAL: PERFIL E CONTA VS DADOS DO SISTEMA */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1.5 bg-[#F1F5F9] rounded-2xl">
+        <button
+          type="button"
+          onClick={() => {
+            setSection('CONTA');
+            if (activeTab !== 'PERFIL' && activeTab !== 'ASSINATURA') {
+              setActiveTab('PERFIL');
+            }
+          }}
+          className={`p-3 rounded-xl transition-all text-left flex items-center gap-3 ${
+            section === 'CONTA'
+              ? 'bg-white shadow-sm border border-[#E5E7EB]'
+              : 'hover:bg-white/60 text-[#64748B]'
+          }`}
+        >
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+            section === 'CONTA' ? 'bg-blue-50 text-[#1A44C8]' : 'bg-slate-200/70 text-slate-500'
+          }`}>
+            <User size={18} />
+          </div>
+          <div>
+            <span className={`text-xs font-bold block ${section === 'CONTA' ? 'text-[#181B22]' : 'text-[#64748B]'}`}>
+              Perfil e Conta
+            </span>
+            <span className="text-[10px] text-[#94A3B8] font-medium">
+              Foto, dados pessoais, plano e pagamentos
+            </span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSection('SISTEMA');
+            if (activeTab === 'PERFIL' || activeTab === 'ASSINATURA') {
+              setActiveTab('CONTAS');
+            }
+          }}
+          className={`p-3 rounded-xl transition-all text-left flex items-center gap-3 ${
+            section === 'SISTEMA'
+              ? 'bg-white shadow-sm border border-[#E5E7EB]'
+              : 'hover:bg-white/60 text-[#64748B]'
+          }`}
+        >
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+            section === 'SISTEMA' ? 'bg-blue-50 text-[#1A44C8]' : 'bg-slate-200/70 text-slate-500'
+          }`}>
+            <Wallet size={18} />
+          </div>
+          <div>
+            <span className={`text-xs font-bold block ${section === 'SISTEMA' ? 'text-[#181B22]' : 'text-[#64748B]'}`}>
+              Dados do Sistema
+            </span>
+            <span className="text-[10px] text-[#94A3B8] font-medium">
+              Contas bancárias, cartões, categorias e pessoas
+            </span>
+          </div>
+        </button>
+      </div>
+
+      {/* 2. SUB-ABAS DA SEÇÃO ATIVA */}
       <div className="flex border-b border-[#E5E7EB] overflow-x-auto custom-scrollbar">
-        <TabButton active={activeTab === 'PERFIL'} onClick={() => setActiveTab('PERFIL')} icon={<User size={14} />} label="Meu Perfil" />
-        <TabButton active={activeTab === 'ASSINATURA'} onClick={() => setActiveTab('ASSINATURA')} icon={<ShieldCheck size={14} />} label="Assinatura & Pagamentos" />
-        <TabButton active={activeTab === 'CONTAS'} onClick={() => setActiveTab('CONTAS')} icon={<Landmark size={14} />} label="Contas" />
-        <TabButton active={activeTab === 'CARTOES'} onClick={() => setActiveTab('CARTOES')} icon={<CreditCard size={14} />} label="Cartões" />
-        <TabButton active={activeTab === 'CATEGORIAS'} onClick={() => setActiveTab('CATEGORIAS')} icon={<ListTree size={14} />} label="Categorias" />
-        <TabButton active={activeTab === 'TERCEIROS'} onClick={() => setActiveTab('TERCEIROS')} icon={<UserCircle2 size={14} />} label="Terceiros" />
+        {section === 'CONTA' ? (
+          <>
+            <TabButton 
+              active={activeTab === 'PERFIL'} 
+              onClick={() => setActiveTab('PERFIL')} 
+              icon={<User size={14} />} 
+              label="Meu Perfil" 
+            />
+            <TabButton 
+              active={activeTab === 'ASSINATURA'} 
+              onClick={() => setActiveTab('ASSINATURA')} 
+              icon={<ShieldCheck size={14} />} 
+              label="Assinatura" 
+            />
+          </>
+        ) : (
+          <>
+            <TabButton 
+              active={activeTab === 'CONTAS'} 
+              onClick={() => setActiveTab('CONTAS')} 
+              icon={<Landmark size={14} />} 
+              label="Contas Bancárias" 
+            />
+            <TabButton 
+              active={activeTab === 'CARTOES'} 
+              onClick={() => setActiveTab('CARTOES')} 
+              icon={<CreditCard size={14} />} 
+              label="Cartões de Crédito" 
+            />
+            <TabButton 
+              active={activeTab === 'CATEGORIAS'} 
+              onClick={() => setActiveTab('CATEGORIAS')} 
+              icon={<ListTree size={14} />} 
+              label="Categorias" 
+            />
+            <TabButton 
+              active={activeTab === 'TERCEIROS'} 
+              onClick={() => setActiveTab('TERCEIROS')} 
+              icon={<UserCircle2 size={14} />} 
+              label="Pessoas e Terceiros" 
+            />
+          </>
+        )}
       </div>
 
       <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
@@ -460,13 +559,13 @@ export default function SettingsPage() {
         )}
 
         {/* ======================================================== */}
-        {/* --- ABA ASSINATURA & PAGAMENTOS --- */}
+        {/* --- ABA ASSINATURA --- */}
         {/* ======================================================== */}
         {activeTab === 'ASSINATURA' && (
           <div className="animate-fade-in-up space-y-6 max-w-2xl">
             <div>
-              <h2 className="text-sm font-bold text-[#181B22]">Minha Assinatura & Pagamento</h2>
-              <p className="text-[11px] text-[#64748B] mt-0.5">Gerencie seu plano ativo, forma de cobrança e solicitações de cancelamento.</p>
+              <h2 className="text-sm font-bold text-[#181B22]">Minha Assinatura</h2>
+              <p className="text-[11px] text-[#64748B] mt-0.5">Gerencie seu plano ativo, método de pagamento e renovação recorrente.</p>
             </div>
 
             <Alerts error={errorMsg} success={successMsg} />
@@ -509,7 +608,7 @@ export default function SettingsPage() {
                       <span className="text-[10px] text-[#64748B] block mb-0.5">Permissões de Sistema</span>
                       <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
                         <ShieldCheck size={13} className="text-[#1A44C8]" />
-                        Acesso Total & Gerador
+                        Acesso Total de Desenvolvedor
                       </strong>
                     </div>
 
@@ -528,7 +627,7 @@ export default function SettingsPage() {
                       Como testar a experiência real de novos clientes?
                     </h4>
                     <p className="text-[11px] text-[#64748B] leading-relaxed">
-                      Esta conta oficial (<code className="text-[#1A44C8] font-bold">{userEmail}</code>) tem passe livre permanente de desenvolvedor master com acesso completo ao painel de <strong>Administração</strong>.
+                      Esta conta oficial (<code className="text-[#1A44C8] font-bold">{userEmail}</code>) tem passe livre permanente de desenvolvedor master com acesso completo às telas de <strong>Gestão</strong> e <strong>Cupons</strong>.
                     </p>
                     <p className="text-[11px] text-[#64748B] leading-relaxed">
                       Para testar o fluxo exato de novos clientes (bloqueio do paywall ao acessar <code className="text-[#181B22] font-semibold">/dashboard</code>, tela de pagamento <code className="text-[#181B22] font-semibold">/planos</code>, resgate de cupons de degustação, Pix com QR Code e cancelamento), utilize uma <strong>segunda conta pessoal</strong> ou abra em aba anônima.
@@ -542,7 +641,7 @@ export default function SettingsPage() {
                       className="flex-1 py-2.5 px-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
                     >
                       <ShieldCheck size={14} />
-                      <span>Ir para o Painel de Administração</span>
+                      <span>Ir para o Painel de Gestão</span>
                     </button>
                   </div>
                 </div>
@@ -582,12 +681,12 @@ export default function SettingsPage() {
                       <span className="text-[10px] text-[#64748B] block mb-0.5">Forma de Pagamento</span>
                       <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
                         <CreditCard size={13} className="text-[#1A44C8]" />
-                        {subscription?.payment_method === 'PIX' ? 'PIX' : 'Cartão de Crédito'}
+                        {subscription?.payment_method === 'PIX' ? 'PIX (Avulso)' : 'Cartão de Crédito (Recorrente)'}
                       </strong>
                     </div>
 
                     <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl">
-                      <span className="text-[10px] text-[#64748B] block mb-0.5">Vencimento / Próx. Ciclo</span>
+                      <span className="text-[10px] text-[#64748B] block mb-0.5">Vencimento do Ciclo</span>
                       <strong className="text-xs font-bold text-[#181B22] flex items-center gap-1">
                         <Calendar size={13} className="text-[#059669]" />
                         {subscription?.current_period_end 
@@ -618,22 +717,77 @@ export default function SettingsPage() {
                   )}
                 </div>
 
-                {/* Ações de Gestão do Plano */}
-                <div className="p-4 bg-white border border-[#E5E7EB] rounded-2xl space-y-3">
-                  <h4 className="text-xs font-bold text-[#181B22]">Gerenciar Pagamento</h4>
+                {/* Card de Método de Pagamento e Recorrência */}
+                <div className="p-5 bg-white border border-[#E5E7EB] rounded-2xl space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
+                        <RefreshCw size={13} className="text-[#1A44C8]" />
+                        Método de Pagamento e Recorrência
+                      </h4>
+                      <p className="text-[11px] text-[#64748B] mt-0.5">
+                        {subscription?.payment_method === 'PIX'
+                          ? 'Seu plano atual é cobrado manualmente via Pix a cada ciclo de 30 dias.'
+                          : 'Sua assinatura conta com renovação automática mensal no cartão de crédito.'}
+                      </p>
+                    </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    {/* Alterar Forma de Pagamento */}
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                      subscription?.payment_method === 'PIX'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {subscription?.payment_method === 'PIX' ? 'Pix Manual' : 'Recorrência Ativa'}
+                    </span>
+                  </div>
+
+                  {subscription?.payment_method === 'PIX' ? (
+                    <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <strong className="text-xs font-bold text-[#181B22] block">Deseja ativar renovação automática no Cartão?</strong>
+                        <span className="text-[11px] text-[#64748B]">
+                          Evite interrupções no acesso ativando o débito recorrente no cartão de crédito.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push('/planos')}
+                        className="py-2 px-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center justify-center gap-1.5 active:scale-95"
+                      >
+                        <CreditCard size={13} />
+                        <span>Ativar Recorrência</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <strong className="text-xs font-bold text-[#181B22] block">Cartão de Crédito Cadastrado</strong>
+                        <span className="text-[11px] text-[#64748B]">
+                          Você pode atualizar os dados do seu cartão ou migrar para pagamento avulso via Pix.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push('/planos')}
+                        className="py-2 px-3.5 bg-white hover:bg-slate-100 border border-[#E5E7EB] text-[#181B22] rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center justify-center gap-1.5 active:scale-95"
+                      >
+                        <RefreshCw size={13} className="text-[#1A44C8]" />
+                        <span>Alterar Cartão</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Ações de Gestão: Mudar Método ou Cancelar */}
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-[#F1F5F9]">
                     <button
                       type="button"
                       onClick={() => router.push('/planos')}
                       className="flex-1 py-2.5 px-4 bg-white hover:bg-gray-50 border border-[#E5E7EB] hover:border-[#1A44C8] text-[#181B22] rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
                     >
                       <RefreshCw size={14} className="text-[#1A44C8]" />
-                      <span>Alterar Forma de Pagamento</span>
+                      <span>Mudar Método de Pagamento</span>
                     </button>
 
-                    {/* Cancelar Renovação */}
                     {subscription?.status !== 'CANCELED' && (
                       <button
                         type="button"

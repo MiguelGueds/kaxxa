@@ -50,7 +50,7 @@ export function CommandPalette({ isOpen, onClose, userEmail }: CommandPalettePro
     { id: 'nav-investimentos', title: 'Investimentos', subtitle: 'Renda fixa, ações, FIIs e criptoativos', icon: TrendingUp, href: '/dashboard/investimentos', category: 'Navegação' },
     { id: 'nav-terceiros', title: 'Terceiros', subtitle: 'Gastos e empréstimos com amigos ou parentes', icon: Users, href: '/dashboard/terceiros', category: 'Navegação' },
     { id: 'nav-dividas', title: 'Dívidas e Empréstimos', subtitle: 'Amortizações e simulação de quitação antecipada', icon: Landmark, href: '/dashboard/dividas', category: 'Navegação' },
-    { id: 'nav-config', title: 'Configurações & Perfil', subtitle: 'Dados cadastrais, contas, cartões e categorias', icon: Settings, href: '/dashboard/configuracoes', category: 'Navegação' },
+    { id: 'nav-config', title: 'Configurações', subtitle: 'Perfil, assinatura, contas, cartões e categorias', icon: Settings, href: '/dashboard/configuracoes', category: 'Navegação' },
     
     // Ações Rápidas
     { id: 'act-transacao', title: 'Nova Transação', subtitle: 'Lançar nova receita ou despesa no extrato', icon: PlusCircle, href: '/dashboard/transacoes', category: 'Ações Rápidas' },
@@ -59,8 +59,8 @@ export function CommandPalette({ isOpen, onClose, userEmail }: CommandPalettePro
     { id: 'act-terceiro', title: 'Novo Lançamento de Terceiro', subtitle: 'Vincular despesa a uma pessoa', icon: PlusCircle, href: '/dashboard/terceiros', category: 'Ações Rápidas' },
 
     // Área Administrativa (Apenas Admin)
-    { id: 'adm-users', title: 'Gestão de Usuários & Assinantes', subtitle: 'Métricas de receita, trial, planos e usuários do sistema', icon: ShieldCheck, href: '/dashboard/admin', category: 'Administração', adminOnly: true },
-    { id: 'adm-cupons', title: 'Gerador de Cupons & Degustação', subtitle: 'Criar cupons de 2 dias ou descontos promocionais', icon: Ticket, href: '/dashboard/admin?tab=cupons', category: 'Administração', adminOnly: true },
+    { id: 'adm-users', title: 'Gestão de Usuários', subtitle: 'Métricas de receita, trial, planos e assinantes do sistema', icon: ShieldCheck, href: '/dashboard/admin', category: 'Administração', adminOnly: true },
+    { id: 'adm-cupons', title: 'Cupons Promocionais', subtitle: 'Criar cupons de 2 dias ou descontos promocionais', icon: Ticket, href: '/dashboard/admin/cupons', category: 'Administração', adminOnly: true },
   ];
 
   const filteredItems = allItems.filter(item => {

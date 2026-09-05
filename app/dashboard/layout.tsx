@@ -135,15 +135,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     {
       title: 'Configurações',
       items: [
-        { href: '/dashboard/configuracoes', icon: Settings, label: 'Meu Perfil & Conta' },
+        { href: '/dashboard/configuracoes', icon: Settings, label: 'Configurações' },
       ]
     },
     ...(isAdmin ? [
       {
         title: 'Administração',
         items: [
-          { href: '/dashboard/admin', icon: ShieldCheck, label: 'Gestão de Usuários', badge: 'Admin' },
-          { href: '/dashboard/admin?tab=cupons', icon: Ticket, label: 'Cupons & Testes' },
+          { href: '/dashboard/admin', icon: ShieldCheck, label: 'Gestão', badge: 'Admin' },
+          { href: '/dashboard/admin/cupons', icon: Ticket, label: 'Cupons' },
         ]
       }
     ] : [])
@@ -157,7 +157,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (pathname === '/dashboard/terceiros') return { title: 'Terceiros', icon: Users };
     if (pathname === '/dashboard/dividas') return { title: 'Dívidas e Empréstimos', icon: Landmark };
     if (pathname === '/dashboard/configuracoes') return { title: 'Configurações', icon: Settings };
-    if (pathname?.startsWith('/dashboard/admin')) return { title: 'Gestão da Plataforma', icon: ShieldCheck };
+    if (pathname === '/dashboard/admin/cupons') return { title: 'Cupons', icon: Ticket };
+    if (pathname?.startsWith('/dashboard/admin')) return { title: 'Gestão', icon: ShieldCheck };
     return { title: 'Dashboard', icon: HomeIcon };
   };
 

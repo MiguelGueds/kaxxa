@@ -604,7 +604,7 @@ export default function InvestimentosPage() {
       },
       {
         id: 'FIXA' as const,
-        title: 'Renda Fixa & Reservas',
+        title: 'Renda Fixa e Reservas',
         subtitle: 'Tesouro Direto, CDBs, LCIs e Caixinhas',
         icon: Shield,
         color: '#3B6CF0',
@@ -614,7 +614,7 @@ export default function InvestimentosPage() {
       },
       {
         id: 'BDRS' as const,
-        title: 'Internacional & ETFs',
+        title: 'Internacional e ETFs',
         subtitle: 'BDRs, Ações Globais e Fundos de Índice',
         icon: Coins,
         color: '#818CF8',
@@ -624,7 +624,7 @@ export default function InvestimentosPage() {
       },
       {
         id: 'CRIPTO' as const,
-        title: 'Criptomoedas & Ativos Digitais',
+        title: 'Criptomoedas e Ativos Digitais',
         subtitle: 'Bitcoin, Ethereum e Ativos Blockchain',
         icon: Sparkles,
         color: '#F59E0B',

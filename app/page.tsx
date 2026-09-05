@@ -293,7 +293,7 @@ export default function LandingPage() {
           </span>
           <span className="flex items-center gap-1.5">
             <Zap size={14} className="text-[#1A44C8]" />
-            Ativação imediata via Pix & Cartão
+            Ativação imediata via Pix e Cartão
           </span>
           <span className="flex items-center gap-1.5">
             <Lock size={14} className="text-[#00A3FF]" />

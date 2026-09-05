@@ -34,15 +34,15 @@ import { BankLogo } from '@/app/components/BankLogo';
 
 // Categorias Limpas e Padronizadas
 const CATEGORIES_FLAT_LIST = [
-  'Alimentação & Supermercado',
-  'Restaurante & Delivery',
-  'Transporte & Combustível',
-  'Lazer & Assinaturas (Streaming)',
-  'Moradia & Casa',
-  'Saúde & Farmácia',
-  'Vestuário & Moda',
-  'Educação & Livros',
-  'Compras Pessoais & Outros'
+  'Alimentação e Supermercado',
+  'Restaurante e Delivery',
+  'Transporte e Combustível',
+  'Lazer e Assinaturas (Streaming)',
+  'Moradia e Casa',
+  'Saúde e Farmácia',
+  'Vestuário e Moda',
+  'Educação e Livros',
+  'Compras Pessoais e Outros'
 ];
 
 interface CardItem {
@@ -168,11 +168,11 @@ export default function MinhasFaturasPage() {
 
   // Dados Extraídos no Modal de Importação
   const [extractedImports, setExtractedImports] = useState<ImportItem[]>([
-    { id: 'imp-1', checked: true, date: '2026-07-12', description: 'Uber Viagens', amount: 38.50, category: 'Transporte & Combustível' },
-    { id: 'imp-2', checked: true, date: '2026-07-11', description: 'Mercado Livre - Fones', amount: 189.90, category: 'Lazer & Assinaturas (Streaming)', installmentText: '1/3' },
-    { id: 'imp-3', checked: true, date: '2026-07-10', description: 'Restaurante Outback', amount: 215.00, category: 'Restaurante & Delivery' },
-    { id: 'imp-4', checked: true, date: '2026-07-09', description: 'Droga Raia Farmácia', amount: 84.20, category: 'Saúde & Farmácia' },
-    { id: 'imp-5', checked: true, date: '2026-07-08', description: 'Posto Ipiranga Gasolina', amount: 220.00, category: 'Transporte & Combustível' }
+    { id: 'imp-1', checked: true, date: '2026-07-12', description: 'Uber Viagens', amount: 38.50, category: 'Transporte e Combustível' },
+    { id: 'imp-2', checked: true, date: '2026-07-11', description: 'Mercado Livre - Fones', amount: 189.90, category: 'Lazer e Assinaturas (Streaming)', installmentText: '1/3' },
+    { id: 'imp-3', checked: true, date: '2026-07-10', description: 'Restaurante Outback', amount: 215.00, category: 'Restaurante e Delivery' },
+    { id: 'imp-4', checked: true, date: '2026-07-09', description: 'Droga Raia Farmácia', amount: 84.20, category: 'Saúde e Farmácia' },
+    { id: 'imp-5', checked: true, date: '2026-07-08', description: 'Posto Ipiranga Gasolina', amount: 220.00, category: 'Transporte e Combustível' }
   ]);
 
   const [categoriesList, setCategoriesList] = useState<string[]>(CATEGORIES_FLAT_LIST);

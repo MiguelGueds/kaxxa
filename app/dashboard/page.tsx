@@ -604,7 +604,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#E5E7EB]">
             <div className="flex items-center gap-2">
               <Landmark size={14} className="text-[#1A44C8]" />
-              <h3 className="text-xs font-bold text-[#181B22]">Aportes recentes & evolução</h3>
+              <h3 className="text-xs font-bold text-[#181B22]">Aportes recentes e evolução</h3>
             </div>
             <Link href="/dashboard/investimentos" className="text-[10px] font-bold text-[#1A44C8]">
               Ver aportes
