@@ -28,8 +28,12 @@ export function KaxxaLogo({ size = 28, className = "" }: { size?: number, classN
 
 export function KaxxaWordmark({ className = "", textColor = "text-[#181B22]" }: { className?: string, textColor?: string }) {
   return (
-    <span className={`font-black tracking-[-0.03em] uppercase inline-flex items-center select-none ${textColor} ${className}`}>
-      KAXXA
+    <span className={`font-outfit font-black tracking-[-0.01em] uppercase inline-flex items-center select-none ${className}`}>
+      <span className={textColor}>K</span>
+      <span className="text-[#1A44C8]">A</span>
+      <span className={textColor}>X</span>
+      <span className="text-[#1A44C8]">X</span>
+      <span className={textColor}>A</span>
     </span>
   );
 }

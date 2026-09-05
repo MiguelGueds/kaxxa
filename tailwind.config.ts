@@ -42,6 +42,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'Plus Jakarta Sans', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        outfit: ['Outfit', 'sans-serif'],
         mono: ['var(--font-mono)', 'JetBrains Mono', 'Space Mono', 'monospace'],
       },
       boxShadow: {
