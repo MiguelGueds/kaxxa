@@ -725,50 +725,61 @@ export default function PlanosCheckoutPage() {
                     </button>
                   </div>
 
-                  {/* OPÇÃO DE ATIVAR RECORRÊNCIA AO SELECIONAR CARTÃO (COM DESIGN PERSUASIVO) */}
+                  {/* OPÇÃO COMPACTA E MODERNA DE RENOVAÇÃO AUTOMÁTICA */}
                   {paymentMethod === 'CARD' && (
-                    <div className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                      cardRecurring 
-                        ? 'bg-blue-50/70 border-[#1A44C8] shadow-sm ring-2 ring-[#1A44C8]/10' 
-                        : 'bg-gradient-to-r from-blue-50/40 via-amber-50/40 to-slate-50 border-[#E2E8F0] hover:border-[#1A44C8]'
-                    }`}>
-                      <label className="flex items-start gap-3 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={cardRecurring}
-                          onChange={(e) => setCardRecurring(e.target.checked)}
-                          className="w-5 h-5 mt-0.5 text-[#1A44C8] rounded border-gray-300 focus:ring-[#1A44C8] cursor-pointer"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between flex-wrap gap-1">
-                            <span className="text-xs font-black text-[#181B22] flex items-center gap-1.5">
-                              <Sparkles size={13} className="text-[#1A44C8]" />
-                              Ativar renovação automática mensal
+                    <div
+                      onClick={() => setCardRecurring(!cardRecurring)}
+                      className={`px-3.5 py-2.5 rounded-xl border transition-all duration-200 cursor-pointer select-none flex items-center justify-between gap-3 ${
+                        cardRecurring
+                          ? 'bg-blue-50/70 border-[#1A44C8]/50 shadow-xs'
+                          : 'bg-slate-50/80 hover:bg-slate-100/70 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* Toggle Switch Moderno */}
+                        <div
+                          className={`w-9 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 shrink-0 ${
+                            cardRecurring ? 'bg-[#1A44C8]' : 'bg-slate-300'
+                          }`}
+                        >
+                          <div
+                            className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ${
+                              cardRecurring ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                          />
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-[#181B22]">
+                              Renovação automática mensal
                             </span>
-                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${cardRecurring ? 'bg-blue-100 text-[#1A44C8]' : 'bg-slate-200 text-slate-700'}`}>
-                              R$ {displayPrice.toFixed(2).replace('.', ',')}/mês
-                            </span>
-                          </div>
-                          
-                          <p className="text-[11px] text-[#475569] mt-1 leading-relaxed">
                             {cardRecurring ? (
-                              <span className="text-[#059669] font-bold flex items-center gap-1 mt-0.5">
-                                <CheckCircle2 size={12} /> Renovação contínua ativa. Seu acesso não será interrompido e você pode cancelar com 1 clique a qualquer momento no perfil.
+                              <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/20">
+                                Ativa
                               </span>
                             ) : (
-                              <span className="text-blue-950 font-medium block mt-0.5">
-                                ⚡ Recomendado: Ative para não se preocupar com vencimentos manuais e manter seu acesso sempre garantido sem interrupções.
+                              <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                ⭐ Recomendado
                               </span>
                             )}
-                          </p>
-
-                          <div className="flex items-center gap-3 mt-2 text-[10px] font-bold text-[#64748B]">
-                            <span>✓ Sem carência nem multas</span>
-                            <span>✓ Cancele com 1 clique</span>
-                            <span>✓ Cobrança oficial Mercado Pago</span>
                           </div>
+                          <p className="text-[10px] text-[#64748B] truncate mt-0.5">
+                            {cardRecurring
+                              ? 'Acesso contínuo sem interrupções • Cancele quando quiser no perfil'
+                              : 'Evite bloqueios e a necessidade de renovar manualmente todo mês'}
+                          </p>
                         </div>
-                      </label>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <span className={`text-[11px] font-black block ${cardRecurring ? 'text-[#1A44C8]' : 'text-slate-600'}`}>
+                          R$ {displayPrice.toFixed(2).replace('.', ',')}
+                        </span>
+                        <span className="text-[9px] text-[#64748B] block -mt-0.5">
+                          {cardRecurring ? '/mês' : '/30 dias'}
+                        </span>
+                      </div>
                     </div>
                   )}
 
