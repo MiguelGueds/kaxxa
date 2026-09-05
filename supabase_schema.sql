@@ -249,8 +249,23 @@ DROP POLICY IF EXISTS "Isolamento total de assinaturas por usuario" ON subscript
 CREATE POLICY "Isolamento total de assinaturas por usuario" ON subscriptions 
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+-- ------------------------------------------------------------
+-- 10. TABELA: Cupons de Teste e Desconto (coupons)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS coupons (
+  id TEXT PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL,
+  type TEXT NOT NULL DEFAULT 'TRIAL_DAYS', -- 'TRIAL_DAYS', 'PERCENT'
+  value DECIMAL(10,2) NOT NULL DEFAULT 2.00,
+  max_uses INTEGER NOT NULL DEFAULT 1,
+  used_count INTEGER NOT NULL DEFAULT 0,
+  used_by JSONB DEFAULT '[]'::jsonb,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- ============================================================
--- 10. TRIGGERS AUTOMÁTICOS PARA UPDATED_AT
+-- 11. TRIGGERS AUTOMÁTICOS PARA UPDATED_AT
 -- ============================================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

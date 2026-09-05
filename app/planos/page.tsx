@@ -16,9 +16,10 @@ import {
   Lock, 
   Clock, 
   Sparkles,
-  Gift,
-  KeyRound,
-  UserCheck
+  Ticket,
+  X,
+  UserCheck,
+  Tag
 } from 'lucide-react';
 import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
 import { supabase } from '@/lib/supabase';
@@ -53,12 +54,17 @@ export default function PlanosCheckoutPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [countdown, setCountdown] = useState(900);
 
-  // VIP Code State
-  const [showVipInput, setShowVipInput] = useState(false);
-  const [vipCode, setVipCode] = useState('');
-  const [vipLoading, setVipLoading] = useState(false);
-  const [vipSuccess, setVipSuccess] = useState('');
-  const [vipError, setVipError] = useState('');
+  // Cupom de Desconto / Teste
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    days: number;
+    type: string;
+    message: string;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState('');
+  const [showCouponInput, setShowCouponInput] = useState(false);
 
   // Polling interval
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -91,6 +97,16 @@ export default function PlanosCheckoutPage() {
     }
 
     checkCurrentSession();
+
+    // Lê cupom da URL caso passado (?cupom=XYZ ou ?coupon=XYZ)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlCoupon = params.get('cupom') || params.get('coupon');
+      if (urlCoupon) {
+        setCouponInput(urlCoupon.toUpperCase());
+        setShowCouponInput(true);
+      }
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user && isMounted) {
@@ -281,6 +297,92 @@ export default function PlanosCheckoutPage() {
     };
   }, [pixData, isApproved, user, router]);
 
+  // Validar Cupom de Desconto
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponInput.trim()) return;
+
+    setCouponLoading(true);
+    setCouponError('');
+
+    try {
+      const res = await fetch('/api/checkout/coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'VALIDATE',
+          code: couponInput.trim(),
+          userId: user?.id,
+          email: user?.email,
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Cupom inválido.');
+      }
+
+      setAppliedCoupon({
+        code: data.code,
+        days: data.days,
+        type: data.type,
+        message: data.message,
+      });
+      setPixData(null);
+    } catch (err: any) {
+      setCouponError(err.message || 'Cupom inválido.');
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError('');
+  };
+
+  // Resgatar / Ativar Cupom de Degustação (R$ 0,00)
+  const handleRedeemCoupon = async () => {
+    if (!user) {
+      handleGoogleClick();
+      return;
+    }
+
+    if (!appliedCoupon) return;
+
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      const res = await fetch('/api/checkout/coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'REDEEM',
+          code: appliedCoupon.code,
+          userId: user.id,
+          email: user.email,
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Não foi possível resgatar o cupom.');
+      }
+
+      setIsApproved(true);
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erro ao ativar cupom.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGeneratePix = async () => {
     if (!user) {
       handleGoogleClick();
@@ -382,46 +484,6 @@ export default function PlanosCheckoutPage() {
     }
   };
 
-  // Validador de Código VIP/Teste
-  const handleVipSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
-      setVipError('Faça login com o Google acima antes de validar seu convite.');
-      return;
-    }
-    if (!vipCode.trim()) return;
-
-    setVipLoading(true);
-    setVipError('');
-    setVipSuccess('');
-
-    try {
-      const res = await fetch('/api/checkout/vip-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: vipCode.trim(),
-          userId: user.id,
-          email: user.email,
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Código VIP inválido.');
-      }
-
-      setVipSuccess(data.message || `Acesso de teste de ${data.days} dias liberado!`);
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1600);
-    } catch (err: any) {
-      setVipError(err.message || 'Erro ao validar código.');
-    } finally {
-      setVipLoading(false);
-    }
-  };
-
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
@@ -429,7 +491,7 @@ export default function PlanosCheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8]">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100/40 via-[#F8FAFC] to-[#EEF2F6] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] overflow-x-hidden">
       
       {/* Script Oficial do Google Identity Services */}
       <Script 
@@ -438,8 +500,15 @@ export default function PlanosCheckoutPage() {
         onLoad={initGsi} 
       />
 
+      {/* Luzes Suaves com Degradê de Alta Fidelidade */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-[550px] h-[550px] bg-gradient-to-br from-[#1A44C8]/10 via-[#00A3FF]/10 to-transparent blur-[140px] rounded-full" />
+        <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] bg-gradient-to-bl from-[#6366F1]/10 via-[#38BDF8]/10 to-transparent blur-[150px] rounded-full" />
+        <div className="absolute -bottom-40 left-1/4 w-[500px] h-[500px] bg-emerald-500/[0.06] blur-[130px] rounded-full" />
+      </div>
+
       {/* Header Minimalista e Compacto */}
-      <header className="relative z-10 w-full border-b border-[#E2E8F0] bg-white/90 backdrop-blur-md px-6 py-3 flex items-center justify-between">
+      <header className="relative z-10 w-full border-b border-[#E2E8F0] bg-white/80 backdrop-blur-md px-6 py-3 flex items-center justify-between shadow-sm">
         <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
           <KaxxaLogo className="w-7 h-7" />
           <KaxxaWordmark className="text-lg tracking-tight" />
@@ -477,9 +546,13 @@ export default function PlanosCheckoutPage() {
             <div className="w-14 h-14 bg-[#059669]/10 text-[#059669] rounded-2xl flex items-center justify-center mx-auto mb-3 border border-[#059669]/20 shadow-sm">
               <CheckCircle2 size={32} className="animate-bounce" />
             </div>
-            <h3 className="text-lg font-black text-[#181B22] mb-1">Pagamento Aprovado!</h3>
+            <h3 className="text-lg font-black text-[#181B22] mb-1">
+              {appliedCoupon ? 'Acesso Liberado!' : 'Pagamento Aprovado!'}
+            </h3>
             <p className="text-xs text-[#64748B] mb-4 leading-relaxed">
-              Sua Assinatura Kaxxa foi liberada com sucesso. Redirecionando para seu painel...
+              {appliedCoupon 
+                ? `Seu teste de ${appliedCoupon.days} dias foi ativado com sucesso. Redirecionando para seu painel...`
+                : 'Sua Assinatura Kaxxa foi liberada com sucesso. Redirecionando para seu painel...'}
             </p>
             <div className="w-full bg-[#F1F5F9] h-2 rounded-full overflow-hidden">
               <div className="bg-[#1A44C8] h-full animate-[pulse_1s_infinite] w-full" />
@@ -507,10 +580,10 @@ export default function PlanosCheckoutPage() {
 
         {/* Notificação Compacta de Login se não estiver logado */}
         {!user && !authLoading && (
-          <div className="mb-4 p-3 bg-blue-50/70 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="mb-4 p-3 bg-blue-50/80 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs backdrop-blur-sm shadow-sm">
             <div className="flex items-center gap-2 text-[#1E3A8A]">
               <UserCheck size={16} className="text-[#1A44C8] shrink-0" />
-              <span>Conecte sua conta para vincular o pagamento à sua assinatura:</span>
+              <span>Conecte sua conta para vincular o acesso à sua assinatura:</span>
             </div>
             <div id="google-btn-planos" className="shrink-0 flex justify-center" />
           </div>
@@ -522,242 +595,295 @@ export default function PlanosCheckoutPage() {
           {/* COLUNA ESQUERDA (7 cols): ESCOLHA DIRETA PIX vs CARTÃO */}
           <div className="lg:col-span-7 space-y-4">
 
-            {/* SELEÇÃO DIRETA ENTRE PIX E CARTÃO */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5">
+            {/* SELEÇÃO DIRETA ENTRE PIX E CARTÃO OU CUPOM DE ACESSO */}
+            <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5 hover:shadow-md transition-all">
               
               <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
                 <h2 className="text-xs font-extrabold text-[#181B22] uppercase tracking-wide">
-                  Escolha a Forma de Pagamento
+                  {appliedCoupon ? 'Benefício do Cupom' : 'Escolha a Forma de Pagamento'}
                 </h2>
-                <span className="text-xs font-black text-[#059669]">
-                  R$ 39,90
+                <span className={`text-xs font-black ${appliedCoupon ? 'text-[#059669]' : 'text-[#059669]'}`}>
+                  {appliedCoupon ? 'GRÁTIS (R$ 0,00)' : 'R$ 39,90'}
                 </span>
               </div>
 
-              {/* BOTOES DE ESCOLHA DIRETA */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* BOTÃO PIX */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaymentMethod('PIX');
-                    setErrorMsg('');
-                  }}
-                  className={`p-3 rounded-xl border-2 text-left transition-all relative ${
-                    paymentMethod === 'PIX'
-                      ? 'border-[#059669] bg-emerald-50/25 shadow-sm ring-2 ring-[#059669]/10'
-                      : 'border-[#E2E8F0] hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                      paymentMethod === 'PIX' ? 'bg-[#059669] text-white' : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      <Zap size={15} />
-                    </div>
-                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-[#059669]">
-                      Instantâneo
-                    </span>
-                  </div>
-                  <h3 className="text-xs font-extrabold text-[#181B22]">PIX</h3>
-                  <p className="text-[10px] text-[#64748B] mt-0.5">QR Code ou Copia e Cola</p>
-                </button>
-
-                {/* BOTÃO CARTÃO DE CRÉDITO */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaymentMethod('CARD');
-                    setPixData(null);
-                    setErrorMsg('');
-                  }}
-                  className={`p-3 rounded-xl border-2 text-left transition-all relative ${
-                    paymentMethod === 'CARD'
-                      ? 'border-[#1A44C8] bg-blue-50/25 shadow-sm ring-2 ring-[#1A44C8]/10'
-                      : 'border-[#E2E8F0] hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                      paymentMethod === 'CARD' ? 'bg-[#1A44C8] text-white' : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      <CreditCard size={15} />
-                    </div>
-                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-100 text-[#1A44C8]">
-                      Mercado Pago
-                    </span>
-                  </div>
-                  <h3 className="text-xs font-extrabold text-[#181B22]">Cartão de Crédito</h3>
-                  <p className="text-[10px] text-[#64748B] mt-0.5">Recorrente ou Pagamento Único</p>
-                </button>
-              </div>
-
-              {/* OPÇÃO DE ATIVAR RECORRÊNCIA (APARECE DIRETAMENTE AO SELECIONAR CARTÃO) */}
-              {paymentMethod === 'CARD' && (
-                <div className="p-3 bg-blue-50/50 border border-blue-200/80 rounded-xl space-y-2 animate-in fade-in duration-200">
-                  <label className="flex items-start gap-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={cardRecurring}
-                      onChange={(e) => setCardRecurring(e.target.checked)}
-                      className="w-4 h-4 mt-0.5 text-[#1A44C8] rounded border-gray-300 focus:ring-[#1A44C8] cursor-pointer"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold text-[#181B22]">
-                          Ativar renovação automática mensal
-                        </span>
-                        <span className="text-[10px] font-black text-[#1A44C8]">
-                          R$ 39,90/mês
-                        </span>
+              {/* SE CUPOM ESTIVER ATIVADO: CARD DE RESGATE GRÁTIS */}
+              {appliedCoupon ? (
+                <div className="p-4 bg-emerald-50/80 border-2 border-[#059669] rounded-xl space-y-3 animate-in fade-in">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-[#059669] text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <Tag size={16} />
                       </div>
-                      <p className="text-[10px] text-[#64748B] mt-0.5 leading-relaxed">
-                        {cardRecurring 
-                          ? 'Seu plano renova todo mês sem você se preocupar com vencimento. Cancele com 1 clique a qualquer momento no seu perfil.'
-                          : 'Modo Avulso: Cobrança única de 30 dias. Nenhuma cobrança futura será realizada no seu cartão.'}
-                      </p>
-                    </div>
-                  </label>
-                </div>
-              )}
-
-              {/* Erro */}
-              {errorMsg && (
-                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold text-center">
-                  {errorMsg}
-                </div>
-              )}
-
-              {/* FLUXO PIX SELECIONADO */}
-              {paymentMethod === 'PIX' && (
-                <div className="pt-1">
-                  {pixData ? (
-                    <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-center space-y-3">
-                      <div className="flex items-center justify-between pb-2 border-b border-[#E2E8F0] text-xs font-bold">
-                        <span className="text-[#059669] flex items-center gap-1">
-                          <Clock size={13} />
-                          Expira em {formatTime(countdown)}
-                        </span>
-                        <span>Total: R$ 39,90</span>
-                      </div>
-
-                      <div className="p-2.5 bg-white border border-[#E2E8F0] rounded-xl inline-block shadow-sm">
-                        {pixData.qrCodeBase64 ? (
-                          <img 
-                            src={`data:image/png;base64,${pixData.qrCodeBase64}`} 
-                            alt="QR Code PIX"
-                            className="w-36 h-36 object-contain rounded-lg mx-auto"
-                          />
-                        ) : (
-                          <div className="w-36 h-36 bg-gray-50 rounded-lg flex items-center justify-center mx-auto">
-                            <QrCode size={80} className="text-[#181B22]" />
-                          </div>
-                        )}
-                        <div className="flex items-center justify-center gap-2 mt-2 text-[10px] font-bold text-[#1A44C8]">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1A44C8] opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1A44C8]" />
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-extrabold text-xs text-[#181B22]">
+                            Cupom &quot;{appliedCoupon.code}&quot; Ativo!
                           </span>
-                          <span>Aguardando pagamento no banco...</span>
+                          <span className="text-[9px] font-black bg-emerald-200/70 text-emerald-800 px-1.5 py-0.2 rounded-full">
+                            100% OFF
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Copia e Cola */}
-                      <div className="space-y-1 max-w-sm mx-auto">
-                        <label className="text-[10px] font-bold text-[#64748B] block text-left">
-                          Código PIX Copia e Cola:
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            readOnly
-                            value={pixData.qrCode}
-                            className="w-full bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1.5 text-xs text-[#64748B] font-mono select-all focus:outline-none truncate"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleCopyPix}
-                            className="px-3 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95"
-                          >
-                            {copied ? (
-                              <>
-                                <Check size={12} />
-                                <span>Copiado</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy size={12} />
-                                <span>Copiar</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="pt-1 space-y-2">
-                        <button
-                          type="button"
-                          onClick={handleManualCheckStatus}
-                          disabled={loading}
-                          className="w-full py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98"
-                        >
-                          <CheckCircle2 size={14} />
-                          <span>Já paguei no meu banco (Liberar Agora)</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPixData(null)}
-                          className="w-full text-center text-[11px] text-[#64748B] hover:text-[#181B22]"
-                        >
-                          Gerar outro código
-                        </button>
+                        <p className="text-[11px] text-[#059669] font-medium mt-0.5">
+                          {appliedCoupon.days} dias de degustação completa sem precisar pagar nada.
+                        </p>
                       </div>
                     </div>
-                  ) : (
                     <button
                       type="button"
-                      onClick={handleGeneratePix}
-                      disabled={loading}
-                      className="w-full py-3 bg-[#059669] hover:bg-[#047857] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                      onClick={handleRemoveCoupon}
+                      className="text-[10px] text-slate-400 hover:text-rose-600 font-bold p-1"
+                      title="Remover cupom"
                     >
-                      {loading ? (
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          <Zap size={14} />
-                          <span>PAGAR COM PIX • R$ 39,90</span>
-                        </>
-                      )}
+                      <X size={14} />
                     </button>
-                  )}
-                </div>
-              )}
+                  </div>
 
-              {/* FLUXO CARTÃO SELECIONADO */}
-              {paymentMethod === 'CARD' && (
-                <div className="pt-1">
                   <button
                     type="button"
-                    onClick={handleCardPayment}
+                    onClick={handleRedeemCoupon}
                     disabled={loading}
-                    className="w-full py-3 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                    className="w-full py-3 bg-[#059669] hover:bg-[#047857] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
                   >
                     {loading ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        <Lock size={14} />
-                        <span>
-                          {cardRecurring ? 'ASSINAR COM CARTÃO (R$ 39,90/MÊS)' : 'PAGAR R$ 39,90 NO CARTÃO (30 DIAS)'}
-                        </span>
+                        <Zap size={14} />
+                        <span>ATIVAR MEU ACESSO DE {appliedCoupon.days} DIAS GRÁTIS</span>
                         <ArrowRight size={13} />
                       </>
                     )}
                   </button>
-                  <p className="text-[10px] text-[#64748B] text-center mt-2">
-                    Você será direcionado à página segura do Mercado Pago para inserir os dados do cartão.
-                  </p>
                 </div>
+              ) : (
+                /* FLUXO NORMAL: BOTOES DE ESCOLHA DIRETA PIX vs CARTÃO */
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* BOTÃO PIX */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod('PIX');
+                        setErrorMsg('');
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all relative ${
+                        paymentMethod === 'PIX'
+                          ? 'border-[#059669] bg-emerald-50/35 shadow-sm ring-2 ring-[#059669]/10'
+                          : 'border-[#E2E8F0] hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                          paymentMethod === 'PIX' ? 'bg-[#059669] text-white' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          <Zap size={15} />
+                        </div>
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-[#059669]">
+                          Instantâneo
+                        </span>
+                      </div>
+                      <h3 className="text-xs font-extrabold text-[#181B22]">PIX</h3>
+                      <p className="text-[10px] text-[#64748B] mt-0.5">QR Code ou Copia e Cola</p>
+                    </button>
+
+                    {/* BOTÃO CARTÃO DE CRÉDITO */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod('CARD');
+                        setPixData(null);
+                        setErrorMsg('');
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all relative ${
+                        paymentMethod === 'CARD'
+                          ? 'border-[#1A44C8] bg-blue-50/35 shadow-sm ring-2 ring-[#1A44C8]/10'
+                          : 'border-[#E2E8F0] hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                          paymentMethod === 'CARD' ? 'bg-[#1A44C8] text-white' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          <CreditCard size={15} />
+                        </div>
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-100 text-[#1A44C8]">
+                          Mercado Pago
+                        </span>
+                      </div>
+                      <h3 className="text-xs font-extrabold text-[#181B22]">Cartão de Crédito</h3>
+                      <p className="text-[10px] text-[#64748B] mt-0.5">Recorrente ou Pagamento Único</p>
+                    </button>
+                  </div>
+
+                  {/* OPÇÃO DE ATIVAR RECORRÊNCIA AO SELECIONAR CARTÃO */}
+                  {paymentMethod === 'CARD' && (
+                    <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl space-y-2 animate-in fade-in duration-200">
+                      <label className="flex items-start gap-2.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={cardRecurring}
+                          onChange={(e) => setCardRecurring(e.target.checked)}
+                          className="w-4 h-4 mt-0.5 text-[#1A44C8] rounded border-gray-300 focus:ring-[#1A44C8] cursor-pointer"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-extrabold text-[#181B22]">
+                              Ativar renovação automática mensal
+                            </span>
+                            <span className="text-[10px] font-black text-[#1A44C8]">
+                              R$ 39,90/mês
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[#64748B] mt-0.5 leading-relaxed">
+                            {cardRecurring 
+                              ? 'Seu plano renova todo mês sem você se preocupar com vencimento. Cancele com 1 clique a qualquer momento no seu perfil.'
+                              : 'Modo Avulso: Cobrança única de 30 dias. Nenhuma cobrança futura será realizada no seu cartão.'}
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Erro */}
+                  {errorMsg && (
+                    <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold text-center">
+                      {errorMsg}
+                    </div>
+                  )}
+
+                  {/* FLUXO PIX SELECIONADO */}
+                  {paymentMethod === 'PIX' && (
+                    <div className="pt-1">
+                      {pixData ? (
+                        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-center space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-[#E2E8F0] text-xs font-bold">
+                            <span className="text-[#059669] flex items-center gap-1">
+                              <Clock size={13} />
+                              Expira em {formatTime(countdown)}
+                            </span>
+                            <span>Total: R$ 39,90</span>
+                          </div>
+
+                          <div className="p-2.5 bg-white border border-[#E2E8F0] rounded-xl inline-block shadow-sm">
+                            {pixData.qrCodeBase64 ? (
+                              <img 
+                                src={`data:image/png;base64,${pixData.qrCodeBase64}`} 
+                                alt="QR Code PIX"
+                                className="w-36 h-36 object-contain rounded-lg mx-auto"
+                              />
+                            ) : (
+                              <div className="w-36 h-36 bg-gray-50 rounded-lg flex items-center justify-center mx-auto">
+                                <QrCode size={80} className="text-[#181B22]" />
+                              </div>
+                            )}
+                            <div className="flex items-center justify-center gap-2 mt-2 text-[10px] font-bold text-[#1A44C8]">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1A44C8] opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1A44C8]" />
+                              </span>
+                              <span>Aguardando pagamento no banco...</span>
+                            </div>
+                          </div>
+
+                          {/* Copia e Cola */}
+                          <div className="space-y-1 max-w-sm mx-auto">
+                            <label className="text-[10px] font-bold text-[#64748B] block text-left">
+                              Código PIX Copia e Cola:
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                readOnly
+                                value={pixData.qrCode}
+                                className="w-full bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1.5 text-xs text-[#64748B] font-mono select-all focus:outline-none truncate"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleCopyPix}
+                                className="px-3 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95"
+                              >
+                                {copied ? (
+                                  <>
+                                    <Check size={12} />
+                                    <span>Copiado</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={12} />
+                                    <span>Copiar</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="pt-1 space-y-2">
+                            <button
+                              type="button"
+                              onClick={handleManualCheckStatus}
+                              disabled={loading}
+                              className="w-full py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98"
+                            >
+                              <CheckCircle2 size={14} />
+                              <span>Já paguei no meu banco (Liberar Agora)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPixData(null)}
+                              className="w-full text-center text-[11px] text-[#64748B] hover:text-[#181B22]"
+                            >
+                              Gerar outro código
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleGeneratePix}
+                          disabled={loading}
+                          className="w-full py-3 bg-[#059669] hover:bg-[#047857] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                        >
+                          {loading ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <Zap size={14} />
+                              <span>PAGAR COM PIX • R$ 39,90</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* FLUXO CARTÃO SELECIONADO */}
+                  {paymentMethod === 'CARD' && (
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={handleCardPayment}
+                        disabled={loading}
+                        className="w-full py-3 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                      >
+                        {loading ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Lock size={14} />
+                            <span>
+                              {cardRecurring ? 'ASSINAR COM CARTÃO (R$ 39,90/MÊS)' : 'PAGAR R$ 39,90 NO CARTÃO (30 DIAS)'}
+                            </span>
+                            <ArrowRight size={13} />
+                          </>
+                        )}
+                      </button>
+                      <p className="text-[10px] text-[#64748B] text-center mt-2">
+                        Você será direcionado à página segura do Mercado Pago para inserir os dados do cartão.
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="pt-2 border-t border-[#F1F5F9] flex items-center justify-center gap-1.5 text-[10px] text-[#94A3B8]">
@@ -767,55 +893,71 @@ export default function PlanosCheckoutPage() {
 
             </div>
 
-            {/* SEÇÃO DISCRETA: CÓDIGO VIP / TESTE INTERNO */}
-            <div className="text-center pt-1">
-              {!showVipInput ? (
+            {/* SEÇÃO PROFISSIONAL: CUPOM DE DESCONTO */}
+            <div className="bg-white/90 backdrop-blur-md border border-[#E2E8F0] rounded-xl p-3.5 shadow-sm">
+              {!showCouponInput && !appliedCoupon ? (
                 <button
                   type="button"
-                  onClick={() => setShowVipInput(true)}
-                  className="text-[11px] text-[#64748B] hover:text-[#1A44C8] font-medium transition-colors inline-flex items-center gap-1"
+                  onClick={() => setShowCouponInput(true)}
+                  className="text-xs text-[#1A44C8] hover:underline font-bold flex items-center gap-1.5"
                 >
-                  <KeyRound size={11} />
-                  <span>Possui um código de acesso ou convite VIP?</span>
+                  <Tag size={13} />
+                  <span>Possui um cupom de desconto?</span>
                 </button>
               ) : (
-                <form onSubmit={handleVipSubmit} className="max-w-md mx-auto p-3 bg-white border border-[#E2E8F0] rounded-xl shadow-sm text-left space-y-2 animate-in fade-in">
+                <form onSubmit={handleApplyCoupon} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
-                      <Gift size={13} className="text-[#1A44C8]" />
-                      Ativar Convite VIP / Teste
+                      <Tag size={13} className="text-[#1A44C8]" />
+                      Cupom de Desconto
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowVipInput(false)}
-                      className="text-[10px] text-[#64748B] hover:text-[#181B22]"
-                    >
-                      Fechar
-                    </button>
+                    {!appliedCoupon && (
+                      <button
+                        type="button"
+                        onClick={() => setShowCouponInput(false)}
+                        className="text-[10px] text-[#64748B] hover:text-[#181B22]"
+                      >
+                        Fechar
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Ex: AMIGOKAXA"
-                      value={vipCode}
-                      onChange={(e) => setVipCode(e.target.value.toUpperCase())}
-                      className="flex-1 uppercase font-mono text-xs px-2.5 py-1.5 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#1A44C8]"
+                      placeholder="Ex: TESTE-2DIAS"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      disabled={couponLoading || !!appliedCoupon}
+                      className="flex-1 uppercase font-mono text-xs px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#1A44C8] bg-white"
                     />
-                    <button
-                      type="submit"
-                      disabled={vipLoading || !vipCode.trim()}
-                      className="px-3.5 py-1.5 bg-[#181B22] hover:bg-black text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50"
-                    >
-                      {vipLoading ? 'Validando...' : 'Ativar'}
-                    </button>
+                    {appliedCoupon ? (
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-bold transition-all"
+                      >
+                        Remover
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={couponLoading || !couponInput.trim()}
+                        className="px-4 py-2 bg-[#181B22] hover:bg-black text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                      >
+                        {couponLoading ? 'Validando...' : 'Aplicar'}
+                      </button>
+                    )}
                   </div>
 
-                  {vipSuccess && (
-                    <p className="text-[11px] text-[#059669] font-bold">{vipSuccess}</p>
+                  {appliedCoupon && (
+                    <p className="text-[11px] text-[#059669] font-bold flex items-center gap-1">
+                      <CheckCircle2 size={12} />
+                      <span>{appliedCoupon.message}</span>
+                    </p>
                   )}
-                  {vipError && (
-                    <p className="text-[11px] text-rose-600 font-bold">{vipError}</p>
+                  {couponError && (
+                    <p className="text-[11px] text-rose-600 font-bold">{couponError}</p>
                   )}
                 </form>
               )}
@@ -827,7 +969,7 @@ export default function PlanosCheckoutPage() {
           <div className="lg:col-span-5 space-y-3.5 lg:sticky lg:top-4">
 
             {/* Card de Resumo do Pedido */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-sm">
+            <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-sm">
               <h2 className="text-xs font-extrabold text-[#181B22] uppercase tracking-wide pb-2.5 border-b border-[#F1F5F9]">
                 Resumo da Assinatura
               </h2>
@@ -837,11 +979,25 @@ export default function PlanosCheckoutPage() {
                   <div>
                     <h3 className="font-extrabold text-[#181B22]">Assinatura Kaxxa</h3>
                     <p className="text-[10px] text-[#64748B]">
-                      {paymentMethod === 'CARD' && cardRecurring ? 'Cobrança mensal recorrente' : '30 dias de acesso'}
+                      {appliedCoupon 
+                        ? `Degustação de ${appliedCoupon.days} dias` 
+                        : (paymentMethod === 'CARD' && cardRecurring ? 'Cobrança mensal recorrente' : '30 dias de acesso')}
                     </p>
                   </div>
-                  <span className="font-bold text-[#181B22]">R$ 39,90</span>
+                  <span className={`font-bold ${appliedCoupon ? 'line-through text-slate-400' : 'text-[#181B22]'}`}>
+                    R$ 39,90
+                  </span>
                 </div>
+
+                {appliedCoupon && (
+                  <div className="flex justify-between items-center text-[#059669] text-xs font-bold bg-emerald-50 p-1.5 rounded-lg border border-emerald-200">
+                    <span className="flex items-center gap-1">
+                      <Tag size={12} />
+                      Cupom ({appliedCoupon.code})
+                    </span>
+                    <span>- R$ 39,90</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center text-[#64748B] text-[11px]">
                   <span>Cancelamento</span>
@@ -850,36 +1006,19 @@ export default function PlanosCheckoutPage() {
 
                 <div className="pt-2 border-t border-[#E2E8F0] flex justify-between items-baseline">
                   <span className="text-xs font-black text-[#181B22]">Total Hoje:</span>
-                  <span className="text-lg font-black text-[#181B22]">R$ 39,90</span>
-                </div>
-              </div>
-
-              {/* Benefícios Inclusos */}
-              <div className="mt-2.5 pt-2.5 border-t border-[#E2E8F0] space-y-1.5 text-xs text-[#334155]">
-                <span className="text-[10px] font-extrabold text-[#181B22] uppercase tracking-wider block mb-1">
-                  Incluso no seu plano:
-                </span>
-                <div className="flex items-center gap-2 text-[11px]">
-                  <Check size={12} className="text-[#059669] shrink-0 stroke-[3]" />
-                  <span>Amortização inteligente de dívidas</span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px]">
-                  <Check size={12} className="text-[#059669] shrink-0 stroke-[3]" />
-                  <span>Gestão de cartões & previsão de faturas</span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px]">
-                  <Check size={12} className="text-[#059669] shrink-0 stroke-[3]" />
-                  <span>Divisão e cobrança de terceiros</span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px]">
-                  <Check size={12} className="text-[#059669] shrink-0 stroke-[3]" />
-                  <span>Controle de contas bancárias e metas</span>
+                  <span className="text-lg font-black text-[#181B22]">
+                    {appliedCoupon ? (
+                      <span className="text-[#059669]">R$ 0,00</span>
+                    ) : (
+                      'R$ 39,90'
+                    )}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Card Garantia de 7 dias */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 flex items-start gap-2.5 shadow-sm">
+            <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-2xl p-4 flex items-start gap-2.5 shadow-sm">
               <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[#059669] flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5">
                 <ShieldCheck size={15} />
               </div>

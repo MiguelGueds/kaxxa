@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Script from 'next/script';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Sparkles, Lock } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
@@ -63,7 +63,7 @@ export default function LoginPage() {
             size: 'large',
             text: 'continue_with',
             shape: 'pill',
-            width: 360,
+            width: 340,
             logo_alignment: 'left',
           });
           setGsiReady(true);
@@ -76,7 +76,6 @@ export default function LoginPage() {
     return false;
   }, [clientId, handleCredentialResponse]);
 
-  // Polling resiliente para renderizar o botão oficial do Google sem depender do tempo de script
   useEffect(() => {
     let interval: NodeJS.Timeout;
     let attempts = 0;
@@ -100,7 +99,6 @@ export default function LoginPage() {
       setLoading(true);
       setErrorMsg('');
 
-      // Tenta abrir o prompt nativo do Google sem navegar para fora do site
       if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
         (window as any).google.accounts.id.initialize({
           client_id: clientId,
@@ -113,7 +111,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Fallback tradicional OAuth caso o script do Google seja bloqueado por adblock
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -133,7 +130,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6F9] text-[#181B22] relative flex items-center justify-center font-sans overflow-hidden selection:bg-[#1A44C8]/20 selection:text-[#1A44C8]">
+    <div className="min-h-screen bg-gradient-to-br from-[#0F172A] via-[#0D1527] to-[#090D16] text-[#181B22] relative flex items-center justify-center font-sans overflow-hidden selection:bg-[#1A44C8]/30 selection:text-white">
       
       {/* Script Oficial do Google Identity Services */}
       <Script 
@@ -142,113 +139,149 @@ export default function LoginPage() {
         onLoad={initGsi} 
       />
 
-      {/* Luzes Suaves de Fundo */}
+      {/* Grid Tecnológico Animado de Fundo */}
+      <div 
+        className="absolute inset-0 opacity-20 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px)`,
+          backgroundSize: '40px 40px'
+        }}
+      />
+
+      {/* Orbes de Luz Vivas com Animação Fluida */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#1A44C8]/[0.04] blur-[130px]" />
-        <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] bg-[#00A3FF]/[0.04] blur-[140px]" />
+        {/* Orbe Azul Principal - Pulso e Rotação */}
+        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-[#1A44C8]/40 to-[#00A3FF]/30 rounded-full blur-[120px] animate-[pulse_6s_ease-in-out_infinite]" />
+        
+        {/* Orbe Violeta/Ciano - Movimento cruzado */}
+        <div className="absolute bottom-1/4 right-1/4 translate-x-1/3 translate-y-1/3 w-[600px] h-[600px] bg-gradient-to-bl from-[#6366F1]/30 via-[#38BDF8]/25 to-transparent rounded-full blur-[140px] animate-[pulse_8s_ease-in-out_infinite_2s]" />
+        
+        {/* Orbe Esmeralda Suave no Topo */}
+        <div className="absolute -top-20 right-1/3 w-[450px] h-[450px] bg-[#059669]/20 rounded-full blur-[130px] animate-[pulse_7s_ease-in-out_infinite_1s]" />
       </div>
 
-      {/* ANÉIS ORBITAIS / RADIAL AMBIENCE */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] pointer-events-none z-0 opacity-20">
-        <svg viewBox="0 0 1000 1000" className="w-full h-full overflow-visible">
+      {/* Círculos de Órbita Animados Dinâmicos */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[850px] pointer-events-none z-0 opacity-35">
+        <svg viewBox="0 0 850 850" className="w-full h-full overflow-visible">
           <defs>
-            <linearGradient id="loginOrbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(16,53,229,0.3)" />
-              <stop offset="50%" stopColor="rgba(0,163,255,0.1)" />
-              <stop offset="100%" stopColor="rgba(16,53,229,0)" />
+            <linearGradient id="loginGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#00A3FF" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="#1A44C8" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#6366F1" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="loginGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#059669" stopOpacity="0.7" />
+              <stop offset="60%" stopColor="#1A44C8" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#00A3FF" stopOpacity="0" />
             </linearGradient>
           </defs>
           
-          <g className="animate-[spin_40s_linear_infinite]" style={{ transformOrigin: '500px 500px' }}>
-            <ellipse cx="500" cy="500" rx="400" ry="120" fill="none" stroke="url(#loginOrbitGrad)" strokeWidth="1.5" />
+          <g className="animate-[spin_24s_linear_infinite]" style={{ transformOrigin: '425px 425px' }}>
+            <ellipse cx="425" cy="425" rx="380" ry="140" fill="none" stroke="url(#loginGrad1)" strokeWidth="1.8" strokeDasharray="8 6" />
           </g>
-          <g className="animate-[spin_50s_linear_infinite_reverse]" style={{ transformOrigin: '500px 500px' }}>
-            <ellipse cx="500" cy="500" rx="400" ry="120" fill="none" stroke="url(#loginOrbitGrad)" strokeWidth="1.5" transform="rotate(45 500 500)" />
+          <g className="animate-[spin_32s_linear_infinite_reverse]" style={{ transformOrigin: '425px 425px' }}>
+            <ellipse cx="425" cy="425" rx="360" ry="160" fill="none" stroke="url(#loginGrad2)" strokeWidth="1.5" transform="rotate(55 425 425)" />
           </g>
         </svg>
       </div>
 
+      {/* Botão Voltar para Início */}
       <Link
         href="/"
-        className="absolute top-8 left-8 flex items-center gap-2 text-xs font-bold text-[#64748B] hover:text-[#181B22] transition-colors z-20"
+        className="absolute top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white transition-colors z-20 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md shadow-lg group"
       >
-        <ArrowLeft className="w-4 h-4 text-[#1A44C8]" />
-        Voltar para o início
+        <ArrowLeft className="w-4 h-4 text-[#00A3FF] transition-transform group-hover:-translate-x-0.5" />
+        <span>Voltar ao início</span>
       </Link>
 
-      <div className="w-full max-w-[440px] z-10 px-4">
-        {/* Main Card with #FFFFFF */}
-        <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-3xl p-10 relative overflow-hidden shadow-xl">
+      {/* Card Central com Borda Iluminada Shimmer */}
+      <div className="w-full max-w-[420px] z-10 px-4 py-8 animate-in fade-in zoom-in-95 duration-500">
+        
+        {/* Contêiner com Gradiente de Borda Sofisticado */}
+        <div className="relative p-[1.5px] rounded-3xl bg-gradient-to-b from-white/25 via-white/10 to-[#1A44C8]/30 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_40px_rgba(26,68,200,0.25)] backdrop-blur-2xl">
           
-          {/* Logo Kaxxa Oficial */}
-          <div className="flex justify-center mb-5">
-            <div className="w-16 h-16 rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-center shadow-sm">
-              <KaxxaLogo size={32} />
-            </div>
-          </div>
-          
-          {/* Título */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-1">
-              <KaxxaWordmark className="text-2xl tracking-tight" />
-            </div>
-            <p className="text-xs text-[#64748B] mt-1.5 font-medium">
-              Acesse ou crie sua conta em 1 clique com sua conta Google
-            </p>
-          </div>
-
-          {errorMsg && (
-            <div className="mb-6 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs text-center font-bold">
-              {errorMsg}
-            </div>
-          )}
-
-          {/* Botão Oficial do Google */}
-          <div className="space-y-4">
+          <div className="bg-[#FFFFFF] rounded-[22px] p-7 sm:p-9 relative overflow-hidden">
             
-            <div className="flex flex-col items-center justify-center min-h-[44px]">
-              {/* Container do Botão Nativo Oficial do Google (Sem URL do Supabase) */}
-              <div id="google-btn-container" className="flex justify-center w-full min-h-[40px]" />
-
-              {/* Botão Fallback estilizado caso o Google script demore */}
-              {!gsiReady && (
-                <button
-                  type="button"
-                  onClick={handleGoogleClick}
-                  disabled={loading}
-                  className="w-full py-3 px-5 bg-white hover:bg-gray-50 border border-[#E5E7EB] hover:border-[#1A44C8] text-[#181B22] rounded-full font-bold text-xs transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-3 active:scale-98 disabled:opacity-50"
-                >
-                  {loading ? (
-                    <div className="w-4 h-4 border-2 border-[#1A44C8]/30 border-t-[#1A44C8] rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                      </svg>
-                      <span>Continuar com o Google</span>
-                    </>
-                  )}
-                </button>
-              )}
+            {/* Brilho Superior Interno */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#00A3FF] via-[#1A44C8] to-[#059669]" />
+            
+            {/* Logo Kaxxa com Anel Iluminado */}
+            <div className="flex justify-center mb-5">
+              <div className="relative p-[2px] rounded-2xl bg-gradient-to-tr from-[#1A44C8] via-[#00A3FF] to-[#059669] shadow-lg shadow-[#1A44C8]/25">
+                <div className="w-14 h-14 rounded-[14px] bg-white flex items-center justify-center">
+                  <KaxxaLogo size={32} />
+                </div>
+              </div>
+            </div>
+            
+            {/* Título e Subtítulo */}
+            <div className="text-center mb-6">
+              <div className="flex justify-center mb-1.5">
+                <KaxxaWordmark className="text-2xl tracking-tight" />
+              </div>
+              <p className="text-xs text-[#64748B] mt-1 font-medium leading-relaxed">
+                Acesse ou crie sua conta em 1 clique com segurança total
+              </p>
             </div>
 
-            <div className="pt-2 text-[11px] text-[#94A3B8] flex items-center justify-center gap-1.5">
-              <ShieldCheck size={14} className="text-[#059669]" />
-              <span>Autenticação rápida, oficial e segura</span>
+            {errorMsg && (
+              <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs text-center font-bold animate-in fade-in">
+                {errorMsg}
+              </div>
+            )}
+
+            {/* Ação de Login Oficial Google */}
+            <div className="space-y-4">
+              
+              <div className="flex flex-col items-center justify-center min-h-[44px]">
+                {/* Botão Oficial Google */}
+                <div id="google-btn-container" className="flex justify-center w-full min-h-[40px]" />
+
+                {/* Botão Fallback estilizado */}
+                {!gsiReady && (
+                  <button
+                    type="button"
+                    onClick={handleGoogleClick}
+                    disabled={loading}
+                    className="w-full py-3 px-5 bg-white hover:bg-slate-50 border-2 border-[#E2E8F0] hover:border-[#1A44C8] text-[#181B22] rounded-full font-bold text-xs transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-3 active:scale-98 disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-[#1A44C8]/30 border-t-[#1A44C8] rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                        <span>Continuar com o Google</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Selo de Proteção */}
+              <div className="pt-2 text-[11px] text-[#64748B] flex items-center justify-center gap-1.5 font-medium">
+                <ShieldCheck size={14} className="text-[#059669]" />
+                <span>Autenticação criptografada oficial Google</span>
+              </div>
             </div>
+
+            {/* Rodapé / Microtermos */}
+            <div className="mt-7 pt-4 border-t border-[#F1F5F9] text-center">
+              <p className="text-[10px] text-[#94A3B8] leading-relaxed">
+                Ambiente seguro • Proteção de dados bancários LGPD
+              </p>
+            </div>
+
           </div>
-
-          {/* Micro-termos */}
-          <p className="mt-8 text-[10px] text-[#94A3B8] leading-relaxed text-center">
-            Ao continuar, você concorda com os Termos de Serviço e a Política de Privacidade do Kaxxa.
-          </p>
 
         </div>
+
       </div>
+
     </div>
   );
 }
-

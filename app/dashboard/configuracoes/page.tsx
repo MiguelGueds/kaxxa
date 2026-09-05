@@ -21,7 +21,14 @@ import {
   HelpCircle,
   ExternalLink,
   MessageSquare,
-  AlertTriangle
+  AlertTriangle,
+  Ticket,
+  Copy,
+  Check,
+  Sparkles,
+  Share2,
+  KeyRound,
+  Tag
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -34,7 +41,7 @@ type ThirdParty = { id: string; name: string; type: string; };
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'PERFIL' | 'ASSINATURA' | 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS'>('PERFIL');
+  const [activeTab, setActiveTab] = useState<'PERFIL' | 'ASSINATURA' | 'CUPONS' | 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS'>('PERFIL');
   
   // Shared States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +63,87 @@ export default function SettingsPage() {
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const [refundReason, setRefundReason] = useState('');
   const [refundPixKey, setRefundPixKey] = useState('');
+
+  // --- CUPONS STATE ---
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [newCouponCode, setNewCouponCode] = useState('');
+  const [newCouponDays, setNewCouponDays] = useState(2);
+  const [newCouponMaxUses, setNewCouponMaxUses] = useState(1);
+  const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
+
+  const fetchCoupons = async () => {
+    setLoadingCoupons(true);
+    try {
+      const res = await fetch('/api/coupons');
+      const data = await res.json();
+      if (data.coupons) {
+        setCoupons(data.coupons);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar cupons:', err);
+    } finally {
+      setLoadingCoupons(false);
+    }
+  };
+
+  const generateRandomCouponCode = () => {
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    setNewCouponCode(`TESTE-${randomSuffix}`);
+  };
+
+  const handleCreateCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    resetMessages();
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: newCouponCode.trim() || undefined,
+          days: newCouponDays,
+          maxUses: newCouponMaxUses,
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao criar cupom.');
+      setSuccessMsg(`Cupom "${data.coupon.code}" criado com sucesso!`);
+      setNewCouponCode('');
+      fetchCoupons();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erro ao criar cupom.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCoupon = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja remover este cupom?')) return;
+    try {
+      const res = await fetch(`/api/coupons?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setCoupons(prev => prev.filter(c => c.id !== id));
+        setSuccessMsg('Cupom removido com sucesso.');
+      }
+    } catch (err) {
+      console.error('Erro ao remover cupom:', err);
+    }
+  };
+
+  const handleCopyCouponCode = (code: string, id: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCouponId(`code-${id}`);
+    setTimeout(() => setCopiedCouponId(null), 2500);
+  };
+
+  const handleCopyCouponLink = (code: string, id: string) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://kaxxa.vercel.app';
+    const link = `${origin}/planos?cupom=${code}`;
+    navigator.clipboard.writeText(link);
+    setCopiedCouponId(`link-${id}`);
+    setTimeout(() => setCopiedCouponId(null), 2500);
+  };
 
   // Categorias
   const [categories, setCategories] = useState<Category[]>([]);
@@ -87,6 +175,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchData();
+    fetchCoupons();
   }, []);
 
   const fetchData = async () => {
@@ -322,6 +411,7 @@ export default function SettingsPage() {
       <div className="flex border-b border-[#E5E7EB] overflow-x-auto custom-scrollbar">
         <TabButton active={activeTab === 'PERFIL'} onClick={() => setActiveTab('PERFIL')} icon={<User size={14} />} label="Meu Perfil" />
         <TabButton active={activeTab === 'ASSINATURA'} onClick={() => setActiveTab('ASSINATURA')} icon={<ShieldCheck size={14} />} label="Assinatura & Pagamentos" />
+        <TabButton active={activeTab === 'CUPONS'} onClick={() => { setActiveTab('CUPONS'); fetchCoupons(); }} icon={<Ticket size={14} />} label="Cupons & Testes" badge="Admin" />
         <TabButton active={activeTab === 'CONTAS'} onClick={() => setActiveTab('CONTAS')} icon={<Landmark size={14} />} label="Contas" />
         <TabButton active={activeTab === 'CARTOES'} onClick={() => setActiveTab('CARTOES')} icon={<CreditCard size={14} />} label="Cartões" />
         <TabButton active={activeTab === 'CATEGORIAS'} onClick={() => setActiveTab('CATEGORIAS')} icon={<ListTree size={14} />} label="Categorias" />
@@ -568,6 +658,244 @@ export default function SettingsPage() {
 
               </div>
             )}
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* --- ABA CUPONS & TESTES (ADMIN) --- */}
+        {/* ======================================================== */}
+        {activeTab === 'CUPONS' && (
+          <div className="animate-fade-in-up space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E5E7EB]">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-[#181B22]">Gerador de Cupons de Teste</h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-[#1A44C8]">
+                    Uso Único Descartável
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#64748B] mt-0.5">
+                  Crie cupons exclusivos para liberar 2 dias de degustação para amigos ou clientes. Cada cupom funciona 1 única vez e expira logo após ser resgatado.
+                </p>
+              </div>
+            </div>
+
+            <Alerts error={errorMsg} success={successMsg} />
+
+            {/* Formulário de Criação de Cupom */}
+            <form onSubmit={handleCreateCoupon} className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl space-y-4">
+              <div className="text-xs font-extrabold text-[#181B22] flex items-center gap-1.5">
+                <Plus size={14} className="text-[#1A44C8]" />
+                <span>Gerar Novo Cupom</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                {/* Código */}
+                <div className="sm:col-span-6 space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
+                    Código do Cupom
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Ex: TESTE-78X9"
+                      value={newCouponCode}
+                      onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+                      className="flex-1 uppercase font-mono text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8]"
+                    />
+                    <button
+                      type="button"
+                      onClick={generateRandomCouponCode}
+                      className="px-3 py-2 bg-white hover:bg-slate-50 border border-[#E5E7EB] text-[#181B22] rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center gap-1"
+                      title="Gerar código aleatório"
+                    >
+                      <Sparkles size={12} className="text-[#1A44C8]" />
+                      <span>Aleatório</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Duração */}
+                <div className="sm:col-span-3 space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
+                    Duração do Teste
+                  </label>
+                  <select
+                    value={newCouponDays}
+                    onChange={(e) => setNewCouponDays(Number(e.target.value))}
+                    className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
+                  >
+                    <option value={1}>1 Dia de Degustação</option>
+                    <option value={2}>2 Dias (Recomendado)</option>
+                    <option value={3}>3 Dias</option>
+                    <option value={7}>7 Dias</option>
+                  </select>
+                </div>
+
+                {/* Limite de Usos */}
+                <div className="sm:col-span-3 space-y-1">
+                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
+                    Limite de Uso
+                  </label>
+                  <select
+                    value={newCouponMaxUses}
+                    onChange={(e) => setNewCouponMaxUses(Number(e.target.value))}
+                    className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
+                  >
+                    <option value={1}>1 Uso (Uso Único)</option>
+                    <option value={2}>2 Usos</option>
+                    <option value={5}>5 Usos</option>
+                    <option value={10}>10 Usos</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+                >
+                  <Plus size={13} />
+                  <span>{isSubmitting ? 'Gerando...' : 'Criar Cupom de Teste'}</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Lista de Cupons Existentes */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-[#181B22] uppercase tracking-wider">
+                  Cupons Criados ({coupons.length})
+                </h3>
+                <button
+                  type="button"
+                  onClick={fetchCoupons}
+                  className="text-[11px] text-[#1A44C8] hover:underline font-bold flex items-center gap-1"
+                >
+                  <RefreshCw size={11} className={loadingCoupons ? 'animate-spin' : ''} />
+                  <span>Atualizar lista</span>
+                </button>
+              </div>
+
+              {loadingCoupons && coupons.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400">
+                  Carregando cupons...
+                </div>
+              ) : coupons.length === 0 ? (
+                <div className="p-8 border border-dashed border-[#E5E7EB] rounded-2xl text-center space-y-1.5">
+                  <Ticket size={24} className="mx-auto text-slate-400" />
+                  <p className="text-xs text-[#64748B] font-bold">Nenhum cupom gerado ainda</p>
+                  <p className="text-[10px] text-slate-400">Use o formulário acima para gerar seu primeiro cupom descartável de teste.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {coupons.map((coupon) => {
+                    const isExhausted = coupon.used_count >= coupon.max_uses;
+                    const isCodeCopied = copiedCouponId === `code-${coupon.id}`;
+                    const isLinkCopied = copiedCouponId === `link-${coupon.id}`;
+
+                    return (
+                      <div
+                        key={coupon.id}
+                        className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                          isExhausted 
+                            ? 'bg-slate-50 border-slate-200 opacity-75' 
+                            : 'bg-white border-[#E2E8F0] shadow-sm hover:shadow-md'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-sm font-black text-[#181B22] tracking-wider bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                                {coupon.code}
+                              </span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#1A44C8] border border-blue-100">
+                                {coupon.value} {coupon.value === 1 ? 'dia' : 'dias'} grátis
+                              </span>
+                            </div>
+                            <div className="mt-1 flex items-center gap-1.5 text-[10px]">
+                              {isExhausted ? (
+                                <span className="text-rose-600 font-bold flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                  Esgotado ({coupon.used_count}/{coupon.max_uses} usos)
+                                </span>
+                              ) : (
+                                <span className="text-[#059669] font-bold flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  Disponível ({coupon.used_count}/{coupon.max_uses} usos)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCoupon(coupon.id)}
+                            className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
+                            title="Excluir cupom"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+
+                        {/* Detalhes de quem usou */}
+                        {coupon.used_by && coupon.used_by.length > 0 && (
+                          <div className="p-2 bg-slate-100/70 rounded-xl text-[10px] text-[#475569] space-y-0.5 border border-slate-200">
+                            <span className="font-bold block text-[#181B22]">Utilizado por:</span>
+                            {coupon.used_by.map((u: any, i: number) => (
+                              <div key={i} className="truncate">
+                                • {u.email || u.user_id} ({new Date(u.used_at).toLocaleDateString('pt-BR')})
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Botões de Ação Rápida: Copiar Código e Copiar Link */}
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleCopyCouponCode(coupon.code, coupon.id)}
+                            className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#181B22] rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 active:scale-95"
+                          >
+                            {isCodeCopied ? (
+                              <>
+                                <Check size={12} className="text-[#059669]" />
+                                <span className="text-[#059669]">Copiado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={12} />
+                                <span>Copiar Código</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCopyCouponLink(coupon.code, coupon.id)}
+                            className="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#1A44C8] rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 active:scale-95"
+                          >
+                            {isLinkCopied ? (
+                              <>
+                                <Check size={12} className="text-[#059669]" />
+                                <span className="text-[#059669]">Link Copiado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Share2 size={12} />
+                                <span>Copiar Link</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
 
@@ -917,10 +1245,16 @@ export default function SettingsPage() {
   );
 }
 
-function TabButton({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
+function TabButton({ active, onClick, icon, label, badge }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, badge?: string }) {
   return (
     <button onClick={onClick} className={`flex items-center gap-2 px-5 py-3 text-[11px] font-bold border-b-2 transition-colors whitespace-nowrap uppercase tracking-wider ${active ? 'border-[#1A44C8] text-[#1A44C8] bg-[#1A44C8]/5' : 'border-transparent text-[#64748B] hover:text-[#181B22] hover:bg-[#F1F3F7]'}`}>
-      {icon} {label}
+      {icon} 
+      <span>{label}</span>
+      {badge && (
+        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-blue-100 text-[#1A44C8] lowercase">
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
