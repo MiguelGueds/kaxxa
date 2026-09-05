@@ -183,7 +183,12 @@ function SettingsContent() {
     ]);
       
     if (catRes.data) setCategories(catRes.data);
-    if (accRes.data) setAccounts(accRes.data);
+    if (accRes.data) setAccounts(accRes.data.map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      type: a.type,
+      balance: Number(a.balance ?? a.initial_balance ?? 0)
+    })));
     if (cardRes.data) setCards(cardRes.data.map(c => ({
       id: c.id,
       name: c.name,
@@ -328,7 +333,12 @@ function SettingsContent() {
   const handleSaveAccount = async (e: React.FormEvent) => {
     e.preventDefault(); setIsSubmitting(true); resetMessages();
     const { data: { session } } = await supabase.auth.getSession();
-    const { error } = await supabase.from('accounts').insert({ user_id: session?.user.id, name: accountName, type: accountType, balance: parseFloat(accountBalance || '0') });
+    const { error } = await supabase.from('accounts').insert({ 
+      user_id: session?.user.id, 
+      name: accountName, 
+      type: accountType, 
+      initial_balance: parseFloat(accountBalance || '0') 
+    });
     if (error) setErrorMsg(error.message); else { setSuccessMsg('Conta salva!'); fetchData(); setTimeout(() => setIsAccountModalOpen(false), 800); }
     setIsSubmitting(false);
   };
@@ -382,105 +392,136 @@ function SettingsContent() {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto animate-fade-in-up w-full space-y-6">
-      <header className="mb-1">
-        <h1 className="text-xl font-extrabold text-[#181B22]">Configurações</h1>
-        <p className="text-xs text-[#64748B]">Gerencie seus dados pessoais, assinatura e a estrutura financeira do sistema.</p>
+      {/* 1. CABEÇALHO CONTEXTUAL COM IDENTIFICAÇÃO CLARA DA SEÇÃO */}
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-[#E5E7EB]/80">
+        <div>
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] mb-1">
+            <span>Configurações</span>
+            <span>/</span>
+            <span className="text-[#1A44C8]">{section === 'CONTA' ? 'Perfil e Conta' : 'Dados do Sistema'}</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-black text-[#181B22] tracking-tight">
+            {section === 'CONTA' ? 'Perfil e Conta' : 'Dados do Sistema'}
+          </h1>
+          <p className="text-xs text-[#64748B] mt-0.5">
+            {section === 'CONTA' 
+              ? 'Gerencie seus dados de acesso, foto, informações pessoais e detalhes da sua assinatura.' 
+              : 'Estruture suas contas bancárias, cartões de crédito, categorias financeiras e pessoas cadastradas.'}
+          </p>
+        </div>
+
+        {/* Alternador Rápido de Contexto */}
+        <div className="flex items-center gap-1.5 p-1 bg-[#F1F5F9] rounded-2xl border border-[#E2E8F0] self-start sm:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => handleSelectSection('CONTA')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              section === 'CONTA'
+                ? 'bg-white text-[#1A44C8] shadow-sm'
+                : 'text-[#64748B] hover:text-[#181B22]'
+            }`}
+          >
+            <User size={13} />
+            <span>Perfil e Conta</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSelectSection('SISTEMA')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              section === 'SISTEMA'
+                ? 'bg-white text-[#1A44C8] shadow-sm'
+                : 'text-[#64748B] hover:text-[#181B22]'
+            }`}
+          >
+            <Wallet size={13} />
+            <span>Dados do Sistema</span>
+          </button>
+        </div>
       </header>
 
-      {/* 1. SELETOR PRINCIPAL: PERFIL E CONTA VS DADOS DO SISTEMA */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1.5 bg-[#F1F5F9] rounded-2xl">
-        <button
-          type="button"
-          onClick={() => handleSelectSection('CONTA')}
-          className={`p-3 rounded-xl transition-all text-left flex items-center gap-3 ${
-            section === 'CONTA'
-              ? 'bg-white shadow-sm border border-[#E5E7EB]'
-              : 'hover:bg-white/60 text-[#64748B]'
-          }`}
-        >
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-            section === 'CONTA' ? 'bg-blue-50 text-[#1A44C8]' : 'bg-slate-200/70 text-slate-500'
-          }`}>
-            <User size={18} />
-          </div>
-          <div>
-            <span className={`text-xs font-bold block ${section === 'CONTA' ? 'text-[#181B22]' : 'text-[#64748B]'}`}>
-              Perfil e Conta
-            </span>
-            <span className="text-[10px] text-[#94A3B8] font-medium">
-              Foto, dados pessoais, plano e pagamentos
-            </span>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleSelectSection('SISTEMA')}
-          className={`p-3 rounded-xl transition-all text-left flex items-center gap-3 ${
-            section === 'SISTEMA'
-              ? 'bg-white shadow-sm border border-[#E5E7EB]'
-              : 'hover:bg-white/60 text-[#64748B]'
-          }`}
-        >
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-            section === 'SISTEMA' ? 'bg-blue-50 text-[#1A44C8]' : 'bg-slate-200/70 text-slate-500'
-          }`}>
-            <Wallet size={18} />
-          </div>
-          <div>
-            <span className={`text-xs font-bold block ${section === 'SISTEMA' ? 'text-[#181B22]' : 'text-[#64748B]'}`}>
-              Dados do Sistema
-            </span>
-            <span className="text-[10px] text-[#94A3B8] font-medium">
-              Contas bancárias, cartões, categorias e pessoas
-            </span>
-          </div>
-        </button>
-      </div>
-
-      {/* 2. SUB-ABAS DA SEÇÃO ATIVA */}
-      <div className="flex border-b border-[#E5E7EB] overflow-x-auto custom-scrollbar">
+      {/* 2. SUB-ABAS EM FORMATO PILL MODERNO */}
+      <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
         {section === 'CONTA' ? (
           <>
-            <TabButton 
-              active={activeTab === 'PERFIL'} 
+            <button 
+              type="button"
               onClick={() => handleSelectTab('PERFIL')} 
-              icon={<User size={14} />} 
-              label="Meu Perfil" 
-            />
-            <TabButton 
-              active={activeTab === 'ASSINATURA'} 
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+                activeTab === 'PERFIL'
+                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+              }`}
+            >
+              <User size={14} />
+              <span>Meu Perfil</span>
+            </button>
+
+            <button 
+              type="button"
               onClick={() => handleSelectTab('ASSINATURA')} 
-              icon={<ShieldCheck size={14} />} 
-              label="Minha Assinatura" 
-            />
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+                activeTab === 'ASSINATURA'
+                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+              }`}
+            >
+              <ShieldCheck size={14} />
+              <span>Minha Assinatura</span>
+            </button>
           </>
         ) : (
           <>
-            <TabButton 
-              active={activeTab === 'CONTAS'} 
+            <button 
+              type="button"
               onClick={() => handleSelectTab('CONTAS')} 
-              icon={<Landmark size={14} />} 
-              label="Contas Bancárias" 
-            />
-            <TabButton 
-              active={activeTab === 'CARTOES'} 
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+                activeTab === 'CONTAS'
+                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+              }`}
+            >
+              <Landmark size={14} />
+              <span>Contas Bancárias</span>
+            </button>
+
+            <button 
+              type="button"
               onClick={() => handleSelectTab('CARTOES')} 
-              icon={<CreditCard size={14} />} 
-              label="Cartões de Crédito" 
-            />
-            <TabButton 
-              active={activeTab === 'CATEGORIAS'} 
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+                activeTab === 'CARTOES'
+                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+              }`}
+            >
+              <CreditCard size={14} />
+              <span>Cartões de Crédito</span>
+            </button>
+
+            <button 
+              type="button"
               onClick={() => handleSelectTab('CATEGORIAS')} 
-              icon={<ListTree size={14} />} 
-              label="Categorias" 
-            />
-            <TabButton 
-              active={activeTab === 'TERCEIROS'} 
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+                activeTab === 'CATEGORIAS'
+                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+              }`}
+            >
+              <ListTree size={14} />
+              <span>Categorias</span>
+            </button>
+
+            <button 
+              type="button"
               onClick={() => handleSelectTab('TERCEIROS')} 
-              icon={<UserCircle2 size={14} />} 
-              label="Pessoas e Terceiros" 
-            />
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+                activeTab === 'TERCEIROS'
+                  ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
+                  : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+              }`}
+            >
+              <UserCircle2 size={14} />
+              <span>Pessoas e Terceiros</span>
+            </button>
           </>
         )}
       </div>

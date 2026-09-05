@@ -44,9 +44,7 @@ export const accountsService = {
         user_id: user.id,
         name: acc.name,
         type: acc.type,
-        balance: acc.balance,
         initial_balance: acc.balance,
-        color: acc.color || '#1A44C8',
       })
       .select()
       .single();
@@ -56,7 +54,11 @@ export const accountsService = {
       throw error;
     }
 
-    return data as DbAccount;
+    return {
+      ...data,
+      balance: Number(data.balance ?? data.initial_balance ?? 0),
+      initial_balance: Number(data.initial_balance ?? 0),
+    } as DbAccount;
   },
 
   async updateBalance(id: string, deltaAmount: number): Promise<boolean> {
@@ -65,18 +67,19 @@ export const accountsService = {
 
     const { data: acc } = await supabase
       .from('accounts')
-      .select('balance')
+      .select('*')
       .eq('id', id)
       .eq('user_id', user.id)
       .single();
 
     if (!acc) return false;
 
-    const newBalance = Number(acc.balance || 0) + deltaAmount;
+    const currentBal = Number(acc.balance ?? acc.initial_balance ?? 0);
+    const newBalance = currentBal + deltaAmount;
 
     const { error } = await supabase
       .from('accounts')
-      .update({ balance: newBalance })
+      .update({ initial_balance: newBalance })
       .eq('id', id)
       .eq('user_id', user.id);
 
