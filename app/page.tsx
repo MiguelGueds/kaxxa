@@ -25,7 +25,6 @@ import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
   const [activeTab, setActiveTab] = useState<'patrimonio' | 'terceiros' | 'dividas' | 'all'>('patrimonio');
   const [isPaused, setIsPaused] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
@@ -1057,29 +1056,10 @@ export default function LandingPage() {
             Sem pegadinhas, sem anúncios e com total controle dos seus dados.
           </p>
 
-          {/* Seletor Mensal vs Anual */}
-          <div className="mt-8 inline-flex items-center p-1 rounded-full bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm">
-            <button 
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                billingCycle === 'monthly' 
-                  ? 'bg-[#1A44C8] text-white shadow-sm' 
-                  : 'text-[#64748B] hover:text-[#181B22]'
-              }`}
-            >
-              Mensal
-            </button>
-            <button 
-              onClick={() => setBillingCycle('yearly')}
-              className={`px-5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all ${
-                billingCycle === 'yearly' 
-                  ? 'bg-[#1A44C8] text-white shadow-sm' 
-                  : 'text-[#64748B] hover:text-[#181B22]'
-              }`}
-            >
-              <span>Anual</span>
-              <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded-full text-white font-bold">20% OFF</span>
-            </button>
+          {/* Badge Plano Único */}
+          <div className="mt-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#1A44C8]/10 border border-[#1A44C8]/20 text-[#1A44C8] text-xs font-bold shadow-sm">
+            <Sparkles size={14} />
+            <span>Plano Único Mensal • Sem Fidelidade</span>
           </div>
         </div>
 
@@ -1089,7 +1069,7 @@ export default function LandingPage() {
             
             <div className="flex-1 space-y-6">
               <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#1A44C8]">Plano Pro</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-[#1A44C8]">Acesso Completo</span>
                 <h3 className="text-2xl font-extrabold text-[#181B22] mt-1">Assinatura Kaxxa</h3>
                 <p className="text-xs text-[#64748B] font-medium mt-1">Controle total e previsibilidade para sua rotina financeira.</p>
               </div>
@@ -1116,30 +1096,34 @@ export default function LandingPage() {
             </div>
 
             {/* Caixa de Preço */}
-            <div className="w-full md:w-64 p-6 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] flex flex-col items-center justify-center text-center shrink-0">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-[#94A3B8]">Valor do Plano</span>
+            <div className="w-full md:w-72 p-6 sm:p-8 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] flex flex-col items-center justify-center text-center shrink-0">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-[#1A44C8] bg-[#1A44C8]/10 px-2.5 py-0.5 rounded-full">
+                Assinatura Mensal
+              </span>
               
               <div className="flex items-start justify-center gap-1 my-3">
                 <span className="text-[#64748B] text-sm mt-1 font-bold">R$</span>
                 <span className="text-5xl font-extrabold text-[#181B22] tracking-tight tabular-nums">
-                  {billingCycle === 'yearly' ? '31,90' : '39,90'}
+                  39,90
                 </span>
                 <span className="text-[#64748B] text-xs self-end mb-1.5 font-bold">/mês</span>
               </div>
 
-              <p className="text-[10px] text-[#94A3B8] font-medium mb-5">
-                {billingCycle === 'yearly' ? 'Faturado anualmente (R$ 382,80/ano)' : 'Cobrança mensal sem fidelidade'}
+              <p className="text-[11px] text-[#64748B] font-medium mb-5">
+                Sem fidelidade. Cancele quando quiser em 1 clique.
               </p>
 
               <Link 
-                href="/dashboard" 
-                className="w-full py-3 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-md text-center"
+                href="/planos" 
+                className="w-full py-3.5 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-md text-center flex items-center justify-center gap-1.5"
               >
-                Começar Agora
+                <span>Assinar Agora</span>
+                <ArrowRight size={14} />
               </Link>
 
-              <span className="text-[9.5px] text-[#94A3B8] mt-3 font-medium">
-                Garantia incondicional de 14 dias
+              <span className="text-[10px] text-[#059669] font-bold mt-3 flex items-center gap-1">
+                <CheckCircle2 size={12} />
+                Garantia incondicional de 7 dias
               </span>
             </div>
 
