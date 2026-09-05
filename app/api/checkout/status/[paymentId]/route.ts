@@ -27,7 +27,7 @@ export async function GET(
         const status = mpData.status; // 'approved', 'pending', 'rejected', etc.
 
         if (status === 'approved' && userId) {
-          const durationDays = planType === 'ANUAL' ? 365 : 30;
+          const durationDays = 30; // Plano mensal
           const periodEnd = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
 
           await supabase.from('subscriptions').upsert({
