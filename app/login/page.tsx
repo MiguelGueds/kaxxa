@@ -58,22 +58,53 @@ export default function LoginPage() {
             logo_alignment: 'left',
           });
           setGsiReady(true);
+          return true;
         }
       } catch (e) {
         console.error('Error initializing GSI:', e);
       }
     }
+    return false;
   }, [clientId, handleCredentialResponse]);
 
+  // Polling resiliente para renderizar o botão oficial do Google sem depender do tempo de script
   useEffect(() => {
-    initGsi();
+    let interval: NodeJS.Timeout;
+    let attempts = 0;
+
+    const tryInit = () => {
+      attempts++;
+      const success = initGsi();
+      if (success || attempts > 30) {
+        clearInterval(interval);
+      }
+    };
+
+    tryInit();
+    interval = setInterval(tryInit, 200);
+
+    return () => clearInterval(interval);
   }, [initGsi]);
 
-  // Fallback tradicional OAuth caso o script do Google demore ou seja bloqueado
-  const handleGoogleOAuthFallback = async () => {
+  const handleGoogleClick = async () => {
     try {
       setLoading(true);
       setErrorMsg('');
+
+      // Tenta abrir o prompt nativo do Google sem navegar para fora do site
+      if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+        (window as any).google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        (window as any).google.accounts.id.prompt();
+        setLoading(false);
+        return;
+      }
+
+      // Fallback tradicional OAuth caso o script do Google seja bloqueado por adblock
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -174,7 +205,7 @@ export default function LoginPage() {
               {!gsiReady && (
                 <button
                   type="button"
-                  onClick={handleGoogleOAuthFallback}
+                  onClick={handleGoogleClick}
                   disabled={loading}
                   className="w-full py-3 px-5 bg-white hover:bg-gray-50 border border-[#E5E7EB] hover:border-[#1A44C8] text-[#181B22] rounded-full font-bold text-xs transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-3 active:scale-98 disabled:opacity-50"
                 >
