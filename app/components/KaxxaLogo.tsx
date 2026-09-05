@@ -28,13 +28,33 @@ export function KaxxaLogo({ size = 28, className = "" }: { size?: number, classN
 
 export function KaxxaWordmark({ className = "", textColor = "text-[#181B22]" }: { className?: string, textColor?: string }) {
   return (
-    <span className={`font-outfit font-black tracking-[-0.01em] uppercase inline-flex items-center select-none ${className}`}>
-      <span className={textColor}>K</span>
-      <span className="text-[#1A44C8]">A</span>
-      <span className={textColor}>X</span>
-      <span className="text-[#1A44C8]">X</span>
-      <span className={textColor}>A</span>
-    </span>
+    <svg 
+      viewBox="0 0 108 24" 
+      fill="none" 
+      strokeWidth="3.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={`h-[0.85em] w-auto shrink-0 overflow-visible select-none inline-block align-middle ${textColor} ${className}`}
+    >
+      {/* K */}
+      <path d="M 4 3.5 V 20.5" stroke="currentColor" />
+      <path d="M 18.5 3.5 L 4.5 12.5" stroke="currentColor" />
+      <path d="M 9.5 10 L 19 20.5" stroke="currentColor" />
+
+      {/* 1º A (V Invertido sem traço no meio - AZUL DA MARCA) */}
+      <path d="M 24 20.5 L 32 3.5 L 40 20.5" stroke="#1A44C8" />
+
+      {/* 1º X (COR BASE) */}
+      <path d="M 47 3.5 L 60 20.5" stroke="currentColor" />
+      <path d="M 60 3.5 L 47 20.5" stroke="currentColor" />
+
+      {/* 2º X (AZUL DA MARCA) */}
+      <path d="M 67 3.5 L 80 20.5" stroke="#1A44C8" />
+      <path d="M 80 3.5 L 67 20.5" stroke="#1A44C8" />
+
+      {/* 2º A (V Invertido sem traço no meio - COR BASE) */}
+      <path d="M 87 20.5 L 95 3.5 L 103 20.5" stroke="currentColor" />
+    </svg>
   );
 }
 

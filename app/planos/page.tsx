@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { 
   Check, 
@@ -18,7 +19,8 @@ import {
   AlertCircle,
   TrendingUp,
   Layers,
-  ChevronRight
+  ChevronRight,
+  UserCheck
 } from 'lucide-react';
 import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
 import { getAuthenticatedUser, supabase } from '@/lib/supabase';
@@ -27,10 +29,12 @@ import { subscriptionService } from '@/lib/services/subscription';
 export default function PlanosCheckoutPage() {
   const router = useRouter();
 
-  // User state
+  // User & Auth state
   const [user, setUser] = useState<any>(null);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [authLoading, setAuthLoading] = useState(true);
+  const [gsiReady, setGsiReady] = useState(false);
 
   // Payment Method
   const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CARD_RECURRING' | 'CARD_SINGLE'>('PIX');
@@ -52,19 +56,110 @@ export default function PlanosCheckoutPage() {
   // Polling interval
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    async function initUser() {
-      const authUser = await getAuthenticatedUser();
-      if (authUser) {
-        setUser(authUser);
-        setUserEmail(authUser.email || '');
-        setUserName(authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || '');
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '61580172309-baud3b6dnu4n0ustld3v291btg7b0c2a.apps.googleusercontent.com';
 
-        // Se já tem assinatura ativa, redireciona para o dashboard
+  const handleCredentialResponse = useCallback(async (response: any) => {
+    try {
+      setLoading(true);
+      setErrorMsg('');
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        setUser(data.user);
+        setUserEmail(data.user.email || '');
+        setUserName(data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || '');
+
         const access = await subscriptionService.isAccessGranted();
         if (access.granted) {
           router.push('/dashboard');
         }
+      }
+    } catch (err: any) {
+      console.error('Google ID Token error:', err);
+      setErrorMsg(err.message || 'Erro ao autenticar com o Google.');
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  const initGsi = useCallback(() => {
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id && !user) {
+      try {
+        (window as any).google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        const btnContainer = document.getElementById('google-btn-planos');
+        if (btnContainer) {
+          btnContainer.innerHTML = '';
+          (window as any).google.accounts.id.renderButton(btnContainer, {
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'pill',
+            width: 300,
+            logo_alignment: 'left',
+          });
+          setGsiReady(true);
+        }
+      } catch (e) {
+        console.error('Error initializing GSI on planos:', e);
+      }
+    }
+  }, [clientId, handleCredentialResponse, user]);
+
+  useEffect(() => {
+    if (!user) {
+      initGsi();
+    }
+  }, [initGsi, user]);
+
+  const handleGoogleOAuthFallback = async () => {
+    try {
+      setLoading(true);
+      setErrorMsg('');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/planos`
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Google Auth error:', err);
+      setErrorMsg(err.message || 'Erro ao conectar com o Google.');
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    async function initUser() {
+      try {
+        const authUser = await getAuthenticatedUser();
+        if (authUser) {
+          setUser(authUser);
+          setUserEmail(authUser.email || '');
+          setUserName(authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || '');
+
+          const access = await subscriptionService.isAccessGranted();
+          if (access.granted) {
+            router.push('/dashboard');
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao inicializar usuário:', err);
+      } finally {
+        setAuthLoading(false);
       }
     }
     initUser();
@@ -214,6 +309,13 @@ export default function PlanosCheckoutPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8]">
       
+      {/* Script Oficial do Google Identity Services */}
+      <Script 
+        src="https://accounts.google.com/gsi/client" 
+        strategy="afterInteractive" 
+        onLoad={initGsi} 
+      />
+
       {/* Background Ambience */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#1A44C8]/[0.04] blur-[120px]" />
@@ -318,7 +420,69 @@ export default function PlanosCheckoutPage() {
           {/* Coluna Direita: Pagamento / QR Code */}
           <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-center">
 
-            {pixData ? (
+            {authLoading ? (
+              /* Carregando Autenticação */
+              <div className="flex flex-col items-center justify-center py-16 space-y-3">
+                <div className="w-8 h-8 border-2 border-[#1A44C8]/30 border-t-[#1A44C8] rounded-full animate-spin" />
+                <span className="text-xs text-[#64748B] font-medium">Verificando autenticação...</span>
+              </div>
+            ) : !user ? (
+              /* ETAPA 1: Conectar com o Google Antes de Escolher Pagamento */
+              <div className="space-y-6 text-center py-4">
+                <div className="w-14 h-14 rounded-2xl bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center mx-auto border border-[#1A44C8]/20">
+                  <Lock size={24} />
+                </div>
+
+                <div>
+                  <span className="inline-block px-3 py-0.5 rounded-full bg-blue-50 text-[#1A44C8] text-[10px] font-extrabold uppercase tracking-wider mb-2">
+                    Etapa 1 de 2 • Identificação
+                  </span>
+                  <h2 className="text-xl font-black text-[#181B22] tracking-tight">Crie ou acesse sua conta</h2>
+                  <p className="text-xs text-[#64748B] mt-1.5 max-w-sm mx-auto leading-relaxed">
+                    Para sua segurança e liberação automática do plano, conecte-se com o Google em 1 clique antes de escolher o pagamento.
+                  </p>
+                </div>
+
+                {/* Container do Botão Oficial do Google */}
+                <div className="flex flex-col items-center justify-center min-h-[44px] pt-1">
+                  <div id="google-btn-planos" className="flex justify-center w-full min-h-[40px]" />
+                  
+                  {!gsiReady && (
+                    <button
+                      type="button"
+                      onClick={handleGoogleOAuthFallback}
+                      disabled={loading}
+                      className="w-full max-w-xs py-3 px-5 bg-white hover:bg-gray-50 border border-[#E5E7EB] hover:border-[#1A44C8] text-[#181B22] rounded-full font-bold text-xs transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-3 active:scale-98 disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <div className="w-4 h-4 border-2 border-[#1A44C8]/30 border-t-[#1A44C8] rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                          </svg>
+                          <span>Continuar com o Google</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {errorMsg && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold text-center">
+                    {errorMsg}
+                  </div>
+                )}
+
+                <div className="pt-2 text-[11px] text-[#94A3B8] flex items-center justify-center gap-1.5">
+                  <ShieldCheck size={14} className="text-[#059669]" />
+                  <span>Login seguro sem senhas • Seus dados ficam protegidos</span>
+                </div>
+              </div>
+            ) : pixData ? (
               /* Visualização do QR Code PIX (Simples e Direta) */
               <div className="text-center space-y-5">
                 <div>
@@ -400,11 +564,22 @@ export default function PlanosCheckoutPage() {
                 </div>
               </div>
             ) : (
-              /* Formulário Inicial Limpo */
+              /* Formulário Inicial Limpo - Apenas para Usuários Autenticados */
               <div className="space-y-5">
-                <div>
-                  <h2 className="text-lg font-bold text-[#181B22]">Finalizar Pagamento</h2>
-                  <p className="text-xs text-[#64748B] mt-0.5">Escolha como prefere assinar o Kaxxa Finanças (R$ 39,90/mês).</p>
+                <div className="flex items-center justify-between border-b border-[#F1F3F7] pb-3">
+                  <div>
+                    <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-[#059669] text-[9px] font-bold uppercase tracking-wider mb-0.5">
+                      Etapa 2 de 2 • Pagamento
+                    </span>
+                    <h2 className="text-lg font-bold text-[#181B22]">Finalizar Pagamento</h2>
+                  </div>
+
+                  <div className="text-right flex items-center gap-1.5 bg-gray-50 border border-gray-200/80 rounded-xl px-2.5 py-1">
+                    <UserCheck size={13} className="text-[#059669] shrink-0" />
+                    <span className="text-[11px] font-medium text-[#181B22] truncate max-w-[140px]" title={userEmail}>
+                      {userEmail}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Seletor de Forma de Pagamento */}
@@ -487,13 +662,17 @@ export default function PlanosCheckoutPage() {
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-[#64748B] block mb-1">Seu E-mail</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-[#64748B]">Seu E-mail (Conta Conectada)</label>
+                      <span className="text-[10px] text-[#059669] font-bold flex items-center gap-1">
+                        <Check size={12} /> Verificado
+                      </span>
+                    </div>
                     <input
                       type="email"
+                      readOnly
                       value={userEmail}
-                      onChange={e => setUserEmail(e.target.value)}
-                      placeholder="seu-email@exemplo.com"
-                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3.5 py-2.5 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3.5 py-2.5 text-xs text-[#64748B] font-medium cursor-not-allowed select-none"
                     />
                   </div>
                 </div>

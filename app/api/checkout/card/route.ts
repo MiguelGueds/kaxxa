@@ -6,6 +6,10 @@ export async function POST(req: Request) {
   try {
     const { email, name, userId, recurring = true } = await req.json();
 
+    if (!userId) {
+      return NextResponse.json({ error: 'Você precisa estar logado para realizar o pagamento no cartão.' }, { status: 401 });
+    }
+
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
     if (!accessToken) {
       return NextResponse.json({ error: 'Mercado Pago não configurado no servidor' }, { status: 500 });

@@ -6,6 +6,10 @@ export async function POST(req: Request) {
   try {
     const { planType, email, name, userId } = await req.json();
 
+    if (!userId) {
+      return NextResponse.json({ error: 'Você precisa estar logado para gerar o pagamento via PIX.' }, { status: 401 });
+    }
+
     const amount = 39.90;
     const description = 'Kaxxa Finanças - Assinatura Mensal (Acesso Completo)';
 
