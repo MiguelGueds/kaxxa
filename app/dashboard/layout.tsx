@@ -23,18 +23,22 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Eye,
-  EyeOff
+  EyeOff,
+  ShieldCheck,
+  Ticket
 } from 'lucide-react';
 
 import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
 import { subscriptionService } from '@/lib/services/subscription';
 import { isAdminEmail } from '@/lib/admin';
+import { CommandPalette } from '@/app/components/CommandPalette';
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { isConcealed, togglePrivacy } = usePrivacy();
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar: string | null }>({
     name: 'Minha Conta',
@@ -97,6 +101,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  // Atalho global Cmd+K / Ctrl+K para Command Palette
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  const isAdmin = isAdminEmail(userInfo.email);
+
   const sidebarMenus = [
     {
       title: 'Principal',
@@ -105,21 +123,30 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       ]
     },
     {
-      title: 'Módulos Financeiros',
+      title: 'Finanças',
       items: [
         { href: '/dashboard/transacoes', icon: Wallet, label: 'Saldo e Extrato' },
         { href: '/dashboard/investimentos', icon: TrendingUp, label: 'Investimentos' },
-        { href: '/dashboard/cartoes', icon: CreditCard, label: 'Minhas Faturas', badge: 'Ativo' },
+        { href: '/dashboard/cartoes', icon: CreditCard, label: 'Minhas Faturas' },
         { href: '/dashboard/terceiros', icon: Users, label: 'Terceiros' },
-        { href: '/dashboard/dividas', icon: Landmark, label: 'Dívidas e Empréstimos', badge: '5' },
+        { href: '/dashboard/dividas', icon: Landmark, label: 'Dívidas e Empréstimos' },
       ]
     },
     {
-      title: 'Sistema & Conta',
+      title: 'Configurações',
       items: [
-        { href: '/dashboard/configuracoes', icon: Settings, label: 'Configurações' },
+        { href: '/dashboard/configuracoes', icon: Settings, label: 'Meu Perfil & Conta' },
       ]
-    }
+    },
+    ...(isAdmin ? [
+      {
+        title: 'Administração',
+        items: [
+          { href: '/dashboard/admin', icon: ShieldCheck, label: 'Gestão de Usuários', badge: 'Admin' },
+          { href: '/dashboard/admin?tab=cupons', icon: Ticket, label: 'Cupons & Testes' },
+        ]
+      }
+    ] : [])
   ];
 
   const getPageInfo = () => {
@@ -130,6 +157,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (pathname === '/dashboard/terceiros') return { title: 'Terceiros', icon: Users };
     if (pathname === '/dashboard/dividas') return { title: 'Dívidas e Empréstimos', icon: Landmark };
     if (pathname === '/dashboard/configuracoes') return { title: 'Configurações', icon: Settings };
+    if (pathname?.startsWith('/dashboard/admin')) return { title: 'Gestão da Plataforma', icon: ShieldCheck };
     return { title: 'Dashboard', icon: HomeIcon };
   };
 
@@ -318,12 +346,30 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Campo de Busca Rápida */}
-            <div className="hidden md:flex items-center gap-2 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-1.5 hover:border-[#CBD5E1] transition-colors cursor-text shadow-inner">
-              <Search size={13} className="text-[#94A3B8]" />
-              <input type="text" placeholder="Buscar no Kaxxa..." className="bg-transparent border-none outline-none text-xs text-[#181B22] placeholder:text-[#94A3B8] w-36 font-sans" disabled />
-              <span className="text-[9px] font-mono text-[#64748B] bg-[#FFFFFF] border border-[#E5E7EB] px-1.5 py-0.5 rounded shadow-sm">⌘K</span>
+            {/* Campo de Busca Rápida (Abre Command Palette ⌘K) */}
+            <div 
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="hidden md:flex items-center gap-2 bg-[#F8FAFC] border border-[#E5E7EB] hover:border-[#1A44C8]/40 rounded-xl px-3 py-1.5 transition-all cursor-pointer shadow-inner group"
+              title="Buscar páginas, módulos e ações (⌘K)"
+            >
+              <Search size={13} className="text-[#94A3B8] group-hover:text-[#1A44C8] transition-colors" />
+              <span className="text-xs text-[#94A3B8] group-hover:text-[#64748B] w-36 font-sans select-none truncate">
+                Buscar no Kaxxa...
+              </span>
+              <span className="text-[9px] font-mono text-[#64748B] bg-[#FFFFFF] border border-[#E5E7EB] px-1.5 py-0.5 rounded shadow-sm">
+                ⌘K
+              </span>
             </div>
+
+            {/* Botão de Busca Mobile */}
+            <button
+              type="button"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="md:hidden h-8 w-8 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F3F7] border border-[#E5E7EB] flex items-center justify-center text-[#64748B] hover:text-[#181B22]"
+              title="Buscar no Kaxxa (⌘K)"
+            >
+              <Search size={14} />
+            </button>
             
             {/* Botão de Modo Privacidade (Olho) */}
             <button 
@@ -340,15 +386,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </button>
 
             {/* Sino de Notificações */}
-            <button className="w-8 h-8 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] flex items-center justify-center text-[#64748B] hover:border-[#CBD5E1] hover:text-[#181B22] transition-all relative shadow-sm" title="Notificações">
-              <Bell size={14} />
-              <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-[#1A44C8] rounded-full shadow-[0_0_6px_rgba(26,68,200,0.8)]"></div>
+            <button className="h-8 w-8 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F3F7] border border-[#E5E7EB] flex items-center justify-center text-[#64748B] hover:text-[#181B22] transition-colors relative shadow-sm">
+              <Bell size={13} />
+              <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#1A44C8]" />
             </button>
 
-            {/* Perfil do Usuário */}
+            {/* Mini Avatar / Perfil no Topbar */}
             <Link 
               href="/dashboard/configuracoes"
-              className="flex items-center gap-2 bg-[#F8FAFC] hover:bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl p-1 pr-2.5 cursor-pointer transition-all shadow-sm"
+              className="flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-xl hover:bg-[#F1F3F7] transition-colors"
               title="Meu Perfil e Configurações"
             >
               <div className="w-6 h-6 rounded-lg overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
@@ -368,6 +414,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-y-auto custom-scrollbar relative px-3 md:px-5 pb-6 z-10">
           {children}
         </main>
+
+        {/* Modal de Busca Global (⌘K / Ctrl+K) */}
+        <CommandPalette 
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          userEmail={userInfo.email}
+        />
 
       </div>
     </div>

@@ -42,7 +42,7 @@ type ThirdParty = { id: string; name: string; type: string; };
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'PERFIL' | 'ASSINATURA' | 'CUPONS' | 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS'>('PERFIL');
+  const [activeTab, setActiveTab] = useState<'PERFIL' | 'ASSINATURA' | 'CONTAS' | 'CARTOES' | 'CATEGORIAS' | 'TERCEIROS'>('PERFIL');
   
   // Shared States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,95 +65,7 @@ export default function SettingsPage() {
   const [refundReason, setRefundReason] = useState('');
   const [refundPixKey, setRefundPixKey] = useState('');
 
-  // --- CUPONS STATE ---
-  const [coupons, setCoupons] = useState<any[]>([]);
-  const [loadingCoupons, setLoadingCoupons] = useState(false);
-  const [newCouponCode, setNewCouponCode] = useState('');
-  const [newCouponType, setNewCouponType] = useState<'TRIAL_DAYS' | 'PERCENT' | 'FIXED'>('TRIAL_DAYS');
-  const [newCouponValue, setNewCouponValue] = useState<number>(2);
-  const [newCouponDurationMonths, setNewCouponDurationMonths] = useState<number>(1);
-  const [newCouponMaxUses, setNewCouponMaxUses] = useState(1);
-  const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
-
   const isAdmin = isAdminEmail(userEmail);
-
-  const fetchCoupons = async (emailOverride?: string) => {
-    const targetEmail = typeof emailOverride === 'string' ? emailOverride : userEmail;
-    if (!isAdminEmail(targetEmail)) return;
-    setLoadingCoupons(true);
-    try {
-      const res = await fetch('/api/coupons');
-      const data = await res.json();
-      if (data.coupons) {
-        setCoupons(data.coupons);
-      }
-    } catch (err) {
-      console.error('Erro ao buscar cupons:', err);
-    } finally {
-      setLoadingCoupons(false);
-    }
-  };
-
-  const generateRandomCouponCode = () => {
-    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const prefix = newCouponType === 'TRIAL_DAYS' ? 'TESTE' : 'PROMO';
-    setNewCouponCode(`${prefix}-${randomSuffix}`);
-  };
-
-  const handleCreateCoupon = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    resetMessages();
-    try {
-      const res = await fetch('/api/coupons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: newCouponCode.trim() || undefined,
-          type: newCouponType,
-          value: newCouponValue,
-          discountDurationMonths: newCouponDurationMonths,
-          maxUses: newCouponMaxUses,
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao criar cupom.');
-      setSuccessMsg(`Cupom "${data.coupon.code}" criado com sucesso!`);
-      setNewCouponCode('');
-      fetchCoupons();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Erro ao criar cupom.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteCoupon = async (id: string) => {
-    if (!window.confirm('Tem certeza que deseja remover este cupom?')) return;
-    try {
-      const res = await fetch(`/api/coupons?id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setCoupons(prev => prev.filter(c => c.id !== id));
-        setSuccessMsg('Cupom removido com sucesso.');
-      }
-    } catch (err) {
-      console.error('Erro ao remover cupom:', err);
-    }
-  };
-
-  const handleCopyCouponCode = (code: string, id: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCouponId(`code-${id}`);
-    setTimeout(() => setCopiedCouponId(null), 2500);
-  };
-
-  const handleCopyCouponLink = (code: string, id: string) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://kaxxa.vercel.app';
-    const link = `${origin}/planos?cupom=${code}`;
-    navigator.clipboard.writeText(link);
-    setCopiedCouponId(`link-${id}`);
-    setTimeout(() => setCopiedCouponId(null), 2500);
-  };
 
   // Categorias
   const [categories, setCategories] = useState<Category[]>([]);
@@ -198,11 +110,6 @@ export default function SettingsPage() {
     setUserName(u.user_metadata?.full_name || u.email?.split('@')[0] || '');
     setUserPhone(u.user_metadata?.phone || '');
     setUserAvatar(u.user_metadata?.avatar_url || null);
-
-    // Carregar cupons apenas se for administrador
-    if (isAdminEmail(u.email)) {
-      fetchCoupons(u.email);
-    }
 
     // Assinatura
     try {
@@ -425,9 +332,6 @@ export default function SettingsPage() {
       <div className="flex border-b border-[#E5E7EB] overflow-x-auto custom-scrollbar">
         <TabButton active={activeTab === 'PERFIL'} onClick={() => setActiveTab('PERFIL')} icon={<User size={14} />} label="Meu Perfil" />
         <TabButton active={activeTab === 'ASSINATURA'} onClick={() => setActiveTab('ASSINATURA')} icon={<ShieldCheck size={14} />} label="Assinatura & Pagamentos" />
-        {isAdmin && (
-          <TabButton active={activeTab === 'CUPONS'} onClick={() => { setActiveTab('CUPONS'); fetchCoupons(); }} icon={<Ticket size={14} />} label="Cupons & Testes" badge="Admin" />
-        )}
         <TabButton active={activeTab === 'CONTAS'} onClick={() => setActiveTab('CONTAS')} icon={<Landmark size={14} />} label="Contas" />
         <TabButton active={activeTab === 'CARTOES'} onClick={() => setActiveTab('CARTOES')} icon={<CreditCard size={14} />} label="Cartões" />
         <TabButton active={activeTab === 'CATEGORIAS'} onClick={() => setActiveTab('CATEGORIAS')} icon={<ListTree size={14} />} label="Categorias" />
@@ -624,7 +528,7 @@ export default function SettingsPage() {
                       Como testar a experiência real de novos clientes?
                     </h4>
                     <p className="text-[11px] text-[#64748B] leading-relaxed">
-                      Esta conta oficial (<code className="text-[#1A44C8] font-bold">{userEmail}</code>) tem passe livre permanente para você desenvolver, auditar relatórios e gerar cupons na aba <strong>Cupons & Testes</strong>.
+                      Esta conta oficial (<code className="text-[#1A44C8] font-bold">{userEmail}</code>) tem passe livre permanente de desenvolvedor master com acesso completo ao painel de <strong>Administração</strong>.
                     </p>
                     <p className="text-[11px] text-[#64748B] leading-relaxed">
                       Para testar o fluxo exato de novos clientes (bloqueio do paywall ao acessar <code className="text-[#181B22] font-semibold">/dashboard</code>, tela de pagamento <code className="text-[#181B22] font-semibold">/planos</code>, resgate de cupons de degustação, Pix com QR Code e cancelamento), utilize uma <strong>segunda conta pessoal</strong> ou abra em aba anônima.
@@ -634,11 +538,11 @@ export default function SettingsPage() {
                   <div className="flex gap-2 pt-1">
                     <button
                       type="button"
-                      onClick={() => { setActiveTab('CUPONS'); fetchCoupons(); }}
+                      onClick={() => router.push('/dashboard/admin')}
                       className="flex-1 py-2.5 px-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
                     >
-                      <Ticket size={14} />
-                      <span>Abrir Gerador de Cupons & Degustação</span>
+                      <ShieldCheck size={14} />
+                      <span>Ir para o Painel de Administração</span>
                     </button>
                   </div>
                 </div>
@@ -745,314 +649,6 @@ export default function SettingsPage() {
 
               </div>
             )}
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* --- ABA CUPONS & TESTES (ADMIN) --- */}
-        {/* ======================================================== */}
-        {isAdmin && activeTab === 'CUPONS' && (
-          <div className="animate-fade-in-up space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E5E7EB]">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold text-[#181B22]">Gerador de Cupons de Teste</h2>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-[#1A44C8]">
-                    Uso Único Descartável
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#64748B] mt-0.5">
-                  Crie cupons exclusivos para liberar 2 dias de degustação para amigos ou clientes. Cada cupom funciona 1 única vez e expira logo após ser resgatado.
-                </p>
-              </div>
-            </div>
-
-            <Alerts error={errorMsg} success={successMsg} />
-
-            {/* Formulário de Criação de Cupom */}
-            <form onSubmit={handleCreateCoupon} className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl space-y-4">
-              <div className="text-xs font-extrabold text-[#181B22] flex items-center gap-1.5">
-                <Plus size={14} className="text-[#1A44C8]" />
-                <span>Gerar Novo Cupom</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                {/* Tipo de Cupom */}
-                <div className="sm:col-span-4 space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
-                    Tipo de Benefício
-                  </label>
-                  <select
-                    value={newCouponType}
-                    onChange={(e) => {
-                      const t = e.target.value as 'TRIAL_DAYS' | 'PERCENT' | 'FIXED';
-                      setNewCouponType(t);
-                      if (t === 'TRIAL_DAYS') setNewCouponValue(2);
-                      if (t === 'PERCENT') setNewCouponValue(20);
-                      if (t === 'FIXED') setNewCouponValue(10);
-                    }}
-                    className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
-                  >
-                    <option value="TRIAL_DAYS">Degustação (Dias Grátis)</option>
-                    <option value="PERCENT">Desconto em % (Porcentagem)</option>
-                    <option value="FIXED">Desconto em R$ (Valor Fixo)</option>
-                  </select>
-                </div>
-
-                {/* Valor / Duração */}
-                <div className="sm:col-span-4 space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
-                    {newCouponType === 'TRIAL_DAYS' ? 'Dias de Teste' : newCouponType === 'PERCENT' ? '% de Desconto' : 'Valor do Desconto (R$)'}
-                  </label>
-                  {newCouponType === 'TRIAL_DAYS' ? (
-                    <select
-                      value={newCouponValue}
-                      onChange={(e) => setNewCouponValue(Number(e.target.value))}
-                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
-                    >
-                      <option value={1}>1 Dia de Degustação</option>
-                      <option value={2}>2 Dias (Recomendado)</option>
-                      <option value={3}>3 Dias</option>
-                      <option value={7}>7 Dias</option>
-                      <option value={14}>14 Dias</option>
-                      <option value={30}>30 Dias</option>
-                    </select>
-                  ) : (
-                    <input
-                      type="number"
-                      step={newCouponType === 'FIXED' ? '0.01' : '1'}
-                      min="1"
-                      max={newCouponType === 'PERCENT' ? '100' : '39.90'}
-                      value={newCouponValue}
-                      onChange={(e) => setNewCouponValue(Number(e.target.value))}
-                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
-                    />
-                  )}
-                </div>
-
-                {/* Duração do Desconto (se não for TRIAL_DAYS) */}
-                {newCouponType !== 'TRIAL_DAYS' ? (
-                  <div className="sm:col-span-4 space-y-1">
-                    <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
-                      Validade do Desconto
-                    </label>
-                    <select
-                      value={newCouponDurationMonths}
-                      onChange={(e) => setNewCouponDurationMonths(Number(e.target.value))}
-                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
-                    >
-                      <option value={1}>Apenas no 1º mês</option>
-                      <option value={2}>Nos 2 primeiros meses</option>
-                      <option value={3}>Nos 3 primeiros meses</option>
-                      <option value={0}>Em todos os meses (Vitalício)</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div className="sm:col-span-4 space-y-1">
-                    <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
-                      Limite de Uso
-                    </label>
-                    <select
-                      value={newCouponMaxUses}
-                      onChange={(e) => setNewCouponMaxUses(Number(e.target.value))}
-                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
-                    >
-                      <option value={1}>1 Uso (Uso Único Descartável)</option>
-                      <option value={2}>2 Usos</option>
-                      <option value={5}>5 Usos</option>
-                      <option value={10}>10 Usos</option>
-                    </select>
-                  </div>
-                )}
-
-                {/* Código */}
-                <div className="sm:col-span-8 space-y-1">
-                  <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
-                    Código do Cupom
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Digite aqui..."
-                      value={newCouponCode}
-                      onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
-                      className="flex-1 uppercase font-mono text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8]"
-                    />
-                    <button
-                      type="button"
-                      onClick={generateRandomCouponCode}
-                      className="px-3 py-2 bg-white hover:bg-slate-50 border border-[#E5E7EB] text-[#181B22] rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center gap-1"
-                      title="Gerar código aleatório"
-                    >
-                      <Sparkles size={12} className="text-[#1A44C8]" />
-                      <span>Aleatório</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Se não for TRIAL_DAYS, limite de usos fica aqui */}
-                {newCouponType !== 'TRIAL_DAYS' && (
-                  <div className="sm:col-span-4 space-y-1">
-                    <label className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
-                      Limite de Uso
-                    </label>
-                    <select
-                      value={newCouponMaxUses}
-                      onChange={(e) => setNewCouponMaxUses(Number(e.target.value))}
-                      className="w-full text-xs px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl focus:outline-none focus:border-[#1A44C8] font-semibold"
-                    >
-                      <option value={1}>1 Uso (Uso Único)</option>
-                      <option value={5}>5 Usos</option>
-                      <option value={10}>10 Usos</option>
-                      <option value={999999}>Ilimitado</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end pt-1">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-5 py-2.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
-                >
-                  <Plus size={13} />
-                  <span>{isSubmitting ? 'Gerando...' : 'Criar Cupom'}</span>
-                </button>
-              </div>
-            </form>
-
-            {/* Lista de Cupons Existentes */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-[#181B22] uppercase tracking-wider">
-                  Cupons Criados ({coupons.length})
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => fetchCoupons()}
-                  className="text-[11px] text-[#1A44C8] hover:underline font-bold flex items-center gap-1"
-                >
-                  <RefreshCw size={11} className={loadingCoupons ? 'animate-spin' : ''} />
-                  <span>Atualizar lista</span>
-                </button>
-              </div>
-
-              {loadingCoupons && coupons.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">
-                  Carregando cupons...
-                </div>
-              ) : coupons.length === 0 ? (
-                <div className="p-8 border border-dashed border-[#E5E7EB] rounded-2xl text-center space-y-1.5">
-                  <Ticket size={24} className="mx-auto text-slate-400" />
-                  <p className="text-xs text-[#64748B] font-bold">Nenhum cupom gerado ainda</p>
-                  <p className="text-[10px] text-slate-400">Use o formulário acima para gerar seu primeiro cupom de teste ou desconto.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {coupons.map((coupon) => {
-                    const isExhausted = coupon.used_count >= coupon.max_uses;
-                    const isCodeCopied = copiedCouponId === `code-${coupon.id}`;
-                    const isLinkCopied = copiedCouponId === `link-${coupon.id}`;
-
-                    let benefitLabel = `${coupon.value} dias grátis`;
-                    if (coupon.type === 'PERCENT') {
-                      const dur = coupon.discount_duration_months === 0 ? 'Vitalício' : coupon.discount_duration_months === 1 ? '1º mês' : `${coupon.discount_duration_months} meses`;
-                      benefitLabel = `${coupon.value}% OFF (${dur})`;
-                    } else if (coupon.type === 'FIXED') {
-                      const dur = coupon.discount_duration_months === 0 ? 'Vitalício' : coupon.discount_duration_months === 1 ? '1º mês' : `${coupon.discount_duration_months} meses`;
-                      benefitLabel = `R$ ${Number(coupon.value).toFixed(2).replace('.', ',')} OFF (${dur})`;
-                    }
-
-                    return (
-                      <div
-                        key={coupon.id}
-                        className={`p-4 rounded-2xl border transition-all space-y-3 ${
-                          isExhausted 
-                            ? 'bg-slate-50 border-slate-200 opacity-75' 
-                            : 'bg-white border-[#E2E8F0] shadow-sm hover:shadow-md'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-sm font-black text-[#181B22] tracking-wider bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
-                                {coupon.code}
-                              </span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#1A44C8] border border-blue-100">
-                                {benefitLabel}
-                              </span>
-                            </div>
-                            <div className="mt-1 flex items-center gap-1.5 text-[10px]">
-                              {isExhausted ? (
-                                <span className="text-rose-600 font-bold flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                  Expirado
-                                </span>
-                              ) : (
-                                <span className="text-[#059669] font-bold flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                  Disponível ({coupon.used_count}/{coupon.max_uses} {coupon.max_uses === 1 ? 'uso' : 'usos'})
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCoupon(coupon.id)}
-                            className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
-                            title="Excluir cupom"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-
-                        {/* Botões de Ação Rápida: Copiar Código e Copiar Link */}
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => handleCopyCouponCode(coupon.code, coupon.id)}
-                            className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#181B22] rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 active:scale-95"
-                          >
-                            {isCodeCopied ? (
-                              <>
-                                <Check size={12} className="text-[#059669]" />
-                                <span className="text-[#059669]">Copiado!</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy size={12} />
-                                <span>Copiar Código</span>
-                              </>
-                            )}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleCopyCouponLink(coupon.code, coupon.id)}
-                            className="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#1A44C8] rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 active:scale-95"
-                          >
-                            {isLinkCopied ? (
-                              <>
-                                <Check size={12} className="text-[#059669]" />
-                                <span className="text-[#059669]">Link Copiado!</span>
-                              </>
-                            ) : (
-                              <>
-                                <Share2 size={12} />
-                                <span>Copiar Link</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
           </div>
         )}
 

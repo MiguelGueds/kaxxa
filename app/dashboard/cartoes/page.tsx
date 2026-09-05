@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { cardsService } from '@/lib/services/cards';
 import { categoriesService } from '@/lib/services/categories';
 import { 
@@ -275,8 +275,22 @@ export default function MinhasFaturasPage() {
   const totalRemainingMonth = Math.max(0, totalInvoiceMonth - totalPaidMonth);
   const isMonthFullyPaid = totalInvoiceMonth > 0 && totalRemainingMonth <= 0;
 
+  // Despesas acumuladas por cartão
+  const cardExpensesSum = useMemo(() => {
+    const map: Record<string, number> = {};
+    expenses.forEach(e => {
+      map[e.cardId] = (map[e.cardId] || 0) + e.amount;
+    });
+    return map;
+  }, [expenses]);
+
+  const getCardLimitUsed = useCallback((card: CardItem) => {
+    const expTotal = cardExpensesSum[card.id] || 0;
+    return expTotal > 0 ? expTotal : (card.limitUsed || 0);
+  }, [cardExpensesSum]);
+
   const totalLimitGlobal = useMemo(() => cards.reduce((acc, c) => acc + c.limitTotal, 0), [cards]);
-  const totalLimitUsedGlobal = useMemo(() => cards.reduce((acc, c) => acc + c.limitUsed, 0), [cards]);
+  const totalLimitUsedGlobal = useMemo(() => cards.reduce((acc, c) => acc + getCardLimitUsed(c), 0), [cards, getCardLimitUsed]);
   const totalLimitAvailable = Math.max(0, totalLimitGlobal - totalLimitUsedGlobal);
   const limitUsagePct = totalLimitGlobal > 0 ? (totalLimitUsedGlobal / totalLimitGlobal) * 100 : 0;
 
@@ -748,7 +762,8 @@ export default function MinhasFaturasPage() {
                   <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2 cursor-default" onClick={e => e.stopPropagation()}>
                     <h4 className="text-[9px] font-bold text-[#94A3B8] uppercase tracking-wider border-b border-[#E5E7EB] pb-1 mb-1">Por Cartão</h4>
                     {cards.map(c => {
-                      const avail = c.limitTotal - c.limitUsed;
+                      const used = getCardLimitUsed(c);
+                      const avail = Math.max(0, c.limitTotal - used);
                       return (
                         <div key={c.id} className="flex justify-between items-center text-[10px]">
                           <span className="text-[#181B22] font-semibold truncate pr-2">{c.name}</span>

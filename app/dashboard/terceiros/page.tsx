@@ -38,84 +38,6 @@ export interface ThirdPartyDebt {
   notes?: string;
 }
 
-const INITIAL_DEBTS: ThirdPartyDebt[] = [
-  {
-    id: 'tp-1',
-    personName: 'Lucas Ferreira',
-    personAvatarColor: 'from-blue-500 to-indigo-600',
-    description: 'Passagem Aérea no Cartão',
-    originType: 'CARD',
-    originBankOrCard: 'Nubank',
-    totalAmount: 1200.00,
-    paidAmount: 600.00,
-    installmentsTotal: 4,
-    currentInstallment: 2,
-    dueDate: 'Todo dia 10',
-    status: 'PARTIAL',
-    notes: 'Pagando R$ 300/mês na fatura'
-  },
-  {
-    id: 'tp-2',
-    personName: 'Lucas Ferreira',
-    personAvatarColor: 'from-blue-500 to-indigo-600',
-    description: 'Empréstimo PIX (Conserto do Carro)',
-    originType: 'ACCOUNT',
-    originBankOrCard: 'Itaú',
-    totalAmount: 450.00,
-    paidAmount: 0.00,
-    installmentsTotal: 1,
-    currentInstallment: 0,
-    dueDate: '25/08/2026',
-    status: 'PENDING',
-    notes: 'Prometeu devolver até final do mês'
-  },
-  {
-    id: 'tp-3',
-    personName: 'Mariana Costa',
-    personAvatarColor: 'from-pink-500 to-rose-600',
-    description: 'iPhone 15 Pro Parcelado no Cartão',
-    originType: 'CARD',
-    originBankOrCard: 'Santander',
-    totalAmount: 4800.00,
-    paidAmount: 2400.00,
-    installmentsTotal: 10,
-    currentInstallment: 5,
-    dueDate: 'Todo dia 20',
-    status: 'PARTIAL',
-    notes: '5 parcelas restantes de R$ 480'
-  },
-  {
-    id: 'tp-4',
-    personName: 'Rodrigo (Irmão)',
-    personAvatarColor: 'from-blue-500 to-blue-600',
-    description: 'Empréstimo Pessoal Nubank',
-    originType: 'ACCOUNT',
-    originBankOrCard: 'Nubank',
-    totalAmount: 3000.00,
-    paidAmount: 1500.00,
-    installmentsTotal: 6,
-    currentInstallment: 3,
-    dueDate: 'Todo dia 15',
-    status: 'PARTIAL',
-    notes: '3 parcelas de R$ 500 restantes'
-  },
-  {
-    id: 'tp-5',
-    personName: 'Carlos Eduardo',
-    personAvatarColor: 'from-purple-500 to-indigo-600',
-    description: 'Jantar Comemoração no Cartão',
-    originType: 'CARD',
-    originBankOrCard: 'Inter',
-    totalAmount: 250.00,
-    paidAmount: 250.00,
-    installmentsTotal: 1,
-    currentInstallment: 1,
-    dueDate: 'Pago',
-    status: 'PAID',
-    notes: 'Já fez o PIX de volta'
-  }
-];
-
 const PERSON_THEMES: Record<string, { bg: string; border: string; glow: string; accent: string; hex: string }> = {
   'Lucas Ferreira': { 
     bg: 'bg-blue-50', 
@@ -157,7 +79,7 @@ const DEFAULT_THEME = {
 
 export default function TerceirosPage() {
   const { isConcealed } = usePrivacy();
-  const [debts, setDebts] = useState<ThirdPartyDebt[]>(INITIAL_DEBTS);
+  const [debts, setDebts] = useState<ThirdPartyDebt[]>([]);
   
   // Filtros de Lançamentos
   const [activeFilterTab, setActiveFilterTab] = useState<'ALL' | 'CARD' | 'ACCOUNT' | 'PENDING' | 'PAID'>('ALL');
@@ -200,9 +122,12 @@ export default function TerceirosPage() {
             status: d.status,
             notes: d.notes,
           })));
+        } else {
+          setDebts([]);
         }
       } catch (e) {
         console.error('Erro ao buscar dívidas de terceiros do Supabase:', e);
+        setDebts([]);
       } finally {
         setLoading(false);
       }

@@ -32,49 +32,88 @@ export function calculateCouponDiscount(originalPrice: number, coupon: Coupon): 
   return { discountAmount: 0, finalPrice: originalPrice };
 }
 
-const LOCAL_COUPONS_DIR = path.join(process.cwd(), 'data');
-const LOCAL_COUPONS_FILE = path.join(LOCAL_COUPONS_DIR, 'coupons.json');
+let MEMORY_COUPONS: Coupon[] | null = null;
+
+function getStoragePaths() {
+  const primaryDir = path.join(process.cwd(), 'data');
+  const primaryFile = path.join(primaryDir, 'coupons.json');
+  const tmpDir = '/tmp/kaxxa_data';
+  const tmpFile = path.join(tmpDir, 'coupons.json');
+  return { primaryDir, primaryFile, tmpDir, tmpFile };
+}
 
 function ensureLocalFile(): Coupon[] {
+  if (MEMORY_COUPONS && MEMORY_COUPONS.length > 0) {
+    return MEMORY_COUPONS;
+  }
+
+  const { primaryDir, primaryFile, tmpDir, tmpFile } = getStoragePaths();
+
+  const defaultInitial: Coupon[] = [
+    {
+      id: 'cp_welcome_2d',
+      code: 'TESTE-2DIAS',
+      type: 'TRIAL_DAYS',
+      value: 2,
+      discount_duration_months: 1,
+      max_uses: 1,
+      used_count: 0,
+      used_by: [],
+      active: true,
+      created_at: new Date().toISOString(),
+    }
+  ];
+
+  // 1. Tenta ler do primary (process.cwd)
   try {
-    if (!fs.existsSync(LOCAL_COUPONS_DIR)) {
-      fs.mkdirSync(LOCAL_COUPONS_DIR, { recursive: true });
+    if (fs.existsSync(primaryFile)) {
+      const data = fs.readFileSync(primaryFile, 'utf8');
+      MEMORY_COUPONS = JSON.parse(data);
+      if (MEMORY_COUPONS && MEMORY_COUPONS.length > 0) return MEMORY_COUPONS;
     }
-    if (!fs.existsSync(LOCAL_COUPONS_FILE)) {
-      const initial: Coupon[] = [
-        {
-          id: 'cp_welcome_2d',
-          code: 'TESTE-2DIAS',
-          type: 'TRIAL_DAYS',
-          value: 2,
-          discount_duration_months: 1,
-          max_uses: 1,
-          used_count: 0,
-          used_by: [],
-          active: true,
-          created_at: new Date().toISOString(),
-        }
-      ];
-      fs.writeFileSync(LOCAL_COUPONS_FILE, JSON.stringify(initial, null, 2), 'utf8');
-      return initial;
+  } catch {}
+
+  // 2. Tenta ler do /tmp
+  try {
+    if (fs.existsSync(tmpFile)) {
+      const data = fs.readFileSync(tmpFile, 'utf8');
+      MEMORY_COUPONS = JSON.parse(data);
+      if (MEMORY_COUPONS && MEMORY_COUPONS.length > 0) return MEMORY_COUPONS;
     }
-    const data = fs.readFileSync(LOCAL_COUPONS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error('Erro ao ler coupons locais:', err);
-    return [];
+  } catch {}
+
+  // 3. Se não houver em nenhum, inicializa no primary ou tmp
+  try {
+    if (!fs.existsSync(primaryDir)) fs.mkdirSync(primaryDir, { recursive: true });
+    fs.writeFileSync(primaryFile, JSON.stringify(defaultInitial, null, 2), 'utf8');
+    MEMORY_COUPONS = defaultInitial;
+    return defaultInitial;
+  } catch {
+    try {
+      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpFile, JSON.stringify(defaultInitial, null, 2), 'utf8');
+      MEMORY_COUPONS = defaultInitial;
+      return defaultInitial;
+    } catch {
+      MEMORY_COUPONS = defaultInitial;
+      return defaultInitial;
+    }
   }
 }
 
 function saveLocalCoupons(coupons: Coupon[]) {
+  MEMORY_COUPONS = coupons;
+  const { primaryDir, primaryFile, tmpDir, tmpFile } = getStoragePaths();
+
   try {
-    if (!fs.existsSync(LOCAL_COUPONS_DIR)) {
-      fs.mkdirSync(LOCAL_COUPONS_DIR, { recursive: true });
-    }
-    fs.writeFileSync(LOCAL_COUPONS_FILE, JSON.stringify(coupons, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Erro ao salvar coupons locais:', err);
-  }
+    if (!fs.existsSync(primaryDir)) fs.mkdirSync(primaryDir, { recursive: true });
+    fs.writeFileSync(primaryFile, JSON.stringify(coupons, null, 2), 'utf8');
+  } catch {}
+
+  try {
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+    fs.writeFileSync(tmpFile, JSON.stringify(coupons, null, 2), 'utf8');
+  } catch {}
 }
 
 export const couponService = {
@@ -86,7 +125,8 @@ export const couponService = {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && data) {
+        if (!error && data && data.length > 0) {
+          saveLocalCoupons(data as Coupon[]);
           return data as Coupon[];
         }
       } catch {
@@ -122,6 +162,12 @@ export const couponService = {
       created_at: new Date().toISOString(),
     };
 
+    // Sempre salva localmente primeiro (memória e disco resiliente)
+    const local = ensureLocalFile();
+    const filtered = local.filter(c => c.code !== code);
+    filtered.unshift(newCoupon);
+    saveLocalCoupons(filtered);
+
     if (isSupabaseConfigured()) {
       try {
         const { data, error } = await supabase
@@ -145,14 +191,10 @@ export const couponService = {
           return data as Coupon;
         }
       } catch {
-        // Fallback local
+        // Fallback local já salvo acima
       }
     }
 
-    const local = ensureLocalFile();
-    const filtered = local.filter(c => c.code !== code);
-    filtered.unshift(newCoupon);
-    saveLocalCoupons(filtered);
     return newCoupon;
   },
 

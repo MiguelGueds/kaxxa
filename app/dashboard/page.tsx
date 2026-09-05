@@ -6,6 +6,7 @@ import { accountsService } from '@/lib/services/accounts';
 import { debtsService } from '@/lib/services/debts';
 import { investmentsService } from '@/lib/services/investments';
 import { transactionsService } from '@/lib/services/transactions';
+import { cardsService } from '@/lib/services/cards';
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
@@ -65,6 +66,9 @@ export default function DashboardPage() {
   const [ganhoCapital, setGanhoCapital] = useState(0);
   const [aportesMes, setAportesMes] = useState(0);
   const [despesasMes, setDespesasMes] = useState(0);
+  const [totalLimiteCartoes, setTotalLimiteCartoes] = useState(0);
+  const [limiteComprometido, setLimiteComprometido] = useState(0);
+  const [qtdCartoes, setQtdCartoes] = useState(0);
   const patrimonioLiquidoTotal = patrimonio + saldoEmContas + valorDiferido - dividasAtivas;
 
   const [investmentBreakdown, setInvestmentBreakdown] = useState<
@@ -74,11 +78,13 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const [dbAccounts, dbDebts, dbInvestments, dbTransactions] = await Promise.all([
+        const [dbAccounts, dbDebts, dbInvestments, dbTransactions, dbCards, dbCardExpenses] = await Promise.all([
           accountsService.fetchAccounts(),
           debtsService.fetchDebts(),
           investmentsService.fetchInvestments(),
-          transactionsService.fetchTransactions(200)
+          transactionsService.fetchTransactions(200),
+          cardsService.fetchCards(),
+          cardsService.fetchCardExpenses()
         ]);
 
         if (dbAccounts && dbAccounts.length > 0) {
@@ -129,6 +135,21 @@ export default function DashboardPage() {
         } else {
           setDespesasMes(0);
           setAportesMes(0);
+        }
+
+        // Cartões reais
+        if (dbCards && dbCards.length > 0) {
+          const totalLimit = dbCards.reduce((acc, c) => acc + (c.credit_limit || 0), 0);
+          setTotalLimiteCartoes(totalLimit);
+          setQtdCartoes(dbCards.length);
+
+          const totalCardExpenses = (dbCardExpenses || []).reduce((acc, e) => acc + (e.amount || 0), 0);
+          const explicitUsed = dbCards.reduce((acc, c) => acc + (c.limit_used || 0), 0);
+          setLimiteComprometido(totalCardExpenses > 0 ? totalCardExpenses : explicitUsed);
+        } else {
+          setTotalLimiteCartoes(0);
+          setLimiteComprometido(0);
+          setQtdCartoes(0);
         }
       } catch (err) {
         console.error('Erro ao carregar métricas consolidadas do Supabase:', err);
@@ -362,63 +383,98 @@ export default function DashboardPage() {
           </div>
         </Link>
 
-        {/* Card 5: Controle de Cartões */}
-        <Link href="/dashboard/cartoes" className="bg-[#FFFFFF] rounded-[24px] p-5 relative overflow-hidden group shadow-sm border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider">Cartões</p>
-              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20">
-                -58.8%
-              </span>
-            </div>
-            
-            <h3 className="text-xs text-[#64748B] font-semibold mt-1">Limite Comprometido</h3>
-            
-            <h2 className="text-2xl font-bold text-[#181B22] mt-1 mb-0.5 flex items-baseline">
-              <span className="text-2xl font-bold text-[#1A44C8] mr-1.5">28%</span>
-              <span className="text-xs text-[#94A3B8]">(R$ 8.920)</span>
-            </h2>
-            
-            <p className="text-[9.5px] text-[#1A44C8] flex items-center gap-1 mt-1 font-medium">
-              <ArrowDownRight size={11} />
-              <span>Otimizado: uso caiu de 68% p/ 28%</span>
-            </p>
-          </div>
+        {/* Card 5: Controle de Cartões Real */}
+        {(() => {
+          const pctComprometido = totalLimiteCartoes > 0 ? (limiteComprometido / totalLimiteCartoes) * 100 : 0;
+          return (
+            <Link href="/dashboard/cartoes" className="bg-[#FFFFFF] rounded-[24px] p-5 relative overflow-hidden group shadow-sm border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider">Cartões</p>
+                  {qtdCartoes > 0 ? (
+                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20">
+                      {qtdCartoes} {qtdCartoes === 1 ? 'cartão' : 'cartões'}
+                    </span>
+                  ) : (
+                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">
+                      Sem cartões
+                    </span>
+                  )}
+                </div>
+                
+                <h3 className="text-xs text-[#64748B] font-semibold mt-1">Limite Comprometido</h3>
+                
+                <h2 className="text-2xl font-bold text-[#181B22] mt-1 mb-0.5 flex items-baseline">
+                  <span className="text-2xl font-bold text-[#1A44C8] mr-1.5">{pctComprometido.toFixed(0)}%</span>
+                  <span className="text-xs text-[#94A3B8]">(R$ {formatCurrency(limiteComprometido)})</span>
+                </h2>
+                
+                <p className="text-[9.5px] text-[#64748B] flex items-center gap-1 mt-1 font-medium truncate">
+                  {totalLimiteCartoes > 0 ? (
+                    <span>R$ {formatCurrency(Math.max(0, totalLimiteCartoes - limiteComprometido))} disponível de R$ {formatCurrency(totalLimiteCartoes)}</span>
+                  ) : (
+                    <span>Cadastre cartões em Minhas Faturas</span>
+                  )}
+                </p>
+              </div>
 
-          {/* Curva de Queda no Uso de Cartões */}
-          <div className="w-full h-7 pt-1">
-            <svg viewBox="0 0 100 24" preserveAspectRatio="none" className="w-full h-full">
-              <path d="M0,4 L25,7 L50,14 L75,18 L100,22" fill="none" stroke="#1A44C8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        </Link>
+              <div className="w-full pt-2">
+                <div className="w-full h-1.5 bg-[#F1F3F7] rounded-full overflow-hidden flex">
+                  <div 
+                    className="h-full bg-[#1A44C8] rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, pctComprometido)}%` }}
+                  />
+                </div>
+              </div>
+            </Link>
+          );
+        })()}
 
-        {/* Card 6: Taxa de Poupança Líquida */}
-        <Link href="/dashboard/transacoes" className="lg:col-span-2 bg-[#FFFFFF] rounded-[24px] p-5 relative overflow-hidden group shadow-sm border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[9px] text-[#1A44C8] bg-[#1A44C8]/10 px-2 py-0.5 rounded-full border border-[#1A44C8]/20 font-bold">
-                +0.6% vs média
-              </span>
-            </div>
-            <h3 className="text-xs text-[#64748B] font-semibold mt-1">Taxa de Poupança Líquida</h3>
-            
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-3xl font-extrabold text-[#181B22]">40.9%</span>
-            </div>
-            <p className="text-[10px] text-[#64748B] mt-1">40.9% da renda bruta convertida em patrimônio líquido</p>
-          </div>
+        {/* Card 6: Balanço Mensal Líquido (Substitui Taxa de Poupança Líquida) */}
+        {(() => {
+          const saldoMes = aportesMes - despesasMes;
+          const isPositivo = saldoMes >= 0;
+          const taxaSobra = aportesMes > 0 ? (saldoMes / aportesMes) * 100 : 0;
 
-          <div className="relative w-16 h-16 shrink-0">
-            <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-              <circle cx="50" cy="50" r="38" fill="transparent" stroke="#E2E8F0" strokeWidth="6" />
-              <circle cx="50" cy="50" r="38" fill="transparent" stroke="#1A44C8" strokeWidth="6" strokeDasharray={238.76} strokeDashoffset={238.76 * 0.4} strokeLinecap="round" />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-bold text-[#1A44C8]">41%</span>
-            </div>
-          </div>
-        </Link>
+          return (
+            <Link href="/dashboard/transacoes" className="lg:col-span-2 bg-[#FFFFFF] rounded-[24px] p-5 relative overflow-hidden group shadow-sm border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all flex items-center justify-between">
+              <div className="min-w-0 flex-1 pr-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full border font-bold ${
+                    isPositivo 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                  }`}>
+                    {isPositivo ? 'Superávit no Mês' : 'Déficit no Mês'}
+                  </span>
+                  {aportesMes > 0 && (
+                    <span className="text-[9px] text-[#64748B] font-medium hidden sm:inline">
+                      ({taxaSobra.toFixed(0)}% da receita livre)
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-xs text-[#64748B] font-semibold mt-1">Balanço Mensal Líquido</h3>
+                
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className={`text-2xl sm:text-3xl font-extrabold ${isPositivo ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {isPositivo ? '+' : ''}R$ {formatCurrency(saldoMes)}
+                  </span>
+                </div>
+                <p className="text-[10px] text-[#64748B] mt-1 truncate">
+                  Receitas R$ {formatCurrency(aportesMes)} − Despesas R$ {formatCurrency(despesasMes)}
+                </p>
+              </div>
+
+              <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${
+                  isPositivo ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'
+                }`}>
+                  {isPositivo ? <ArrowUpRight size={24} /> : <ArrowDownRight size={24} />}
+                </div>
+              </div>
+            </Link>
+          );
+        })()}
 
       </div>
 
