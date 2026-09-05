@@ -26,7 +26,7 @@ import {
   Clock,
   Wallet
 } from 'lucide-react';
-import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
+import { KaxxaLogo } from '@/app/components/KaxxaLogo';
 import { PixIcon } from '@/app/components/PixLogo';
 import { RoiCalculator } from '@/app/components/RoiCalculator';
 
@@ -212,11 +212,8 @@ export default function LandingPage() {
       }`}>
         <div className="max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-between">
           
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl border border-[#E5E7EB] flex items-center justify-center bg-[#FFFFFF] shadow-sm group-hover:border-[#1A44C8]/40 transition-all">
-              <KaxxaLogo size={20} />
-            </div>
-            <KaxxaWordmark className="text-lg" />
+          <Link href="/" className="flex items-center group transition-opacity hover:opacity-90">
+            <KaxxaLogo size={26} />
           </Link>
 
           <nav className="hidden md:flex items-center gap-7 text-[11px] tracking-[0.14em] uppercase font-semibold text-[#64748B]">
@@ -1302,12 +1299,9 @@ export default function LandingPage() {
       <footer className="relative z-10 border-t border-[#E5E7EB] bg-[#FFFFFF] py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg border border-[#E5E7EB] flex items-center justify-center bg-[#F8FAFC]">
-              <KaxxaLogo size={16} />
-            </div>
-            <KaxxaWordmark className="text-xs" />
-            <span className="text-[10px] text-[#94A3B8] ml-2 font-medium">© {new Date().getFullYear()} Kaxxa Inc. Todos os direitos reservados.</span>
+          <div className="flex items-center gap-3">
+            <KaxxaLogo size={20} />
+            <span className="text-[10px] text-[#94A3B8] font-medium border-l border-[#E5E7EB] pl-3">© {new Date().getFullYear()} Kaxxa Inc. Todos os direitos reservados.</span>
           </div>
 
           <div className="flex items-center gap-6 text-xs text-[#64748B] font-medium">

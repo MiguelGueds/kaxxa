@@ -18,58 +18,63 @@ export function KaxxaKLogo({ size = 28, className = "" }: { size?: number, class
   );
 }
 
-export function KaxxaLogo({ size = 28, className = "" }: { size?: number, className?: string }) {
-  return (
-    <div className={`inline-flex items-center justify-center shrink-0 text-[#1A44C8] ${className}`}>
-      <KaxxaKLogo size={size} />
-    </div>
-  );
-}
-
-export function KaxxaWordmark({ className = "", textColor = "text-[#181B22]" }: { className?: string, textColor?: string }) {
+export function KaxxaLogo({ 
+  size = 24, 
+  className = "", 
+  textColor = "text-[#181B22]",
+  accentColor = "#1A44C8"
+}: { 
+  size?: number, 
+  className?: string, 
+  textColor?: string,
+  accentColor?: string
+}) {
   return (
     <span 
       className={`inline-flex items-center select-none leading-none ${textColor} ${className}`}
       aria-label="Kaxxa"
     >
       <svg 
-        viewBox="0 0 98 24" 
+        height={size} 
+        viewBox="0 0 114 28" 
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
-        className="h-[0.92em] w-auto overflow-visible shrink-0"
+        className="w-auto overflow-visible shrink-0"
       >
-        {/* K: Desenhado na mesma geometria e proporção do símbolo K */}
+        {/* K: Desenhado com espessura uniforme 4.8px e cantos externos arredondados */}
         <g fill="currentColor">
-          <path d="M4.5 2 H1.5 C0.67 2 0 2.67 0 3.5 V20.5 C0 21.33 0.67 22 1.5 22 H4.5 V2 Z" />
-          <path d="M5 11.5 L12 2 H15 C16 2 16.8 2.8 16.3 3.8 L9.5 11.5 Z" />
-          <path d="M5 12.5 L9.5 12.5 L16.3 20.2 C16.8 21.2 16 22 15 22 H12 L5 12.5 Z" />
+          <path d="M6.8 3 H2.5 C1.4 3 0.5 3.9 0.5 5 V23 C0.5 24.1 1.4 25 2.5 25 H6.8 V3 Z" />
+          <path d="M7 13.5 L17.5 3 H21.5 C22.8 3 23.6 4.2 23 5.4 L13.5 13.5 Z" />
+          <path d="M7 14.5 L13.5 14.5 L23 22.6 C23.6 23.8 22.8 25 21.5 25 H17.5 L7 14.5 Z" />
         </g>
 
-        {/* 1º A: Em azul oficial #1A44C8 com geometria chanfrada */}
-        <g fill="#1A44C8">
-          <path d="M28.5 2 C27.3 2 26.3 2.8 25.8 3.9 L19.8 20.8 C19.5 21.5 20 22 20.7 22 H24.2 C24.8 22 25.3 21.6 25.5 21.1 L26.8 17.2 H32.2 L33.5 21.1 C33.7 21.6 34.2 22 34.8 22 H38.3 C39 22 39.5 21.5 39.2 20.8 L33.2 3.9 C32.7 2.8 31.7 2 30.5 2 H28.5 Z M29.5 8.2 L31 13.5 H28 Z" />
+        {/* 1º A: Em Azul Oficial #1A44C8 com espessura idêntica de 4.8px e vértice chanfrado */}
+        <g fill={accentColor}>
+          <path d="M38 3 C36.8 3 35.8 3.8 35.3 4.9 L27.3 23.8 C27 24.5 27.5 25 28.2 25 H32.2 C32.8 25 33.3 24.6 33.5 24.1 L35.2 20 H42.8 L44.5 24.1 C44.7 24.6 45.2 25 45.8 25 H49.8 C50.5 25 51 24.5 50.7 23.8 L42.7 4.9 C42.2 3.8 41.2 3 40 3 H38 Z M39 8.8 L41.2 15.5 H36.8 L39 8.8 Z" />
         </g>
 
-        {/* 1º X: Geometria de barras sólidas com cantos arredondados */}
+        {/* 1º X: Barras sólidas de 4.8px com cantos suaves */}
         <g fill="currentColor">
-          <rect x="47.9" y="0.5" width="4.2" height="23" rx="2.1" transform="rotate(-38 50 12)" />
-          <rect x="47.9" y="0.5" width="4.2" height="23" rx="2.1" transform="rotate(38 50 12)" />
+          <rect x="55.6" y="1" width="4.8" height="26" rx="2.4" transform="rotate(-38 58 14)" />
+          <rect x="55.6" y="1" width="4.8" height="26" rx="2.4" transform="rotate(38 58 14)" />
         </g>
 
-        {/* 2º X: Entrelaçado e envolvido com o 1º no azul oficial #1A44C8 */}
-        <g fill="#1A44C8">
-          <rect x="64.9" y="0.5" width="4.2" height="23" rx="2.1" transform="rotate(-38 67 12)" />
-          <rect x="64.9" y="0.5" width="4.2" height="23" rx="2.1" transform="rotate(38 67 12)" />
+        {/* 2º X: Em Azul Oficial #1A44C8 artisticamente entrelaçado e envolvido com o 1º */}
+        <g fill={accentColor}>
+          <rect x="74.6" y="1" width="4.8" height="26" rx="2.4" transform="rotate(-38 77 14)" />
+          <rect x="74.6" y="1" width="4.8" height="26" rx="2.4" transform="rotate(38 77 14)" />
         </g>
 
-        {/* 2º A: Em cor base */}
+        {/* 2º A: Em cor base com geometria idêntica de 4.8px */}
         <g fill="currentColor">
-          <path d="M86.5 2 C85.3 2 84.3 2.8 83.8 3.9 L77.8 20.8 C77.5 21.5 78 22 78.7 22 H82.2 C82.8 22 83.3 21.6 83.5 21.1 L84.8 17.2 H90.2 L91.5 21.1 C91.7 21.6 92.2 22 92.8 22 H96.3 C97 22 97.5 21.5 97.2 20.8 L91.2 3.9 C90.7 2.8 89.7 2 88.5 2 H86.5 Z M87.5 8.2 L89 13.5 H86 Z" />
+          <path d="M99 3 C97.8 3 96.8 3.8 96.3 4.9 L88.3 23.8 C88 24.5 88.5 25 89.2 25 H93.2 C93.8 25 94.3 24.6 94.5 24.1 L96.2 20 H103.8 L105.5 24.1 C105.7 24.6 106.2 25 106.8 25 H110.8 C111.5 25 112 24.5 111.7 23.8 L103.7 4.9 C103.2 3.8 102.2 3 101 3 H99 Z M100 8.8 L102.2 15.5 H97.8 L100 8.8 Z" />
         </g>
       </svg>
     </span>
   );
 }
+
+export const KaxxaWordmark = KaxxaLogo;
 
 // Aliases para retrocompatibilidade
 export const OctaMindLogo = KaxxaLogo;

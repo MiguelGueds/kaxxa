@@ -28,7 +28,7 @@ import {
   UserCircle2
 } from 'lucide-react';
 
-import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
+import { KaxxaLogo, KaxxaKLogo } from '@/app/components/KaxxaLogo';
 import { subscriptionService } from '@/lib/services/subscription';
 import { isAdminEmail } from '@/lib/admin';
 import { CommandPalette } from '@/app/components/CommandPalette';
@@ -209,10 +209,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         <div className={`h-14 flex items-center border-b border-[#F1F3F7] shrink-0 ${
           isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'
         }`}>
-          <Link href="/dashboard" className="flex items-center gap-2.5 group min-w-0" title="Ir para o Dashboard">
-            <KaxxaLogo size={24} />
-            {!isSidebarCollapsed && (
-              <KaxxaWordmark className="text-base tracking-tight" />
+          <Link href="/dashboard" className="flex items-center group min-w-0" title="Ir para o Dashboard">
+            {isSidebarCollapsed ? (
+              <KaxxaKLogo size={24} className="text-[#1A44C8]" />
+            ) : (
+              <KaxxaLogo size={24} />
             )}
           </Link>
 

@@ -34,6 +34,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { subscriptionService, DbSubscription } from '@/lib/services/subscription';
 import { isAdminEmail } from '@/lib/admin';
+import { BankLogo } from '@/app/components/BankLogo';
 
 type Category = { id: string; name: string; type: string; parent_id: string | null; };
 type Account = { id: string; name: string; type: string; balance: number; };
@@ -845,37 +846,52 @@ function SettingsContent() {
         {/* --- ABA CONTAS --- */}
         {/* ======================================================== */}
         {activeTab === 'CONTAS' && (
-          <div className="animate-fade-in-up">
-            <div className="flex justify-between items-center mb-6">
+          <div className="animate-fade-in-up space-y-4">
+            <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-sm font-bold text-[#181B22]">Contas Bancárias</h2>
-                <p className="text-[10px] text-[#64748B] font-medium mt-0.5">Onde seu dinheiro está guardado.</p>
               </div>
-              <button onClick={handleOpenAccountModal} className="text-[10px] font-bold bg-[#1A44C8] text-white px-3 py-1.5 rounded-full hover:bg-[#1538A5] transition-all shadow-sm flex items-center gap-1 uppercase tracking-widest active:scale-95">
-                <Plus size={12} /> Nova Conta
+              <button 
+                onClick={handleOpenAccountModal} 
+                className="text-[10px] font-bold bg-[#1A44C8] text-white px-3.5 py-2 rounded-xl hover:bg-[#1538A5] transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-widest active:scale-95"
+              >
+                <Plus size={13} /> Nova Conta
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl divide-y divide-[#F1F5F9] shadow-xs overflow-hidden">
               {accounts.length === 0 ? (
-                <div className="col-span-full p-8 border border-dashed border-[#E5E7EB] rounded-2xl text-center text-xs text-[#94A3B8] font-medium">
-                  Nenhuma conta cadastrada.
+                <div className="p-8 text-center text-xs text-[#94A3B8] font-medium">
+                  Nenhuma conta bancária cadastrada.
                 </div>
               ) : (
                 accounts.map(acc => (
-                  <div key={acc.id} className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl p-5 flex justify-between items-center group hover:shadow-sm transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#1A44C8]/10 border border-[#1A44C8]/20 flex items-center justify-center text-[#1A44C8]">
-                        <Landmark size={18} />
-                      </div>
-                      <div>
-                        <span className="text-sm text-[#181B22] font-bold">{acc.name}</span>
-                        <p className="text-[10px] text-[#64748B] uppercase tracking-widest font-semibold">{acc.type}</p>
+                  <div key={acc.id} className="p-3.5 px-4 flex items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <BankLogo name={acc.name} size="sm" />
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-[#181B22] block truncate">{acc.name}</span>
+                        <span className="text-[10px] text-[#94A3B8] font-semibold uppercase tracking-wider">
+                          {acc.type === 'CORRENTE' ? 'Conta Corrente' : acc.type === 'POUPANCA' ? 'Poupança / Investimento' : acc.type}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                       <span className="text-xs text-[#1A44C8] font-extrabold">R$ {acc.balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                       <button onClick={() => handleDeleteAccount(acc.id)} className="text-[#94A3B8] hover:text-rose-600 transition-colors"><Trash2 size={13}/></button>
+
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="text-right">
+                        <span className="text-xs font-extrabold text-[#181B22] block">
+                          R$ {acc.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-[9px] text-[#059669] font-bold">Saldo</span>
+                      </div>
+
+                      <button 
+                        onClick={() => handleDeleteAccount(acc.id)} 
+                        className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        title="Excluir conta"
+                      >
+                        <Trash2 size={13}/>
+                      </button>
                     </div>
                   </div>
                 ))
@@ -1145,7 +1161,48 @@ function SettingsContent() {
               <button type="button" onClick={() => setAccountType('CORRENTE')} className={`py-2 text-[10px] font-bold rounded-xl border transition-all ${accountType==='CORRENTE'?'bg-[#1A44C8]/10 border-[#1A44C8]/30 text-[#1A44C8]':'border-[#E5E7EB] text-[#64748B] hover:bg-[#F1F3F7]'}`}>Corrente</button>
               <button type="button" onClick={() => setAccountType('POUPANCA')} className={`py-2 text-[10px] font-bold rounded-xl border transition-all ${accountType==='POUPANCA'?'bg-[#1A44C8]/10 border-[#1A44C8]/30 text-[#1A44C8]':'border-[#E5E7EB] text-[#64748B] hover:bg-[#F1F3F7]'}`}>Poupança / Investimento</button>
             </div>
-            <Input label="Nome da Conta" value={accountName} onChange={setAccountName} placeholder="Ex: Nubank Principal" />
+
+            {/* Sugestões rápidas com logos */}
+            <div>
+              <label className="block text-[9px] text-[#94A3B8] uppercase tracking-widest mb-1.5 pl-1 font-bold">
+                Bancos Frequentes
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {['Nubank', 'Itaú', 'Bradesco', 'Inter', 'C6 Bank', 'Santander', 'Caixa', 'Banco do Brasil'].map(b => (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => setAccountName(b)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] hover:bg-blue-50 hover:border-blue-200 border border-[#E5E7EB] text-[10px] font-bold text-[#181B22] transition-colors active:scale-95"
+                  >
+                    <BankLogo name={b} size="xs" />
+                    <span>{b}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Input com preview automático da logo do banco */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5 pl-1">
+                <label className="text-[9px] text-[#94A3B8] uppercase tracking-widest font-bold">Nome da Conta / Instituição</label>
+                {accountName.trim() && (
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#059669]">
+                    <BankLogo name={accountName} size="xs" />
+                    <span>Identificado</span>
+                  </div>
+                )}
+              </div>
+              <input 
+                type="text" 
+                required 
+                value={accountName} 
+                onChange={e => setAccountName(e.target.value)} 
+                placeholder="Ex: Nubank, Itaú, Bradesco..." 
+                className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-4 py-2.5 text-xs text-[#181B22] placeholder-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-semibold transition-colors" 
+              />
+            </div>
+
             <Input label="Saldo Inicial" value={accountBalance} onChange={setAccountBalance} placeholder="Ex: 1000.00" type="number" step="0.01" />
             <SubmitButton label="Salvar Conta" loading={isSubmitting} />
           </form>

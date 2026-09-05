@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ShieldCheck, Sparkles, Lock } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
+import { KaxxaLogo, KaxxaKLogo } from '@/app/components/KaxxaLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -209,15 +209,15 @@ export default function LoginPage() {
             <div className="flex justify-center mb-5">
               <div className="relative p-[2px] rounded-2xl bg-gradient-to-tr from-[#1A44C8] via-[#00A3FF] to-[#059669] shadow-lg shadow-[#1A44C8]/25">
                 <div className="w-14 h-14 rounded-[14px] bg-white flex items-center justify-center">
-                  <KaxxaLogo size={32} />
+                  <KaxxaKLogo size={30} className="text-[#1A44C8]" />
                 </div>
               </div>
             </div>
             
             {/* Título e Subtítulo */}
             <div className="text-center mb-6">
-              <div className="flex justify-center mb-1.5">
-                <KaxxaWordmark className="text-2xl tracking-tight" />
+              <div className="flex justify-center mb-2">
+                <KaxxaLogo size={28} />
               </div>
               <p className="text-xs text-[#64748B] mt-1 font-medium leading-relaxed">
                 Acesse ou crie sua conta em 1 clique com segurança total

@@ -23,7 +23,7 @@ import {
   Tag,
   AlertCircle
 } from 'lucide-react';
-import { KaxxaLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
+import { KaxxaLogo } from '@/app/components/KaxxaLogo';
 import { PixIcon, PixBadge } from '@/app/components/PixLogo';
 import { supabase } from '@/lib/supabase';
 import { subscriptionService } from '@/lib/services/subscription';
@@ -624,9 +624,8 @@ export default function PlanosCheckoutPage() {
 
         {/* Centro: Logo Kaxxa Perfeitamente Centralizada */}
         <div className="w-1/3 flex items-center justify-center">
-          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-            <KaxxaLogo className="w-7 h-7" />
-            <KaxxaWordmark className="text-xl tracking-tight" />
+          <Link href="/" className="flex items-center transition-opacity hover:opacity-90">
+            <KaxxaLogo size={26} />
           </Link>
         </div>
 
