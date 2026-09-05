@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #F5F6F9;
+}
+
+body {
+  background-color: #F5F6F9;
+  color: #181B22;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: #1A44C8;
+  color: #FFFFFF;
+}
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+@keyframes auroraGlow {
+  0%, 100% { 
+    transform: translate(-50%, 0px) scale(1);
+    opacity: 0.75;
+  }
+  50% { 
+    transform: translate(-50%, 25px) scale(1.1);
+    opacity: 0.95;
+  }
+}
+.animate-aurora-glow {
+  animation: auroraGlow 12s ease-in-out infinite;
+}
+
+@keyframes waveFlow1 {
+  0%, 100% {
+    transform: translateY(0px) scaleY(1);
+  }
+  50% {
+    transform: translateY(-18px) scaleY(1.06);
+  }
+}
+.animate-wave-flow-1 {
+  animation: waveFlow1 12s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes waveFlow2 {
+  0%, 100% {
+    transform: translateY(0px) scaleY(1);
+  }
+  50% {
+    transform: translateY(20px) scaleY(0.95);
+  }
+}
+.animate-wave-flow-2 {
+  animation: waveFlow2 15s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes waveFlow3 {
+  0%, 100% {
+    stroke-dashoffset: 0;
+    opacity: 0.18;
+  }
+  50% {
+    stroke-dashoffset: 60;
+    opacity: 0.45;
+  }
+}
+.animate-wave-flow-3 {
+  animation: waveFlow3 9s ease-in-out infinite;
+}
+
+@keyframes crystalOrb1 {
+  0%, 100% { 
+    transform: translate(0px, 0px) scale(1) rotate(0deg); 
+  }
+  33% { 
+    transform: translate(30px, -20px) scale(1.06) rotate(12deg); 
+  }
+  66% { 
+    transform: translate(-20px, 18px) scale(0.96) rotate(-8deg); 
+  }
+}
+.animate-crystal-orb-1 {
+  animation: crystalOrb1 14s ease-in-out infinite;
+}
+
+@keyframes crystalOrb2 {
+  0%, 100% { 
+    transform: translate(0px, 0px) scale(1) rotate(0deg); 
+  }
+  33% { 
+    transform: translate(-25px, 20px) scale(0.95) rotate(-10deg); 
+  }
+  66% { 
+    transform: translate(20px, -25px) scale(1.05) rotate(8deg); 
+  }
+}
+.animate-crystal-orb-2 {
+  animation: crystalOrb2 16s ease-in-out infinite;
+}
+
+@keyframes crystalOrb3 {
+  0%, 100% { 
+    transform: translate(0px, 0px) scale(1); 
+  }
+  50% { 
+    transform: translate(18px, -20px) scale(1.08); 
+  }
+}
+.animate-crystal-orb-3 {
+  animation: crystalOrb3 18s ease-in-out infinite;
+}
+
+@keyframes spinOrbit {
+  from { transform: translate(-50%, 0) rotate(0deg); }
+  to { transform: translate(-50%, 0) rotate(360deg); }
+}
+.animate-spin-orbit {
+  animation: spinOrbit 45s linear infinite;
+}
+
+@keyframes floatSpark1 {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.25; }
+  50% { transform: translateY(-25px) translateX(12px); opacity: 0.85; }
+}
+.animate-float-spark-1 {
+  animation: floatSpark1 5.5s ease-in-out infinite;
+}
+
+@keyframes floatSpark2 {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.3; }
+  50% { transform: translateY(-30px) translateX(-15px); opacity: 0.9; }
+}
+.animate-float-spark-2 {
+  animation: floatSpark2 7s ease-in-out infinite;
+}
+
+@keyframes floatSpark3 {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.2; }
+  50% { transform: translateY(-18px) translateX(8px); opacity: 0.75; }
+}
+.animate-float-spark-3 {
+  animation: floatSpark3 7.5s ease-in-out infinite;
+}
+
+@keyframes floatSpark4 {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.3; }
+  50% { transform: translateY(-35px) translateX(-12px); opacity: 0.85; }
+}
+.animate-float-spark-4 {
+  animation: floatSpark4 8.5s ease-in-out infinite;
+}
+
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fade-in-down {
+  0% { opacity: 0; transform: translate(-50%, -14px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scale-in-center {
+  0% { opacity: 0; transform: scale(0.97); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-scale-in-center {
+  animation: scale-in-center 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F6F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #1A44C8;
+}
+
