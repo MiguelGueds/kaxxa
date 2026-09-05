@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { thirdPartiesService } from '@/lib/services/thirdParties';
+import { accountsService } from '@/lib/services/accounts';
+import { cardsService } from '@/lib/services/cards';
 import { 
   Plus, 
   CreditCard, 
@@ -101,11 +103,27 @@ export default function TerceirosPage() {
   const [formNotes, setFormNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Contas e Cartões reais do usuário
+  const [userAccounts, setUserAccounts] = useState<{ id: string; name: string }[]>([]);
+  const [userCards, setUserCards] = useState<{ id: string; name: string }[]>([]);
+
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const dbDebts = await thirdPartiesService.fetchDebts();
+        const [dbDebts, dbAccounts, dbCards] = await Promise.all([
+          thirdPartiesService.fetchDebts(),
+          accountsService.fetchAccounts(),
+          cardsService.fetchCards()
+        ]);
+
+        if (dbAccounts && dbAccounts.length > 0) {
+          setUserAccounts(dbAccounts.map(a => ({ id: a.id, name: a.name })));
+        }
+        if (dbCards && dbCards.length > 0) {
+          setUserCards(dbCards.map(c => ({ id: c.id, name: c.name })));
+        }
+
         if (dbDebts && dbDebts.length > 0) {
           setDebts(dbDebts.map(d => ({
             id: d.id,
@@ -134,6 +152,26 @@ export default function TerceirosPage() {
     }
     loadData();
   }, []);
+
+  const handleOpenNewModal = () => {
+    setFormPersonName('');
+    setFormDesc('');
+    setFormTotalAmount('');
+    setFormInstallments('1');
+    setFormDueDate('');
+    setFormNotes('');
+    if (userCards.length > 0) {
+      setFormOriginType('CARD');
+      setFormBankOrCard(userCards[0].name);
+    } else if (userAccounts.length > 0) {
+      setFormOriginType('ACCOUNT');
+      setFormBankOrCard(userAccounts[0].name);
+    } else {
+      setFormOriginType('CARD');
+      setFormBankOrCard('');
+    }
+    setIsNewModalOpen(true);
+  };
 
   const handleSaveDebt = async () => {
     const parsedAmount = parseFloat(formTotalAmount.replace(',', '.')) || 0;
@@ -613,7 +651,7 @@ export default function TerceirosPage() {
             </div>
 
             <button 
-              onClick={() => setIsNewModalOpen(true)}
+              onClick={handleOpenNewModal}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-[10px] transition-all shadow-md whitespace-nowrap"
             >
               <Plus size={12} className="text-white" />
@@ -866,23 +904,67 @@ export default function TerceirosPage() {
                   <label className="block text-[11px] font-bold text-[#64748B] mb-1">Tipo de Origem</label>
                   <select
                     value={formOriginType}
-                    onChange={e => setFormOriginType(e.target.value as 'CARD' | 'ACCOUNT')}
-                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                    onChange={e => {
+                      const newType = e.target.value as 'CARD' | 'ACCOUNT';
+                      setFormOriginType(newType);
+                      if (newType === 'CARD') {
+                        setFormBankOrCard(userCards[0]?.name || '');
+                      } else {
+                        setFormBankOrCard(userAccounts[0]?.name || '');
+                      }
+                    }}
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
                   >
                     <option value="CARD">Cartão de Crédito</option>
-                    <option value="ACCOUNT">Conta / PIX</option>
+                    <option value="ACCOUNT">Conta Bancária</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Banco ou Cartão</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Nubank, Itaú"
-                    value={formBankOrCard}
-                    onChange={e => setFormBankOrCard(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
-                  />
+                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">
+                    {formOriginType === 'CARD' ? 'Cartão' : 'Conta Bancária'}
+                  </label>
+                  {formOriginType === 'CARD' ? (
+                    userCards.length > 0 ? (
+                      <select
+                        value={formBankOrCard}
+                        onChange={e => setFormBankOrCard(e.target.value)}
+                        className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                      >
+                        {userCards.map(c => (
+                          <option key={c.id} value={c.name}>{c.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="Nenhum cartão cadastrado"
+                        value={formBankOrCard}
+                        onChange={e => setFormBankOrCard(e.target.value)}
+                        className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                      />
+                    )
+                  ) : (
+                    userAccounts.length > 0 ? (
+                      <select
+                        value={formBankOrCard}
+                        onChange={e => setFormBankOrCard(e.target.value)}
+                        className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                      >
+                        {userAccounts.map(a => (
+                          <option key={a.id} value={a.name}>{a.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="Nenhuma conta cadastrada"
+                        value={formBankOrCard}
+                        onChange={e => setFormBankOrCard(e.target.value)}
+                        className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                      />
+                    )
+                  )}
                 </div>
               </div>
 

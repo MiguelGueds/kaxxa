@@ -569,8 +569,8 @@ function SettingsContent() {
               
               {/* Foto de Perfil / Avatar */}
               <div className="flex items-center gap-4 p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl">
-                <div className="relative group">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-[#1A44C8] to-[#1538A5] text-white flex items-center justify-center font-black text-xl shadow-sm">
+                <div className="relative group shrink-0">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-[#1A44C8] to-[#1538A5] text-white flex items-center justify-center font-black text-xl shadow-sm border-2 border-white">
                     {userAvatar ? (
                       <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
@@ -580,14 +580,28 @@ function SettingsContent() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute inset-0 bg-black/40 text-white rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute inset-0 bg-black/40 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Alterar foto"
                   >
                     <Camera size={18} />
                   </button>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const isTrial = subscription?.status === 'TRIAL' || (subscription?.amount === 0 && !isAdminEmail(userEmail));
+                      return (
+                        <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                          isTrial 
+                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}>
+                          {isTrial ? 'Período teste' : 'Acesso Pro'}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"

@@ -77,17 +77,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }, []);
 
   const [accessGranted, setAccessGranted] = useState<boolean | null>(null);
+  const [isTrialUser, setIsTrialUser] = useState<boolean>(false);
 
   // Verificação de Paywall / Assinatura
   useEffect(() => {
     let isMounted = true;
     async function checkSubscription() {
       try {
-        const { granted } = await subscriptionService.isAccessGranted();
+        const { granted, subscription } = await subscriptionService.isAccessGranted();
         if (!granted) {
           if (isMounted) setAccessGranted(false);
           router.replace('/planos');
           return;
+        }
+        if (subscription) {
+          const isTrial = subscription.status === 'TRIAL' || (subscription.amount === 0 && !isAdminEmail(userInfo.email));
+          if (isMounted) setIsTrialUser(isTrial);
         }
         if (isMounted) setAccessGranted(true);
       } catch (err) {
@@ -380,21 +385,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               {isConcealed ? <EyeOff size={14} className="text-amber-600" /> : <Eye size={14} className="text-[#1A44C8]" />}
             </button>
 
-            {/* Perfil no Topbar (Avatar Redondo) */}
+            {/* Perfil no Topbar (Avatar Redondo + Acesso Pro / Período teste) */}
             <Link 
               href="/dashboard/configuracoes"
-              className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-[#F1F3F7] transition-colors border border-transparent hover:border-[#E5E7EB]"
+              className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full hover:bg-[#F1F3F7] transition-colors border border-transparent hover:border-[#E5E7EB]"
               title="Meu Perfil e Configurações"
             >
-              <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-xs border border-white/60">
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-xs border border-white/60 shrink-0">
                 {userInfo.avatar ? (
                   <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
                 )}
               </div>
-              <span className="text-xs font-bold text-[#181B22] hidden sm:block max-w-[120px] truncate">{userInfo.name}</span>
-              <ChevronRight size={11} className="text-[#94A3B8] hidden sm:block" />
+              <div className="flex flex-col text-left hidden sm:flex min-w-0">
+                <span className="text-xs font-bold text-[#181B22] max-w-[120px] truncate leading-tight">{userInfo.name}</span>
+                <span className={`text-[9.5px] font-extrabold tracking-tight leading-none mt-0.5 ${
+                  isTrialUser ? 'text-amber-600' : 'text-emerald-600'
+                }`}>
+                  {isTrialUser ? 'Período teste' : 'Acesso Pro'}
+                </span>
+              </div>
+              <ChevronRight size={11} className="text-[#94A3B8] hidden sm:block shrink-0 ml-0.5" />
             </Link>
           </div>
         </header>
