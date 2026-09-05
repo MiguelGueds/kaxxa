@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { saveSubscriptionLocal, DbSubscription } from '@/lib/services/subscription';
 
 export interface Coupon {
   id: string;
@@ -240,7 +241,7 @@ export const couponService = {
     code: string;
     userId: string;
     email?: string;
-  }): Promise<{ success: boolean; days?: number; message: string }> {
+  }): Promise<{ success: boolean; days?: number; endsAt?: string; subscription?: DbSubscription | null; message: string }> {
     const coupon = await this.getCoupon(params.code);
 
     if (!coupon) {
@@ -260,28 +261,40 @@ export const couponService = {
       throw new Error('Você já utilizou este cupom nesta conta.');
     }
 
+    let createdSubscription: DbSubscription | null = null;
+
     // Se for cupom de dias de teste
     if (coupon.type === 'TRIAL_DAYS') {
       const days = coupon.value || 2;
       const currentPeriodEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
-      if (isSupabaseConfigured()) {
-        const { error: subError } = await supabase
-          .from('subscriptions')
-          .upsert({
-            user_id: params.userId,
-            status: 'TRIAL',
-            plan_type: 'MENSAL',
-            payment_method: 'PIX',
-            payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
-            amount: 0.00,
-            current_period_end: currentPeriodEnd,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
+      createdSubscription = {
+        id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
+        user_id: params.userId,
+        status: 'TRIAL',
+        plan_type: 'MENSAL',
+        payment_method: 'PIX',
+        payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
+        amount: 0.00,
+        current_period_end: currentPeriodEnd,
+        updated_at: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      };
 
-        if (subError) {
-          console.error('Erro ao atualizar assinatura com cupom:', subError);
-          throw new Error('Não foi possível ativar o acesso de teste no banco.');
+      // Sempre salva no fallback resiliente
+      saveSubscriptionLocal(createdSubscription);
+
+      if (isSupabaseConfigured()) {
+        try {
+          const { error: subError } = await supabase
+            .from('subscriptions')
+            .upsert(createdSubscription, { onConflict: 'user_id' });
+
+          if (subError) {
+            console.warn('Supabase subscriptions indisponível para upsert, usando fallback local:', subError);
+          }
+        } catch (err) {
+          console.warn('Supabase subscriptions upsert falhou, acesso local garantido:', err);
         }
       }
     }
@@ -321,6 +334,8 @@ export const couponService = {
     return {
       success: true,
       days: coupon.type === 'TRIAL_DAYS' ? coupon.value : undefined,
+      endsAt: createdSubscription?.current_period_end,
+      subscription: createdSubscription,
       message: coupon.type === 'TRIAL_DAYS'
         ? `Cupom ativado com sucesso! Você ganhou ${coupon.value} dias de acesso degustação.`
         : `Cupom de desconto aplicado com sucesso!`

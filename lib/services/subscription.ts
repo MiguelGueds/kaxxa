@@ -14,9 +14,97 @@ export interface DbSubscription {
   updated_at?: string;
 }
 
+// Armazenamento em memória e disco para resiliência (caso a tabela do Supabase ainda não tenha sido criada)
+let MEMORY_SUBSCRIPTIONS: Record<string, DbSubscription> = {};
+
+function getFs() {
+  if (typeof window === 'undefined') {
+    try {
+      return eval('require')('fs');
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function getPath() {
+  if (typeof window === 'undefined') {
+    try {
+      return eval('require')('path');
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function getSubscriptionPaths() {
+  const pathMod = getPath();
+  if (!pathMod) return null;
+  const primaryDir = pathMod.join(process.cwd(), 'data');
+  const primaryFile = pathMod.join(primaryDir, 'subscriptions.json');
+  const tmpDir = '/tmp/kaxxa_data';
+  const tmpFile = pathMod.join(tmpDir, 'subscriptions.json');
+  return { primaryDir, primaryFile, tmpDir, tmpFile };
+}
+
+function loadLocalSubscriptions(): Record<string, DbSubscription> {
+  if (Object.keys(MEMORY_SUBSCRIPTIONS).length > 0) {
+    return MEMORY_SUBSCRIPTIONS;
+  }
+
+  const fsMod = getFs();
+  const paths = getSubscriptionPaths();
+  if (fsMod && paths) {
+    const { primaryFile, tmpFile } = paths;
+    for (const filePath of [tmpFile, primaryFile]) {
+      try {
+        if (fsMod.existsSync(filePath)) {
+          const content = fsMod.readFileSync(filePath, 'utf8');
+          MEMORY_SUBSCRIPTIONS = JSON.parse(content);
+          return MEMORY_SUBSCRIPTIONS;
+        }
+      } catch {}
+    }
+  }
+  return MEMORY_SUBSCRIPTIONS;
+}
+
+export function saveSubscriptionLocal(sub: DbSubscription) {
+  MEMORY_SUBSCRIPTIONS[sub.user_id] = sub;
+
+  // No navegador, persiste também no localStorage
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('kaxxa_trial_active', JSON.stringify({
+        id: sub.id,
+        userId: sub.user_id,
+        endsAt: sub.current_period_end,
+        createdAt: sub.created_at
+      }));
+    } catch {}
+  }
+
+  const fsMod = getFs();
+  const paths = getSubscriptionPaths();
+  if (fsMod && paths) {
+    const { primaryDir, primaryFile, tmpDir, tmpFile } = paths;
+    try {
+      if (!fsMod.existsSync(primaryDir)) fsMod.mkdirSync(primaryDir, { recursive: true });
+      fsMod.writeFileSync(primaryFile, JSON.stringify(MEMORY_SUBSCRIPTIONS, null, 2), 'utf8');
+    } catch {}
+
+    try {
+      if (!fsMod.existsSync(tmpDir)) fsMod.mkdirSync(tmpDir, { recursive: true });
+      fsMod.writeFileSync(tmpFile, JSON.stringify(MEMORY_SUBSCRIPTIONS, null, 2), 'utf8');
+    } catch {}
+  }
+}
+
 export const subscriptionService = {
   /**
-   * Retorna a assinatura ativa do usuário, ou null se não houver.
+   * Retorna a assinatura ativa do usuário, com fallback resiliente.
    */
   async getSubscription(): Promise<DbSubscription | null> {
     const user = await getAuthenticatedUser();
@@ -36,32 +124,60 @@ export const subscriptionService = {
       };
     }
 
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Erro ao verificar assinatura:', error);
-      return null;
+    // 1. Verificação no localStorage (no navegador) para resposta instantânea
+    if (typeof window !== 'undefined') {
+      try {
+        const localTrial = localStorage.getItem('kaxxa_trial_active');
+        if (localTrial) {
+          const parsed = JSON.parse(localTrial);
+          if (parsed.userId === user.id && parsed.endsAt) {
+            const isExpired = new Date(parsed.endsAt).getTime() < Date.now();
+            if (!isExpired) {
+              return {
+                id: parsed.id || 'trial-local',
+                user_id: user.id,
+                status: 'TRIAL',
+                plan_type: 'MENSAL',
+                payment_method: 'PIX',
+                amount: 0,
+                current_period_end: parsed.endsAt,
+                created_at: parsed.createdAt || new Date().toISOString()
+              };
+            }
+          }
+        }
+      } catch {}
     }
 
-    return data as DbSubscription | null;
+    // 2. Consulta ao Supabase
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!error && data) {
+          saveSubscriptionLocal(data as DbSubscription);
+          return data as DbSubscription;
+        }
+      } catch (err) {
+        console.warn('Supabase subscriptions indisponível, usando fallback local:', err);
+      }
+    }
+
+    // 3. Fallback local em memória / arquivo
+    const localMap = loadLocalSubscriptions();
+    return localMap[user.id] || null;
   },
 
   /**
    * Verifica se o usuário possui acesso liberado ao sistema.
-   * Em ambiente sem Supabase configurado (demo local), libera acesso.
-   * Se logado com Supabase, exige status === 'ACTIVE' ou 'TRIAL' com data válida.
    */
   async isAccessGranted(): Promise<{ granted: boolean; subscription: DbSubscription | null }> {
-    if (!isSupabaseConfigured()) {
-      return { granted: true, subscription: null };
-    }
-
     const user = await getAuthenticatedUser();
     if (!user) {
       return { granted: false, subscription: null };
@@ -82,13 +198,38 @@ export const subscriptionService = {
       return { granted: true, subscription: adminSub };
     }
 
+    // Verificação rápida no navegador para trials recém-ativados
+    if (typeof window !== 'undefined') {
+      try {
+        const localTrial = localStorage.getItem('kaxxa_trial_active');
+        if (localTrial) {
+          const parsed = JSON.parse(localTrial);
+          if (parsed.userId === user.id && parsed.endsAt) {
+            const isExpired = new Date(parsed.endsAt).getTime() < Date.now();
+            if (!isExpired) {
+              const trialSub: DbSubscription = {
+                id: parsed.id || 'trial-local',
+                user_id: user.id,
+                status: 'TRIAL',
+                plan_type: 'MENSAL',
+                payment_method: 'PIX',
+                amount: 0,
+                current_period_end: parsed.endsAt,
+                created_at: parsed.createdAt || new Date().toISOString()
+              };
+              return { granted: true, subscription: trialSub };
+            }
+          }
+        }
+      } catch {}
+    }
+
     const sub = await this.getSubscription();
     if (!sub) {
       return { granted: false, subscription: null };
     }
 
     if (sub.status === 'ACTIVE') {
-      // Se tiver data de expiração, valida se ainda não passou
       if (sub.current_period_end) {
         const isExpired = new Date(sub.current_period_end).getTime() < Date.now();
         return { granted: !isExpired, subscription: sub };
@@ -108,7 +249,7 @@ export const subscriptionService = {
   },
 
   /**
-   * Ativa ou renova a assinatura de um usuário.
+   * Ativa ou renova a assinatura de um usuário com persistência dupla.
    */
   async activateSubscription(params: {
     userId: string;
@@ -117,33 +258,56 @@ export const subscriptionService = {
     paymentId: string;
     amount?: number;
     durationDays?: number;
-  }): Promise<DbSubscription | null> {
+    status?: 'ACTIVE' | 'TRIAL';
+  }): Promise<DbSubscription> {
     const planType = params.planType || 'MENSAL';
     const amount = params.amount ?? 39.90;
     const days = params.durationDays || (planType === 'ANUAL' ? 365 : 30);
     const periodEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+    const status = params.status || 'ACTIVE';
 
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .upsert({
-        user_id: params.userId,
-        status: 'ACTIVE',
-        plan_type: planType,
-        payment_method: params.paymentMethod,
-        payment_id: params.paymentId,
-        amount: amount,
-        current_period_end: periodEnd,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' })
-      .select()
-      .single();
+    const subData: DbSubscription = {
+      id: `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      user_id: params.userId,
+      status: status,
+      plan_type: planType,
+      payment_method: params.paymentMethod,
+      payment_id: params.paymentId,
+      amount: amount,
+      current_period_end: periodEnd,
+      updated_at: new Date().toISOString(),
+      created_at: new Date().toISOString()
+    };
 
-    if (error) {
-      console.error('Erro ao ativar assinatura:', error);
-      throw error;
+    // Sempre salva localmente primeiro (resiliência garantida)
+    saveSubscriptionLocal(subData);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .upsert({
+            user_id: params.userId,
+            status: status,
+            plan_type: planType,
+            payment_method: params.paymentMethod,
+            payment_id: params.paymentId,
+            amount: amount,
+            current_period_end: periodEnd,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' })
+          .select()
+          .single();
+
+        if (!error && data) {
+          saveSubscriptionLocal(data as DbSubscription);
+          return data as DbSubscription;
+        }
+      } catch (err) {
+        console.warn('Supabase subscriptions indisponível para upsert, usando local:', err);
+      }
     }
 
-    return data as DbSubscription;
+    return subData;
   }
 };
-

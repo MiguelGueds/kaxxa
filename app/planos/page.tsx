@@ -266,10 +266,17 @@ export default function PlanosCheckoutPage() {
     try {
       setLoading(true);
       setErrorMsg('');
+      if (appliedCoupon) {
+        localStorage.setItem('kaxxa_pending_coupon', appliedCoupon.code);
+      }
+      const redirectUrl = appliedCoupon 
+        ? `${window.location.origin}/planos?cupom=${encodeURIComponent(appliedCoupon.code)}`
+        : `${window.location.origin}/planos`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/planos`
+          redirectTo: redirectUrl
         }
       });
       if (error) throw error;
@@ -409,9 +416,14 @@ export default function PlanosCheckoutPage() {
   };
 
   // Resgatar Cupom de Degustação (100% Grátis)
-  const handleRedeemTrialCoupon = async () => {
-    if (!user) {
+  const handleRedeemTrialCoupon = async (currentUser?: any) => {
+    const activeUser = currentUser || user;
+
+    if (!activeUser) {
       setAuthWarning(true);
+      if (appliedCoupon) {
+        localStorage.setItem('kaxxa_pending_coupon', appliedCoupon.code);
+      }
       handleGoogleClick();
       return;
     }
@@ -428,8 +440,8 @@ export default function PlanosCheckoutPage() {
         body: JSON.stringify({
           action: 'REDEEM',
           code: appliedCoupon.code,
-          userId: user.id,
-          email: user.email,
+          userId: activeUser.id,
+          email: activeUser.email,
         })
       });
 
@@ -438,11 +450,26 @@ export default function PlanosCheckoutPage() {
         throw new Error(data.error || 'Não foi possível resgatar o cupom.');
       }
 
+      // Salva localmente para acesso imediato no navegador sem depender do Supabase
+      if (typeof window !== 'undefined') {
+        const days = data.days || appliedCoupon.value || 2;
+        const endsAt = data.endsAt || (data.subscription ? data.subscription.current_period_end : new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString());
+        localStorage.setItem('kaxxa_trial_active', JSON.stringify({
+          userId: activeUser.id,
+          code: appliedCoupon.code,
+          days,
+          endsAt,
+          subscription: data.subscription
+        }));
+        localStorage.removeItem('kaxxa_pending_coupon');
+      }
+
       setIsApproved(true);
       setTimeout(() => {
         router.push('/dashboard');
-      }, 2000);
+      }, 1200);
     } catch (err: any) {
+      console.error('Erro ao ativar cupom:', err);
       setErrorMsg(err.message || 'Erro ao ativar cupom.');
     } finally {
       setLoading(false);
@@ -719,29 +746,40 @@ export default function PlanosCheckoutPage() {
 
                   {/* Aviso se clicou sem estar logado */}
                   {authWarning && !user && (
-                    <div className="p-3 bg-amber-50 border-2 border-amber-300 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-amber-950 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-950 animate-in fade-in slide-in-from-top-1 duration-200">
                       <div className="flex items-center gap-2">
-                        <AlertCircle size={16} className="text-amber-600 shrink-0" />
-                        <span className="font-bold">Entre em sua conta antes</span>
+                        <AlertCircle size={18} className="text-amber-600 shrink-0" />
+                        <div>
+                          <span className="font-bold block">Entre em sua conta antes de ativar</span>
+                          <span className="text-[11px] text-amber-800">Conecte com sua conta Google para liberar os {appliedCoupon.value} dias de teste gratuito.</span>
+                        </div>
                       </div>
-                      <div className="shrink-0 flex justify-center">
-                        <div id="google-btn-warning-trial" />
-                        {!gsiReady && (
-                          <button
-                            type="button"
-                            onClick={handleGoogleClick}
-                            className="px-3.5 py-1.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
-                          >
-                            <span>Entrar com Google</span>
-                          </button>
-                        )}
+                      <div className="shrink-0 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (appliedCoupon) localStorage.setItem('kaxxa_pending_coupon', appliedCoupon.code);
+                            handleGoogleOAuthDirect();
+                          }}
+                          className="px-4 py-2 bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95 shrink-0"
+                        >
+                          <span>Entrar com Google</span>
+                        </button>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Mensagem de Erro Visível */}
+                  {errorMsg && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-bold flex items-center gap-2">
+                      <AlertCircle size={15} className="shrink-0 text-rose-600" />
+                      <span>{errorMsg}</span>
                     </div>
                   )}
 
                   <button
                     type="button"
-                    onClick={handleRedeemTrialCoupon}
+                    onClick={() => handleRedeemTrialCoupon()}
                     disabled={loading}
                     className="w-full py-3 bg-[#059669] hover:bg-[#047857] text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
                   >
