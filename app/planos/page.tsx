@@ -442,9 +442,11 @@ export default function PlanosCheckoutPage() {
     }
 
     if (!activeUser) {
-      // Se não há sessão iniciada, gera identificador de teste para liberar a degustação imediatamente
-      const tempId = `trial_${Date.now()}`;
-      activeUser = { id: tempId, email: 'degustacao@kaxxa.com.br' };
+      if (appliedCoupon && typeof window !== 'undefined') {
+        localStorage.setItem('kaxxa_pending_coupon', appliedCoupon.code);
+      }
+      router.push('/login');
+      return;
     }
 
     if (!appliedCoupon) return;

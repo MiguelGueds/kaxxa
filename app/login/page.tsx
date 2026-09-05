@@ -20,7 +20,12 @@ export default function LoginPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        router.push('/dashboard');
+        const pendingCoupon = typeof window !== 'undefined' ? localStorage.getItem('kaxxa_pending_coupon') : null;
+        if (pendingCoupon) {
+          router.push(`/planos?cupom=${encodeURIComponent(pendingCoupon)}`);
+        } else {
+          router.push('/dashboard');
+        }
       }
     });
   }, [router]);
@@ -37,7 +42,12 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      router.push('/dashboard');
+      const pendingCoupon = typeof window !== 'undefined' ? localStorage.getItem('kaxxa_pending_coupon') : null;
+      if (pendingCoupon) {
+        router.push(`/planos?cupom=${encodeURIComponent(pendingCoupon)}`);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       console.error('Google ID Token error:', err);
       setErrorMsg(err.message || 'Erro ao autenticar com o Google.');
