@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Ticket,
   UserCircle2,
+  Tag,
   Sun,
   Moon
 } from 'lucide-react';
@@ -144,8 +145,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     {
       title: 'Configurações',
       items: [
-        { href: '/dashboard/configuracoes?tab=perfil', icon: UserCircle2, label: 'Perfil e Conta' },
-        { href: '/dashboard/configuracoes?tab=sistema', icon: Settings, label: 'Dados do Sistema' },
+        { href: '/dashboard/configuracoes?tab=contas', icon: Landmark, label: 'Contas bancárias' },
+        { href: '/dashboard/configuracoes?tab=cartoes', icon: CreditCard, label: 'Cartões' },
+        { href: '/dashboard/configuracoes?tab=categorias', icon: Tag, label: 'Categorias' },
+        { href: '/dashboard/configuracoes?tab=terceiros', icon: Users, label: 'Pessoas' },
       ]
     },
     ...(isAdmin ? [
@@ -164,10 +167,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (href.startsWith('/dashboard/configuracoes')) {
       if (pathname !== '/dashboard/configuracoes') return false;
       const search = typeof window !== 'undefined' ? window.location.search : '';
-      if (href.includes('tab=sistema')) {
-        return search.includes('tab=sistema');
+      const hrefTab = href.split('tab=')[1];
+      if (hrefTab) {
+        return search.includes(`tab=${hrefTab}`);
       }
-      return !search.includes('tab=sistema');
+      return false;
     }
     return false;
   };
@@ -179,7 +183,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (pathname === '/dashboard/cartoes') return { title: 'Minhas Faturas', icon: CreditCard };
     if (pathname === '/dashboard/terceiros') return { title: 'Terceiros', icon: Users };
     if (pathname === '/dashboard/dividas') return { title: 'Dívidas e Empréstimos', icon: Landmark };
-    if (pathname === '/dashboard/configuracoes') return { title: 'Configurações', icon: Settings };
+    if (pathname === '/dashboard/configuracoes') {
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      if (search.includes('tab=perfil') || search.includes('tab=assinatura') || !search) {
+        return { title: 'Minha Conta', icon: UserCircle2 };
+      }
+      return { title: 'Configurações', icon: Settings };
+    }
     if (pathname === '/dashboard/admin/cupons') return { title: 'Cupons', icon: Ticket };
     if (pathname?.startsWith('/dashboard/admin')) return { title: 'Gestão', icon: ShieldCheck };
     return { title: 'Dashboard', icon: HomeIcon };

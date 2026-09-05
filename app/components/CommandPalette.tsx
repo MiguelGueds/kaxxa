@@ -16,7 +16,8 @@ import {
   Ticket,
   ArrowRight,
   PlusCircle,
-  UserCircle2
+  UserCircle2,
+  Tag
 } from 'lucide-react';
 import { isAdminEmail } from '@/lib/admin';
 
@@ -52,10 +53,13 @@ export function CommandPalette({ isOpen, onClose, userEmail }: CommandPalettePro
     { id: 'nav-terceiros', title: 'Terceiros', subtitle: 'Gastos e empréstimos com amigos ou parentes', icon: Users, href: '/dashboard/terceiros', category: 'Navegação' },
     { id: 'nav-dividas', title: 'Dívidas e Empréstimos', subtitle: 'Amortizações e simulação de quitação antecipada', icon: Landmark, href: '/dashboard/dividas', category: 'Navegação' },
     
-    // Configurações
-    { id: 'nav-config-perfil', title: 'Perfil e Conta', subtitle: 'Foto, nome, e-mail, telefone e alteração de senha', icon: UserCircle2, href: '/dashboard/configuracoes?tab=perfil', category: 'Configurações' },
-    { id: 'nav-config-assinatura', title: 'Minha Assinatura', subtitle: 'Plano ativo, método de pagamento, ciclo e recorrência', icon: ShieldCheck, href: '/dashboard/configuracoes?tab=perfil', category: 'Configurações' },
-    { id: 'nav-config-sistema', title: 'Dados do Sistema', subtitle: 'Contas bancárias, cartões, categorias e pessoas', icon: Settings, href: '/dashboard/configuracoes?tab=sistema', category: 'Configurações' },
+    // Configurações e Minha Conta
+    { id: 'nav-config-perfil', title: 'Minha Conta - Meu Perfil', subtitle: 'Foto, nome, e-mail, telefone e alteração de senha', icon: UserCircle2, href: '/dashboard/configuracoes?tab=perfil', category: 'Configurações' },
+    { id: 'nav-config-assinatura', title: 'Minha Assinatura', subtitle: 'Plano ativo, método de pagamento, ciclo e recorrência', icon: ShieldCheck, href: '/dashboard/configuracoes?tab=assinatura', category: 'Configurações' },
+    { id: 'nav-config-contas', title: 'Contas Bancárias', subtitle: 'Cadastrar e gerenciar contas correntes, poupança e carteiras', icon: Landmark, href: '/dashboard/configuracoes?tab=contas', category: 'Configurações' },
+    { id: 'nav-config-cartoes', title: 'Cartões (Configuração)', subtitle: 'Gerenciar cartões de crédito e limites', icon: CreditCard, href: '/dashboard/configuracoes?tab=cartoes', category: 'Configurações' },
+    { id: 'nav-config-categorias', title: 'Categorias Financeiras', subtitle: 'Estrutura de categorias e subcategorias de receitas/despesas', icon: Tag, href: '/dashboard/configuracoes?tab=categorias', category: 'Configurações' },
+    { id: 'nav-config-pessoas', title: 'Pessoas e Terceiros', subtitle: 'Cadastro de clientes, fornecedores e dependentes', icon: Users, href: '/dashboard/configuracoes?tab=terceiros', category: 'Configurações' },
     
     // Ações Rápidas
     { id: 'act-transacao', title: 'Nova Transação', subtitle: 'Lançar nova receita ou despesa no extrato', icon: PlusCircle, href: '/dashboard/transacoes', category: 'Ações Rápidas' },

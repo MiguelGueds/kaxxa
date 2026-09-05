@@ -427,10 +427,10 @@ function SettingsContent() {
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] mb-1">
             <span>Configurações</span>
             <span>/</span>
-            <span className="text-[#1A44C8]">{section === 'CONTA' ? 'Perfil e Conta' : 'Dados do Sistema'}</span>
+            <span className="text-[#1A44C8]">{section === 'CONTA' ? 'Minha Conta' : 'Sistema'}</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-[#181B22] tracking-tight">
-            {section === 'CONTA' ? 'Perfil e Conta' : 'Dados do Sistema'}
+            {section === 'CONTA' ? 'Minha Conta' : 'Configurações do Sistema'}
           </h1>
           <p className="text-xs text-[#64748B] mt-0.5">
             {section === 'CONTA' 
@@ -451,7 +451,7 @@ function SettingsContent() {
             }`}
           >
             <User size={13} />
-            <span>Perfil e Conta</span>
+            <span>Minha Conta</span>
           </button>
           <button
             type="button"
@@ -463,7 +463,7 @@ function SettingsContent() {
             }`}
           >
             <Wallet size={13} />
-            <span>Dados do Sistema</span>
+            <span>Configurações do Sistema</span>
           </button>
         </div>
       </header>
@@ -482,7 +482,7 @@ function SettingsContent() {
               }`}
             >
               <User size={14} />
-              <span>Meu Perfil</span>
+              <span>Meu perfil</span>
             </button>
 
             <button 
@@ -495,7 +495,7 @@ function SettingsContent() {
               }`}
             >
               <ShieldCheck size={14} />
-              <span>Minha Assinatura</span>
+              <span>Minha assinatura</span>
             </button>
           </>
         ) : (
@@ -510,7 +510,7 @@ function SettingsContent() {
               }`}
             >
               <Landmark size={14} />
-              <span>Contas Bancárias</span>
+              <span>Contas bancárias</span>
             </button>
 
             <button 
@@ -523,7 +523,7 @@ function SettingsContent() {
               }`}
             >
               <CreditCard size={14} />
-              <span>Cartões de Crédito</span>
+              <span>Cartões</span>
             </button>
 
             <button 
@@ -535,7 +535,7 @@ function SettingsContent() {
                   : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
               }`}
             >
-              <ListTree size={14} />
+              <Tag size={14} />
               <span>Categorias</span>
             </button>
 
@@ -549,7 +549,7 @@ function SettingsContent() {
               }`}
             >
               <UserCircle2 size={14} />
-              <span>Pessoas e Terceiros</span>
+              <span>Pessoas</span>
             </button>
           </>
         )}
