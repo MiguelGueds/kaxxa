@@ -31,7 +31,7 @@ export function KaxxaWordmark({ className = "", textColor = "text-[#181B22]" }: 
     <svg 
       viewBox="0 0 108 24" 
       fill="none" 
-      strokeWidth="3.5" 
+      strokeWidth="4.4" 
       strokeLinecap="round" 
       strokeLinejoin="round" 
       className={`h-[0.85em] w-auto shrink-0 overflow-visible select-none inline-block align-middle ${textColor} ${className}`}

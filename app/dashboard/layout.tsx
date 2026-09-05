@@ -36,6 +36,37 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { isConcealed, togglePrivacy } = usePrivacy();
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar: string | null }>({
+    name: 'Minha Conta',
+    email: '',
+    avatar: null
+  });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUserInfo({
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
+          email: session.user.email || '',
+          avatar: session.user.user_metadata?.avatar_url || null
+        });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUserInfo({
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
+          email: session.user.email || '',
+          avatar: session.user.user_metadata?.avatar_url || null
+        });
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   // Verificação de Paywall / Assinatura
   useEffect(() => {
@@ -209,26 +240,36 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* User Footer no Estilo Micro-Card */}
           <div className="pt-2.5 border-t border-[#F1F3F7] space-y-1.5">
-            {!isSidebarCollapsed ? (
-              <div className="p-2 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]/80 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm">
-                    KX
+            <Link href="/dashboard/configuracoes" className="block">
+              {!isSidebarCollapsed ? (
+                <div className="p-2 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F3F7] border border-[#E5E7EB]/80 flex items-center justify-between shadow-sm transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-lg overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm">
+                      {userInfo.avatar ? (
+                        <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#181B22] truncate leading-tight">{userInfo.name}</p>
+                      <p className="text-[8.5px] text-[#64748B] truncate">{userInfo.email || 'kaxxa // pro'}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-[#181B22] truncate leading-tight">Conta Principal</p>
-                    <p className="text-[8.5px] text-[#64748B] truncate">kaxxa // pro</p>
+                  <Settings size={12} className="text-[#1A44C8] shrink-0" />
+                </div>
+              ) : (
+                <div className="flex justify-center" title={`${userInfo.name} • Perfil`}>
+                  <div className="w-7 h-7 rounded-lg overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
+                    {userInfo.avatar ? (
+                      <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
+                    )}
                   </div>
                 </div>
-                <Activity size={12} className="text-[#1A44C8] shrink-0" />
-              </div>
-            ) : (
-              <div className="flex justify-center" title="Conta Principal • PRO">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
-                  KX
-                </div>
-              </div>
-            )}
+              )}
+            </Link>
 
             <button 
               onClick={async (e) => { e.preventDefault(); await supabase.auth.signOut(); router.push('/login'); }} 
@@ -292,13 +333,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </button>
 
             {/* Perfil do Usuário */}
-            <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-1 pr-2.5 cursor-pointer hover:border-[#CBD5E1] transition-all shadow-sm">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
-                DU
+            <Link 
+              href="/dashboard/configuracoes"
+              className="flex items-center gap-2 bg-[#F8FAFC] hover:bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl p-1 pr-2.5 cursor-pointer transition-all shadow-sm"
+              title="Meu Perfil e Configurações"
+            >
+              <div className="w-6 h-6 rounded-lg overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
+                {userInfo.avatar ? (
+                  <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
+                )}
               </div>
-              <span className="text-xs font-semibold text-[#181B22] hidden sm:block">Demo User</span>
-              <ChevronRight size={11} className="text-[#94A3B8] rotate-90 hidden sm:block" />
-            </div>
+              <span className="text-xs font-semibold text-[#181B22] hidden sm:block max-w-[120px] truncate">{userInfo.name}</span>
+              <ChevronRight size={11} className="text-[#94A3B8] hidden sm:block" />
+            </Link>
           </div>
         </header>
 
