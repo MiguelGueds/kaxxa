@@ -182,29 +182,30 @@ export default function PlanosCheckoutPage() {
   const planPrice = '39,90';
 
   return (
-    <div className="min-h-screen bg-[#F5F6F9] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8]">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8]">
       
       {/* Background Ambience */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#1A44C8]/[0.05] blur-[140px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#1A44C8]/[0.04] blur-[120px]" />
       </div>
 
-      {/* Header Superior */}
-      <header className="relative z-10 w-full border-b border-[#E5E7EB] bg-[#FFFFFF]/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <KaxxaLogo className="w-8 h-8" />
-          <KaxxaWordmark className="text-xl tracking-tight" />
+      {/* Header Minimalista */}
+      <header className="relative z-10 w-full border-b border-[#E5E7EB] bg-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <KaxxaLogo className="w-7 h-7" />
+          <KaxxaWordmark className="text-lg tracking-tight" />
         </div>
 
         <div className="flex items-center gap-3 text-xs">
           {user ? (
             <div className="flex items-center gap-2 text-[#64748B]">
-              <span>Logado como: <strong className="text-[#181B22]">{user.email}</strong></span>
+              <span className="hidden sm:inline">Logado como:</span>
+              <strong className="text-[#181B22]">{user.email}</strong>
               <button 
                 onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }}
                 className="text-[#1A44C8] hover:underline font-semibold ml-1"
               >
-                Trocar conta
+                Trocar
               </button>
             </div>
           ) : (
@@ -212,275 +213,171 @@ export default function PlanosCheckoutPage() {
               href="/login"
               className="text-[#1A44C8] hover:underline font-bold"
             >
-              Já possui conta? Fazer Login
+              Fazer Login
             </Link>
           )}
         </div>
       </header>
 
       {/* Conteúdo Principal */}
-      <main className="relative z-10 max-w-5xl mx-auto px-4 py-12">
-        
-        {/* Título & Proposta de Valor */}
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1A44C8]/10 border border-[#1A44C8]/20 text-[#1A44C8] text-[11px] font-extrabold uppercase tracking-wider mb-3">
-            <Sparkles size={12} />
-            Acesso Imediato ao Kaxxa
-          </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#181B22] tracking-tight mb-3">
-            Assuma o controle definitivo do seu dinheiro
-          </h1>
-          <p className="text-[#64748B] text-sm">
-            Amortização acelerada de dívidas, controle de faturas, investimentos e extratos inteligentes em uma única plataforma.
-          </p>
-        </div>
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-8 sm:py-12">
 
         {/* Modal de Confirmação de Sucesso */}
         {isApproved && (
           <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-3xl p-8 max-w-md w-full text-center shadow-2xl animate-in fade-in zoom-in duration-300">
-              <div className="w-16 h-16 bg-[#059669]/10 text-[#059669] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#059669]/30">
-                <CheckCircle2 size={36} className="animate-bounce" />
+            <div className="bg-white border border-[#E5E7EB] rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in fade-in zoom-in duration-300">
+              <div className="w-14 h-14 bg-[#059669]/10 text-[#059669] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#059669]/30">
+                <CheckCircle2 size={32} className="animate-bounce" />
               </div>
-              <h3 className="text-2xl font-extrabold text-[#181B22] mb-2">Pagamento Aprovado! 🎉</h3>
-              <p className="text-sm text-[#64748B] mb-6">
-                Sua assinatura do Kaxxa foi confirmada com sucesso. Redirecionando para o seu novo painel financeiro...
+              <h3 className="text-xl font-extrabold text-[#181B22] mb-1">Pagamento Confirmado!</h3>
+              <p className="text-xs text-[#64748B] mb-5">
+                Acesso liberado. Redirecionando para o seu painel...
               </p>
-              <div className="w-full bg-[#F1F3F7] h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-[#F1F3F7] h-1.5 rounded-full overflow-hidden">
                 <div className="bg-[#1A44C8] h-full animate-[pulse_1s_infinite] w-full" />
               </div>
             </div>
           </div>
         )}
 
-        {/* Se já gerou o PIX: Exibe tela focada no pagamento */}
-        {pixData ? (
-          <div className="max-w-xl mx-auto bg-[#FFFFFF] border border-[#E5E7EB] rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
-            <div className="text-center mb-6">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#059669] bg-[#059669]/10 px-3 py-1 rounded-full mb-2">
-                <Clock size={13} />
-                PIX Gerado • Expira em {formatTime(countdown)}
+        {/* Card Unificado de Checkout */}
+        <div className="bg-white border border-[#E5E7EB] rounded-3xl shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12">
+
+          {/* Coluna Esquerda: Resumo do Plano (Clean & Direto) */}
+          <div className="md:col-span-5 bg-[#F8FAFC] border-b md:border-b-0 md:border-r border-[#E5E7EB] p-6 sm:p-8 flex flex-col justify-between">
+            <div>
+              <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] text-[10px] font-extrabold uppercase tracking-wider mb-3">
+                Assinatura Mensal
               </span>
-              <h2 className="text-2xl font-extrabold text-[#181B22] tracking-tight">
-                Pague via PIX para liberar agora
-              </h2>
-              <p className="text-xs text-[#64748B] mt-1">
-                Abra o aplicativo do seu banco, escolha <strong className="text-[#181B22]">Pagar com PIX</strong> e aponte a câmera para o QR Code ou copie o código.
-              </p>
-            </div>
-
-            {/* Valor */}
-            <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl p-4 text-center mb-6">
-              <span className="text-[11px] text-[#64748B] font-bold uppercase tracking-wider block">Valor a pagar:</span>
-              <div className="text-3xl font-extrabold text-[#1A44C8] tracking-tight">
-                R$ {planPrice}
+              <h1 className="text-2xl font-black text-[#181B22] tracking-tight">Kaxxa Finanças</h1>
+              
+              <div className="flex items-baseline gap-1 my-3">
+                <span className="text-3xl sm:text-4xl font-black text-[#181B22] tracking-tight">R$ 39,90</span>
+                <span className="text-xs text-[#64748B] font-semibold">/ mês</span>
               </div>
-              <span className="text-[10px] text-[#059669] font-bold">Assinatura Mensal • Sem fidelidade</span>
-            </div>
+              <p className="text-xs text-[#059669] font-bold">Sem fidelidade • Cancele quando quiser</p>
 
-            {/* QR Code Container */}
-            <div className="flex flex-col items-center justify-center p-6 bg-white border-2 border-dashed border-[#E5E7EB] rounded-2xl mb-6">
-              {pixData.qrCodeBase64 ? (
-                <img 
-                  src={`data:image/png;base64,${pixData.qrCodeBase64}`} 
-                  alt="QR Code PIX Mercado Pago"
-                  className="w-52 h-52 object-contain"
-                />
-              ) : (
-                /* Mock visual elegante para simulação ou fallback */
-                <div className="w-52 h-52 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl flex flex-col items-center justify-center p-4 relative">
-                  <QrCode size={120} className="text-[#181B22] mb-2" />
-                  <span className="text-[9px] font-bold text-[#64748B] uppercase tracking-wider">QR Code PIX</span>
+              {/* Benefícios Rápidos */}
+              <div className="mt-6 pt-6 border-t border-[#E5E7EB] space-y-2.5 text-xs text-[#334155]">
+                <div className="flex items-center gap-2">
+                  <Check size={14} className="text-[#059669] shrink-0" />
+                  <span>Amortização inteligente de dívidas</span>
                 </div>
-              )}
-
-              {/* Status de escuta em tempo real */}
-              <div className="flex items-center gap-2 mt-4 text-[11px] font-semibold text-[#1A44C8]">
-                <span className="w-2 h-2 rounded-full bg-[#1A44C8] animate-ping" />
-                <span>Aguardando confirmação do banco em tempo real...</span>
+                <div className="flex items-center gap-2">
+                  <Check size={14} className="text-[#059669] shrink-0" />
+                  <span>Gestão de cartões & faturas ilimitadas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check size={14} className="text-[#059669] shrink-0" />
+                  <span>Controle de contas & investimentos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check size={14} className="text-[#059669] shrink-0" />
+                  <span>Divisão e cobrança de terceiros</span>
+                </div>
               </div>
             </div>
 
-            {/* Código Copia e Cola */}
-            <div className="space-y-2 mb-6">
-              <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider block">
-                PIX Copia e Cola
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={pixData.qrCode}
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#64748B] font-mono select-all focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleCopyPix}
-                  className="px-4 py-2 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0"
-                >
-                  {copied ? (
-                    <>
-                      <Check size={14} />
-                      <span>Copiado!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={14} />
-                      <span>Copiar</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Botão de Verificação Manual & Trocar Plano */}
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={handleManualCheckStatus}
-                disabled={loading}
-                className="w-full py-3 bg-[#059669] hover:bg-[#047857] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
-              >
-                <CheckCircle2 size={16} />
-                <span>Já fiz o pagamento (Liberar Acesso)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPixData(null)}
-                className="w-full py-2 text-center text-xs text-[#64748B] hover:text-[#181B22] font-semibold transition-colors"
-              >
-                Alterar forma de pagamento
-              </button>
+            {/* Rodapé da Coluna Esquerda: Garantia */}
+            <div className="mt-8 pt-4 border-t border-[#E5E7EB] flex items-center gap-2.5 text-[11px] text-[#64748B]">
+              <ShieldCheck size={18} className="text-[#059669] shrink-0" />
+              <span>Garantia de 7 dias com devolução integral.</span>
             </div>
           </div>
-        ) : (
-          /* Grid de Planos e Seleção */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            {/* Coluna Esquerda: Apresentação do Plano Único */}
-            <div className="lg:col-span-7 space-y-4">
-              <h2 className="text-lg font-bold text-[#181B22]">1. Seu plano de acesso</h2>
 
-              {/* Card Plano Único Mensal */}
-              <div className="relative bg-[#FFFFFF] border-2 border-[#1A44C8] rounded-3xl p-6 sm:p-7 shadow-md ring-4 ring-[#1A44C8]/10 overflow-hidden">
-                <div className="absolute top-0 right-0 bg-[#1A44C8] text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-2xl uppercase tracking-wider shadow-sm flex items-center gap-1">
-                  <Sparkles size={11} />
-                  Acesso Completo • Sem Fidelidade
+          {/* Coluna Direita: Pagamento / QR Code */}
+          <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-center">
+
+            {pixData ? (
+              /* Visualização do QR Code PIX (Simples e Direta) */
+              <div className="text-center space-y-5">
+                <div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#059669] bg-[#059669]/10 px-2.5 py-0.5 rounded-full mb-2">
+                    <Clock size={12} />
+                    PIX ativo • Expira em {formatTime(countdown)}
+                  </span>
+                  <h2 className="text-xl font-extrabold text-[#181B22]">Pague via PIX</h2>
+                  <p className="text-xs text-[#64748B] mt-0.5">Escaneie o QR Code ou copie o código abaixo</p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
-                  <div>
-                    <span className="text-[11px] font-bold text-[#1A44C8] uppercase tracking-wider block mb-1">
-                      Assinatura Mensal Kaxxa
-                    </span>
-                    <h3 className="text-2xl font-extrabold text-[#181B22]">Plano Único Kaxxa</h3>
-                    <p className="text-xs text-[#64748B] mt-1">
-                      Controle financeiro avançado, quitação de dívidas e investimentos em um só lugar.
-                    </p>
-                  </div>
-                  <div className="sm:text-right shrink-0">
-                    <div className="flex items-baseline sm:justify-end gap-1">
-                      <span className="text-xs text-[#64748B] font-bold">R$</span>
-                      <span className="text-3xl font-black text-[#181B22] tracking-tight">39,90</span>
-                      <span className="text-xs text-[#64748B] font-semibold">/ mês</span>
+                {/* Container do QR Code */}
+                <div className="inline-flex flex-col items-center p-4 bg-white border border-[#E5E7EB] rounded-2xl shadow-sm">
+                  {pixData.qrCodeBase64 ? (
+                    <img 
+                      src={`data:image/png;base64,${pixData.qrCodeBase64}`} 
+                      alt="QR Code PIX Mercado Pago"
+                      className="w-44 h-44 object-contain"
+                    />
+                  ) : (
+                    <div className="w-44 h-44 bg-gray-50 rounded-xl flex items-center justify-center">
+                      <QrCode size={100} className="text-[#181B22]" />
                     </div>
-                    <span className="inline-block text-[11px] text-[#059669] font-bold mt-0.5 bg-[#059669]/10 px-2 py-0.5 rounded-md">
-                      Cancele quando quiser
-                    </span>
-                  </div>
-                </div>
+                  )}
 
-                <div className="pt-5 border-t border-[#E5E7EB] space-y-3">
-                  <h4 className="text-xs font-bold text-[#181B22] uppercase tracking-wider">
-                    Tudo o que está incluído no seu acesso:
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-[#181B22]">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] flex items-center justify-center shrink-0">
-                        <Check size={13} />
-                      </div>
-                      <span>Simulador e amortização de dívidas</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] flex items-center justify-center shrink-0">
-                        <Check size={13} />
-                      </div>
-                      <span>Gestão e projeção de faturas de cartões</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] flex items-center justify-center shrink-0">
-                        <Check size={13} />
-                      </div>
-                      <span>Controle de contas bancárias e extrato</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] flex items-center justify-center shrink-0">
-                        <Check size={13} />
-                      </div>
-                      <span>Acompanhamento de investimentos</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] flex items-center justify-center shrink-0">
-                        <Check size={13} />
-                      </div>
-                      <span>Divisão de contas & cobrança de terceiros</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] flex items-center justify-center shrink-0">
-                        <Check size={13} />
-                      </div>
-                      <span>Relatórios automáticos e sem anúncios</span>
-                    </div>
+                  {/* Pulsing listening status */}
+                  <div className="flex items-center gap-1.5 mt-3 text-[11px] font-semibold text-[#1A44C8]">
+                    <span className="w-2 h-2 rounded-full bg-[#1A44C8] animate-ping" />
+                    <span>Aguardando confirmação do banco...</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Garantia */}
-              <div className="flex items-center gap-3 p-4 bg-white border border-[#E5E7EB] rounded-2xl text-xs text-[#64748B]">
-                <ShieldCheck size={26} className="text-[#059669] shrink-0" />
-                <span>
-                  <strong className="text-[#181B22]">Garantia incondicional de 7 dias:</strong> Se por qualquer motivo você não gostar da plataforma, você pode cancelar a qualquer momento sem pegadinhas ou fidelidade.
-                </span>
-              </div>
-            </div>
-
-            {/* Coluna Direita: Método de Pagamento & Checkout */}
-            <div className="lg:col-span-5 space-y-4">
-              <h2 className="text-lg font-bold text-[#181B22]">2. Forma de pagamento</h2>
-
-              <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-3xl p-6 shadow-md space-y-6">
-                
-                {/* Abas PIX vs Cartão */}
-                <div className="grid grid-cols-2 gap-2 p-1 bg-[#F1F3F7] rounded-xl">
+                {/* Código Copia e Cola */}
+                <div className="flex gap-2 max-w-md mx-auto">
+                  <input
+                    type="text"
+                    readOnly
+                    value={pixData.qrCode}
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#64748B] font-mono select-all focus:outline-none truncate"
+                  />
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('PIX')}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                      paymentMethod === 'PIX'
-                        ? 'bg-white text-[#181B22] shadow-sm'
-                        : 'text-[#64748B] hover:text-[#181B22]'
-                    }`}
+                    onClick={handleCopyPix}
+                    className="px-4 py-2 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0"
                   >
-                    <QrCode size={14} className="text-[#059669]" />
-                    <span>PIX (Instantâneo)</span>
+                    {copied ? (
+                      <>
+                        <Check size={14} />
+                        <span>Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        <span>Copiar</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Botões de Ação */}
+                <div className="space-y-2 max-w-md mx-auto pt-2">
+                  <button
+                    type="button"
+                    onClick={handleManualCheckStatus}
+                    disabled={loading}
+                    className="w-full py-3 bg-[#059669] hover:bg-[#047857] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98"
+                  >
+                    <CheckCircle2 size={15} />
+                    <span>Já fiz o pagamento (Liberar Acesso)</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('CREDIT_CARD')}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                      paymentMethod === 'CREDIT_CARD'
-                        ? 'bg-white text-[#181B22] shadow-sm'
-                        : 'text-[#64748B] hover:text-[#181B22]'
-                    }`}
+                    onClick={() => setPixData(null)}
+                    className="w-full py-1.5 text-center text-xs text-[#64748B] hover:text-[#181B22] font-semibold transition-colors"
                   >
-                    <CreditCard size={14} className="text-[#1A44C8]" />
-                    <span>Cartão de Crédito</span>
+                    Alterar dados
                   </button>
                 </div>
+              </div>
+            ) : (
+              /* Formulário Inicial Limpo */
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-lg font-bold text-[#181B22]">Finalizar Pagamento</h2>
+                  <p className="text-xs text-[#64748B] mt-0.5">Preencha seus dados para gerar o PIX de liberação imediata.</p>
+                </div>
 
-                {/* Dados do Pagante */}
+                {/* Campos do Pagante */}
                 <div className="space-y-3">
                   <div>
                     <label className="text-[11px] font-bold text-[#64748B] block mb-1">Seu Nome</label>
@@ -489,7 +386,7 @@ export default function PlanosCheckoutPage() {
                       value={userName}
                       onChange={e => setUserName(e.target.value)}
                       placeholder="Nome completo"
-                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3.5 py-2.5 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
                     />
                   </div>
 
@@ -499,37 +396,21 @@ export default function PlanosCheckoutPage() {
                       type="email"
                       value={userEmail}
                       onChange={e => setUserEmail(e.target.value)}
-                      placeholder="email@exemplo.com"
-                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                      placeholder="seu-email@exemplo.com"
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3.5 py-2.5 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
                     />
                   </div>
                 </div>
 
-                {/* Se Cartão selecionado */}
-                {paymentMethod === 'CREDIT_CARD' && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
-                    <p className="font-bold flex items-center gap-1 mb-1">
-                      <AlertCircle size={14} />
-                      Recomendamos pagar via PIX
-                    </p>
-                    O PIX possui aprovação instantânea em 3 segundos e sem consumir o limite do seu cartão. Você pode alternar para a aba PIX acima.
+                {/* Forma de Pagamento: PIX em destaque */}
+                <div className="flex items-center justify-between p-3.5 rounded-xl border-2 border-[#1A44C8] bg-[#1A44C8]/[0.03]">
+                  <div className="flex items-center gap-2.5">
+                    <QrCode size={18} className="text-[#059669]" />
+                    <span className="text-xs font-bold text-[#181B22]">PIX</span>
                   </div>
-                )}
-
-                {/* Resumo */}
-                <div className="pt-4 border-t border-[#E5E7EB] space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#64748B]">Plano Selecionado:</span>
-                    <strong className="text-[#181B22]">Assinatura Mensal Kaxxa</strong>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#64748B]">Cobrança:</span>
-                    <span className="text-[#059669] font-bold">Sem fidelidade (Cancele quando quiser)</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#64748B]">Total hoje:</span>
-                    <strong className="text-xl font-extrabold text-[#1A44C8]">R$ {planPrice}</strong>
-                  </div>
+                  <span className="text-[10px] font-extrabold text-[#059669] bg-[#059669]/10 px-2 py-0.5 rounded-full">
+                    Aprovação em 3 segundos
+                  </span>
                 </div>
 
                 {errorMsg && (
@@ -538,33 +419,33 @@ export default function PlanosCheckoutPage() {
                   </div>
                 )}
 
-                {/* Botão Final de Checkout */}
+                {/* Botão Principal */}
                 <button
                   type="button"
                   onClick={handleGeneratePix}
                   disabled={loading}
-                  className="w-full py-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-2xl font-bold text-sm transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
+                  className="w-full py-3.5 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-98"
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
-                      <Lock size={15} />
-                      <span>{paymentMethod === 'PIX' ? 'GERAR PIX & LIBERAR ACESSO' : 'PAGAR & LIBERAR ACESSO'}</span>
+                      <Lock size={14} />
+                      <span>GERAR PIX • R$ 39,90</span>
                     </>
                   )}
                 </button>
 
-                <div className="flex items-center justify-center gap-2 text-[10px] text-[#94A3B8]">
-                  <ShieldCheck size={13} className="text-[#059669]" />
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#94A3B8]">
+                  <ShieldCheck size={12} className="text-[#059669]" />
                   <span>Ambiente seguro processado via Mercado Pago</span>
                 </div>
-
               </div>
-            </div>
+            )}
 
           </div>
-        )}
+
+        </div>
 
       </main>
     </div>
