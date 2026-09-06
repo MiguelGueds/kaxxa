@@ -90,6 +90,13 @@ export default function PlanosCheckoutPage() {
         const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
         const isChangeMethod = searchParams?.get('change_method') === 'true' || searchParams?.get('mudar_metodo') === 'true';
 
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && isMounted) {
+          setUser(session.user);
+          setUserEmail(session.user.email || '');
+          setUserName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
+        }
+
         // Se já possui acesso liberado e NÃO está trocando método, redireciona direto
         if (!isChangeMethod) {
           const access = await subscriptionService.isAccessGranted();
@@ -97,13 +104,6 @@ export default function PlanosCheckoutPage() {
             router.push('/dashboard');
             return;
           }
-        }
-
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user && isMounted) {
-          setUser(session.user);
-          setUserEmail(session.user.email || '');
-          setUserName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
         }
       } catch (err) {
         console.error('Erro ao verificar sessão:', err);
@@ -469,6 +469,21 @@ export default function PlanosCheckoutPage() {
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Não foi possível resgatar o cupom.');
+      }
+
+      // Garante a gravação direta no Supabase pelo cliente autenticado do navegador (usando auth.uid())
+      try {
+        const days = data.days || appliedCoupon.value || 2;
+        await subscriptionService.activateSubscription({
+          userId: activeUser.id,
+          status: appliedCoupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
+          durationDays: days,
+          paymentMethod: 'PIX',
+          paymentId: `cupom-${appliedCoupon.code.toLowerCase()}`,
+          amount: 0,
+        });
+      } catch (e) {
+        console.warn('Erro na sincronização cliente-Supabase:', e);
       }
 
       // Salva localmente para acesso imediato no navegador sem depender do Supabase

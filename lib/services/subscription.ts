@@ -104,7 +104,7 @@ export function saveSubscriptionLocal(sub: DbSubscription) {
 
 export const subscriptionService = {
   /**
-   * Retorna a assinatura ativa do usuário, com fallback resiliente.
+   * Retorna a assinatura ativa do usuário, com fallback resiliente e auto-recuperação.
    */
   async getSubscription(): Promise<DbSubscription | null> {
     const user = await getAuthenticatedUser();
@@ -165,11 +165,78 @@ export const subscriptionService = {
           .maybeSingle();
 
         if (!error && data) {
-          saveSubscriptionLocal(data as DbSubscription);
-          return data as DbSubscription;
+          if (data.current_period_end) {
+            const isExpired = new Date(data.current_period_end).getTime() < Date.now();
+            if (!isExpired) {
+              saveSubscriptionLocal(data as DbSubscription);
+              return data as DbSubscription;
+            }
+          } else {
+            saveSubscriptionLocal(data as DbSubscription);
+            return data as DbSubscription;
+          }
         }
       } catch (err) {
         console.warn('Supabase subscriptions indisponível, usando fallback local:', err);
+      }
+
+      // 2.1 AUTO-HEAL: Se não encontrou assinatura ativa na tabela subscriptions,
+      // verifica se o usuário usou um cupom de degustação ou possui investimentos no banco
+      try {
+        const client = supabaseAdmin || supabase;
+
+        // A) Verificar se o e-mail ou user.id está registrado em algum cupom
+        const { data: coupons } = await client.from('coupons').select('*');
+        if (coupons && coupons.length > 0) {
+          for (const c of coupons) {
+            const usedList = Array.isArray(c.used_by) ? c.used_by : [];
+            const usage = usedList.find((u: any) =>
+              (u.user_id && u.user_id === user.id) ||
+              (u.email && user.email && u.email.toLowerCase() === user.email.toLowerCase())
+            );
+
+            if (usage) {
+              const usedAt = usage.used_at ? new Date(usage.used_at).getTime() : Date.now();
+              const days = c.type === 'TRIAL_DAYS' ? (c.value || 2) : 30;
+              const periodEnd = new Date(usedAt + days * 24 * 60 * 60 * 1000).toISOString();
+
+              if (new Date(periodEnd).getTime() > Date.now()) {
+                const healedSub = await this.activateSubscription({
+                  userId: user.id,
+                  status: 'TRIAL',
+                  planType: 'MENSAL',
+                  paymentMethod: 'PIX',
+                  paymentId: `auto-heal-${c.code.toLowerCase()}`,
+                  amount: 0,
+                  durationDays: days,
+                });
+                return healedSub;
+              }
+            }
+          }
+        }
+
+        // B) Verificar se o usuário possui investimentos já salvos no Supabase
+        const { data: invs } = await client
+          .from('investments')
+          .select('created_at')
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (invs && invs.length > 0) {
+          const healedSub = await this.activateSubscription({
+            userId: user.id,
+            status: 'TRIAL',
+            planType: 'MENSAL',
+            paymentMethod: 'PIX',
+            paymentId: `auto-heal-user-investments`,
+            amount: 0,
+            durationDays: 2,
+          });
+          return healedSub;
+        }
+      } catch (e) {
+        console.warn('Erro na auto-recuperação de assinatura:', e);
       }
     }
 
@@ -184,7 +251,7 @@ export const subscriptionService = {
   async isAccessGranted(): Promise<{ granted: boolean; subscription: DbSubscription | null }> {
     const user = await getAuthenticatedUser();
 
-    // 1. Verificação PRIORITÁRIA no navegador para trials recém-ativados (não depende de rede/banco)
+    // 1. Verificação PRIORITÁRIA no navegador para trials recém-ativados (se bater com user)
     if (typeof window !== 'undefined') {
       try {
         const localTrial = localStorage.getItem('kaxxa_trial_active');
@@ -286,9 +353,40 @@ export const subscriptionService = {
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
-        const { data, error } = await client
+
+        // 1. Verifica se já existe um registro para o user_id
+        const { data: existing } = await client
           .from('subscriptions')
-          .upsert({
+          .select('id')
+          .eq('user_id', params.userId)
+          .maybeSingle();
+
+        if (existing?.id) {
+          const { data: updated, error: updateErr } = await client
+            .from('subscriptions')
+            .update({
+              status: status,
+              plan_type: planType,
+              payment_method: params.paymentMethod,
+              payment_id: params.paymentId,
+              amount: amount,
+              current_period_end: periodEnd,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existing.id)
+            .select()
+            .single();
+
+          if (!updateErr && updated) {
+            saveSubscriptionLocal(updated as DbSubscription);
+            return updated as DbSubscription;
+          }
+        }
+
+        // 2. Se não existia, faz insert de novo registro
+        const { data: inserted, error: insertErr } = await client
+          .from('subscriptions')
+          .insert({
             user_id: params.userId,
             status: status,
             plan_type: planType,
@@ -297,16 +395,39 @@ export const subscriptionService = {
             amount: amount,
             current_period_end: periodEnd,
             updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' })
+          })
           .select()
           .single();
 
-        if (!error && data) {
-          saveSubscriptionLocal(data as DbSubscription);
-          return data as DbSubscription;
+        if (!insertErr && inserted) {
+          saveSubscriptionLocal(inserted as DbSubscription);
+          return inserted as DbSubscription;
+        }
+
+        // 3. Fallback no cliente: se gravação administrativa falhar (ex: RLS anon client), tenta pelo cliente público do navegador se disponível
+        if (typeof window !== 'undefined') {
+          const { data: clientSaved } = await supabase
+            .from('subscriptions')
+            .upsert({
+              user_id: params.userId,
+              status: status,
+              plan_type: planType,
+              payment_method: params.paymentMethod,
+              payment_id: params.paymentId,
+              amount: amount,
+              current_period_end: periodEnd,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id' })
+            .select()
+            .single();
+
+          if (clientSaved) {
+            saveSubscriptionLocal(clientSaved as DbSubscription);
+            return clientSaved as DbSubscription;
+          }
         }
       } catch (err) {
-        console.warn('Supabase subscriptions indisponível para upsert, usando local:', err);
+        console.warn('Supabase subscriptions indisponível para gravação, usando local:', err);
       }
     }
 
