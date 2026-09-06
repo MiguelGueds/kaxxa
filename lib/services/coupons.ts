@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase';
 import { saveSubscriptionLocal, DbSubscription } from '@/lib/services/subscription';
 
 export interface Coupon {
@@ -129,7 +129,8 @@ export const couponService = {
   async listCoupons(): Promise<Coupon[]> {
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        const client = supabaseAdmin || supabase;
+        const { data, error } = await client
           .from('coupons')
           .select('*')
           .order('created_at', { ascending: false });
@@ -179,7 +180,8 @@ export const couponService = {
 
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        const client = supabaseAdmin || supabase;
+        const { data, error } = await client
           .from('coupons')
           .insert({
             id: newCoupon.id,
@@ -210,7 +212,8 @@ export const couponService = {
   async deleteCoupon(idOrCode: string): Promise<boolean> {
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('coupons').delete().or(`id.eq.${idOrCode},code.eq.${idOrCode}`);
+        const client = supabaseAdmin || supabase;
+        await client.from('coupons').delete().or(`id.eq.${idOrCode},code.eq.${idOrCode}`);
       } catch {
         // Fallback
       }
@@ -227,7 +230,8 @@ export const couponService = {
 
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        const client = supabaseAdmin || supabase;
+        const { data, error } = await client
           .from('coupons')
           .select('*')
           .eq('code', normalized)
@@ -300,9 +304,19 @@ export const couponService = {
 
     if (isSupabaseConfigured()) {
       try {
-        const { error: subError } = await supabase
+        const client = supabaseAdmin || supabase;
+        const { error: subError } = await client
           .from('subscriptions')
-          .upsert(createdSubscription, { onConflict: 'user_id' });
+          .upsert({
+            user_id: params.userId,
+            status: coupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
+            plan_type: 'MENSAL',
+            payment_method: 'PIX',
+            payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
+            amount: coupon.type === 'TRIAL_DAYS' ? 0.00 : (coupon.value === 100 ? 0.00 : 39.90),
+            current_period_end: currentPeriodEnd,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
 
         if (subError) {
           console.warn('Supabase subscriptions indisponível para upsert, usando fallback local:', subError);
@@ -322,7 +336,8 @@ export const couponService = {
 
     if (isSupabaseConfigured()) {
       try {
-        await supabase
+        const client = supabaseAdmin || supabase;
+        await client
           .from('coupons')
           .update({
             used_count: newUsedCount,
@@ -351,7 +366,8 @@ export const couponService = {
       subscription: createdSubscription,
       message: coupon.type === 'TRIAL_DAYS'
         ? `Cupom ativado com sucesso! Você ganhou ${coupon.value} dias de degustação.`
-        : `Cupom de desconto aplicado com sucesso!`
+        : `Cupom de desconto applied com sucesso!`
     };
   }
 };
+

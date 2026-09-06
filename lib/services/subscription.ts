@@ -1,4 +1,4 @@
-import { supabase, getAuthenticatedUser, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, supabaseAdmin, getAuthenticatedUser, isSupabaseConfigured } from '@/lib/supabase';
 import { isAdminEmail } from '@/lib/admin';
 
 export interface DbSubscription {
@@ -107,6 +107,8 @@ export const subscriptionService = {
    * Retorna a assinatura ativa do usuário, com fallback resiliente.
    */
   async getSubscription(): Promise<DbSubscription | null> {
+    const user = await getAuthenticatedUser();
+
     // 1. Verificação no localStorage (no navegador) para resposta instantânea
     if (typeof window !== 'undefined') {
       try {
@@ -114,12 +116,13 @@ export const subscriptionService = {
         if (localTrial) {
           const parsed = JSON.parse(localTrial);
           const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
-          if (endsAt) {
+          const localUserId = parsed.userId || parsed.subscription?.user_id;
+          if (endsAt && (!user || !localUserId || localUserId === user.id)) {
             const isExpired = new Date(endsAt).getTime() < Date.now();
             if (!isExpired) {
               return {
                 id: parsed.id || parsed.subscription?.id || 'trial-local',
-                user_id: parsed.userId || parsed.subscription?.user_id || 'trial-user',
+                user_id: localUserId || user?.id || 'trial-user',
                 status: 'TRIAL',
                 plan_type: 'MENSAL',
                 payment_method: 'PIX',
@@ -133,7 +136,6 @@ export const subscriptionService = {
       } catch {}
     }
 
-    const user = await getAuthenticatedUser();
     if (!user) return null;
 
     // Se for administrador (somoskaxxa@gmail.com), acesso vitalício de desenvolvedor
@@ -153,7 +155,8 @@ export const subscriptionService = {
     // 2. Consulta ao Supabase
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        const client = supabaseAdmin || supabase;
+        const { data, error } = await client
           .from('subscriptions')
           .select('*')
           .eq('user_id', user.id)
@@ -179,6 +182,8 @@ export const subscriptionService = {
    * Verifica se o usuário possui acesso liberado ao sistema.
    */
   async isAccessGranted(): Promise<{ granted: boolean; subscription: DbSubscription | null }> {
+    const user = await getAuthenticatedUser();
+
     // 1. Verificação PRIORITÁRIA no navegador para trials recém-ativados (não depende de rede/banco)
     if (typeof window !== 'undefined') {
       try {
@@ -186,12 +191,13 @@ export const subscriptionService = {
         if (localTrial) {
           const parsed = JSON.parse(localTrial);
           const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
-          if (endsAt) {
+          const localUserId = parsed.userId || parsed.subscription?.user_id;
+          if (endsAt && (!user || !localUserId || localUserId === user.id)) {
             const isExpired = new Date(endsAt).getTime() < Date.now();
             if (!isExpired) {
               const trialSub: DbSubscription = {
                 id: parsed.id || parsed.subscription?.id || 'trial-local',
-                user_id: parsed.userId || parsed.subscription?.user_id || 'trial-user',
+                user_id: localUserId || user?.id || 'trial-user',
                 status: 'TRIAL',
                 plan_type: 'MENSAL',
                 payment_method: 'PIX',
@@ -208,7 +214,6 @@ export const subscriptionService = {
       }
     }
 
-    const user = await getAuthenticatedUser();
     if (!user) {
       return { granted: false, subscription: null };
     }
@@ -233,15 +238,7 @@ export const subscriptionService = {
       return { granted: false, subscription: null };
     }
 
-    if (sub.status === 'ACTIVE') {
-      if (sub.current_period_end) {
-        const isExpired = new Date(sub.current_period_end).getTime() < Date.now();
-        return { granted: !isExpired, subscription: sub };
-      }
-      return { granted: true, subscription: sub };
-    }
-
-    if (sub.status === 'TRIAL') {
+    if (sub.status === 'ACTIVE' || sub.status === 'TRIAL') {
       if (sub.current_period_end) {
         const isExpired = new Date(sub.current_period_end).getTime() < Date.now();
         return { granted: !isExpired, subscription: sub };
@@ -288,7 +285,8 @@ export const subscriptionService = {
 
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        const client = supabaseAdmin || supabase;
+        const { data, error } = await client
           .from('subscriptions')
           .upsert({
             user_id: params.userId,
@@ -315,3 +313,4 @@ export const subscriptionService = {
     return subData;
   }
 };
+
