@@ -79,7 +79,7 @@ export default function PlanosCheckoutPage() {
   // Polling interval
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '61580172309-baud3b6dnu4n0ustld3v291btg7b0c2a.apps.googleusercontent.com';
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '1013913072699-93aluj2vckav760pp05t7pcriipk1n5b.apps.googleusercontent.com';
 
   // Sincronização e Monitoramento de Sessão
   useEffect(() => {
