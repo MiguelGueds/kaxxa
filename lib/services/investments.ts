@@ -53,7 +53,7 @@ export const investmentsService = {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data !== null) {
         const formatted = data.map(inv => ({
           ...inv,
           quantity: Number(inv.quantity || 0),
@@ -62,6 +62,38 @@ export const investmentsService = {
           current_value: Number(inv.current_value || 0),
           profitability_pct: Number(inv.profitability_pct || 0),
         })) as DbInvestment[];
+
+        // Sincroniza itens locais criados em offline/pendentes que ainda não subiram para o Supabase
+        const localItems = getLocalInvestments(user.id);
+        const pendingLocal = localItems.filter(local => 
+          (local.id.startsWith('inv-') || local.id.startsWith('rf-') || local.id.startsWith('rv-')) &&
+          !formatted.some(remote => remote.id === local.id || (remote.name === local.name && remote.category === local.category))
+        );
+
+        if (pendingLocal.length > 0) {
+          for (const item of pendingLocal) {
+            try {
+              const { id, user_id, ...cleanItem } = item;
+              const { data: inserted } = await supabase
+                .from('investments')
+                .insert({ ...cleanItem, user_id: user.id })
+                .select()
+                .single();
+              if (inserted) {
+                formatted.unshift({
+                  ...inserted,
+                  quantity: Number(inserted.quantity || 0),
+                  average_price: Number(inserted.average_price || 0),
+                  invested_amount: Number(inserted.invested_amount || 0),
+                  current_value: Number(inserted.current_value || 0),
+                  profitability_pct: Number(inserted.profitability_pct || 0),
+                } as DbInvestment);
+              }
+            } catch (e) {
+              console.warn('Erro ao sincronizar investimento pendente para o Supabase:', e);
+            }
+          }
+        }
 
         saveLocalInvestments(user.id, formatted);
         return formatted;
@@ -124,7 +156,6 @@ export const investmentsService = {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    // Atualiza backup local imediatamente
     const currentLocal = getLocalInvestments(user.id);
     const updatedLocal = currentLocal.map(item => item.id === id ? { ...item, ...updates } : item);
     saveLocalInvestments(user.id, updatedLocal);

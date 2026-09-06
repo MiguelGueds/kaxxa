@@ -50,12 +50,41 @@ export const thirdPartiesService = {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data !== null) {
         const formatted = (data || []).map(d => ({
           ...d,
           total_amount: Number(d.total_amount || 0),
           paid_amount: Number(d.paid_amount || 0),
         })) as DbThirdPartyDebt[];
+
+        // Sincroniza débitos criados localmente em offline/pendentes que ainda não subiram para o Supabase
+        const localItems = getLocalDebts(user.id);
+        const pendingLocal = localItems.filter(local => 
+          local.id.startsWith('tp-') &&
+          !formatted.some(remote => remote.id === local.id || (remote.person_name === local.person_name && remote.description === local.description))
+        );
+
+        if (pendingLocal.length > 0) {
+          for (const item of pendingLocal) {
+            try {
+              const { id, user_id, ...cleanItem } = item;
+              const { data: inserted } = await supabase
+                .from('third_party_debts')
+                .insert({ ...cleanItem, user_id: user.id })
+                .select()
+                .single();
+              if (inserted) {
+                formatted.unshift({
+                  ...inserted,
+                  total_amount: Number(inserted.total_amount || 0),
+                  paid_amount: Number(inserted.paid_amount || 0),
+                } as DbThirdPartyDebt);
+              }
+            } catch (e) {
+              console.warn('Erro ao sincronizar débito de terceiro para o Supabase:', e);
+            }
+          }
+        }
 
         saveLocalDebts(user.id, formatted);
         return formatted;
