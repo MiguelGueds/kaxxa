@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Fundo azul royal arredondado -->
+  <rect width="64" height="64" rx="14" fill="#1A44C8"/>
+  <!-- K geométrico original em branco -->
+  <g transform="translate(12, 12) scale(1.667)" fill="white">
+    <path d="M10 2 H6 C3.79 2 2 3.79 2 6 V18 C2 20.21 3.79 22 6 22 H10 V2 Z" />
+    <path d="M11 11.5 L16.5 2 H19 C20.66 2 22 3.34 22 5 V8 L11 11.5 Z" />
+    <path d="M11 12.5 L16.5 22 H19 C20.66 22 22 20.66 22 19 V16 L11 12.5 Z" />
+  </g>
+</svg>

@@ -19,7 +19,9 @@ export const metadata: Metadata = {
   title: 'Kaxxa Finanças',
   description: 'Plataforma inteligente de gestão financeira, consolidação de investimentos, blindagem de terceiros e liquidação estratégica de dívidas.',
   icons: {
-    icon: '/icon.svg',
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
     shortcut: '/icon.svg',
     apple: '/icon.svg',
   },
