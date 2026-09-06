@@ -63,15 +63,15 @@ export const investmentsService = {
           profitability_pct: Number(inv.profitability_pct || 0),
         })) as DbInvestment[];
 
-        // Sincroniza itens locais criados em offline/pendentes que ainda não subiram para o Supabase
+        // Purga itens fictícios de demonstração (rf-*, rv-*) do localStorage
         const localItems = getLocalInvestments(user.id);
-        const pendingLocal = localItems.filter(local => 
-          (local.id.startsWith('inv-') || local.id.startsWith('rf-') || local.id.startsWith('rv-')) &&
+        const realPendingLocal = localItems.filter(local => 
+          local.id.startsWith('inv-') &&
           !formatted.some(remote => remote.id === local.id || (remote.name === local.name && remote.category === local.category))
         );
 
-        if (pendingLocal.length > 0) {
-          for (const item of pendingLocal) {
+        if (realPendingLocal.length > 0) {
+          for (const item of realPendingLocal) {
             try {
               const { id, user_id, ...cleanItem } = item;
               const { data: inserted } = await supabase
@@ -95,6 +95,7 @@ export const investmentsService = {
           }
         }
 
+        // Atualiza o backup local estritamente com os dados reais do Supabase
         saveLocalInvestments(user.id, formatted);
         return formatted;
       }
@@ -103,7 +104,7 @@ export const investmentsService = {
     }
 
     const localData = getLocalInvestments(user.id);
-    return localData;
+    return localData.filter(i => !i.id.startsWith('rf-') && !i.id.startsWith('rv-'));
   },
 
   async createInvestment(inv: Omit<DbInvestment, 'id' | 'user_id'> & { created_at?: string }): Promise<DbInvestment | null> {
