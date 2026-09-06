@@ -146,16 +146,26 @@ export default function DashboardPage() {
           const totalCardExpenses = (dbCardExpenses || []).reduce((acc, e) => acc + (e.amount || 0), 0);
           const explicitUsed = dbCards.reduce((acc, c) => acc + (c.limit_used || 0), 0);
           setLimiteComprometido(totalCardExpenses > 0 ? totalCardExpenses : explicitUsed);
-        } else {
-          setTotalLimiteCartoes(0);
-          setLimiteComprometido(0);
-          setQtdCartoes(0);
         }
       } catch (err) {
         console.error('Erro ao carregar métricas consolidadas do Supabase:', err);
       }
     }
     loadDashboardData();
+
+    const handleRefresh = () => {
+      loadDashboardData();
+    };
+
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('visibilitychange', handleRefresh);
+    window.addEventListener('kaxxa_refresh_data', handleRefresh);
+
+    return () => {
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('visibilitychange', handleRefresh);
+      window.removeEventListener('kaxxa_refresh_data', handleRefresh);
+    };
   }, []);
 
   const investmentBreakdownTotal = investmentBreakdown.reduce((acc, item) => acc + item.value, 0);

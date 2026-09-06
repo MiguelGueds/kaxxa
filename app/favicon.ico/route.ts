@@ -18,3 +18,4 @@ export async function GET() {
     return new NextResponse('', { status: 404 });
   }
 }
+

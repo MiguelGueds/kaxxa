@@ -349,6 +349,20 @@ export default function InvestimentosPage() {
       }
     }
     loadData();
+
+    const handleRefresh = () => {
+      loadData();
+    };
+
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('visibilitychange', handleRefresh);
+    window.addEventListener('kaxxa_refresh_data', handleRefresh);
+
+    return () => {
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('visibilitychange', handleRefresh);
+      window.removeEventListener('kaxxa_refresh_data', handleRefresh);
+    };
   }, []);
 
   // Hover states para os gráficos Donut
