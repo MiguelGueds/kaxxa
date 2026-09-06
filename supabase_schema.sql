@@ -302,29 +302,4 @@ CREATE TRIGGER update_investments_modtime BEFORE UPDATE ON investments FOR EACH 
 DROP TRIGGER IF EXISTS update_subscriptions_modtime ON subscriptions;
 CREATE TRIGGER update_subscriptions_modtime BEFORE UPDATE ON subscriptions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- ------------------------------------------------------------
--- 12. TABELA: Solicitações de Reembolso (refund_requests)
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS refund_requests (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  user_email TEXT NOT NULL,
-  amount DECIMAL(15,2) DEFAULT 0.00,
-  payment_method TEXT DEFAULT 'PIX',
-  reason TEXT,
-  pix_key TEXT,
-  status TEXT DEFAULT 'PENDING',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-ALTER TABLE refund_requests ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Isolamento total de reembolso por usuario" ON refund_requests;
-CREATE POLICY "Isolamento total de reembolso por usuario" ON refund_requests 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
-DROP TRIGGER IF EXISTS update_refund_requests_modtime ON refund_requests;
-CREATE TRIGGER update_refund_requests_modtime BEFORE UPDATE ON refund_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
 

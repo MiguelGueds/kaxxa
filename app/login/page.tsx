@@ -14,6 +14,11 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [gsiReady, setGsiReady] = useState(false);
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'GOOGLE' | 'EMAIL'>('GOOGLE');
+  const [isSignUp, setIsSignUp] = useState(false);
+
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '61580172309-baud3b6dnu4n0ustld3v291btg7b0c2a.apps.googleusercontent.com';
 
   // Redireciona caso já esteja autenticado
@@ -50,7 +55,11 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Google ID Token error:', err);
-      setErrorMsg(err.message || 'Erro ao autenticar com o Google.');
+      if (err.message?.includes('disabled_client') || err.error === 'disabled_client' || err.message?.includes('401')) {
+        setErrorMsg('O Cliente OAuth do Google foi desativado no Google Cloud Console. Reative o Client ID no Google Cloud Console ou Supabase.');
+      } else {
+        setErrorMsg(err.message || 'Erro ao autenticar com o Google.');
+      }
       setLoading(false);
     }
   }, [router]);
@@ -135,6 +144,60 @@ export default function LoginPage() {
       } else {
         setErrorMsg(err.message || 'Erro ao conectar com o Google.');
       }
+      setLoading(false);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setErrorMsg('Por favor, preencha o e-mail e a senha.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setErrorMsg('');
+
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        if (data.user) {
+          const pendingCoupon = typeof window !== 'undefined' ? localStorage.getItem('kaxxa_pending_coupon') : null;
+          if (pendingCoupon) {
+            router.push(`/planos?cupom=${encodeURIComponent(pendingCoupon)}`);
+          } else {
+            router.push('/dashboard');
+          }
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        if (data.session?.user) {
+          const pendingCoupon = typeof window !== 'undefined' ? localStorage.getItem('kaxxa_pending_coupon') : null;
+          if (pendingCoupon) {
+            router.push(`/planos?cupom=${encodeURIComponent(pendingCoupon)}`);
+          } else {
+            router.push('/dashboard');
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('Email Auth Error:', err);
+      if (err.message?.includes('Email signups are disabled')) {
+        setErrorMsg('O cadastro por e-mail está desativado no Supabase. Ative em Authentication > Providers > Email no painel do Supabase.');
+      } else if (err.message?.includes('Invalid login credentials')) {
+        setErrorMsg('Credenciais inválidas. Verifique o e-mail e a senha digitados.');
+      } else {
+        setErrorMsg(err.message || 'Erro ao autenticar com e-mail.');
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -235,49 +298,122 @@ export default function LoginPage() {
             </div>
 
             {errorMsg && (
-              <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs text-center font-bold animate-in fade-in">
-                {errorMsg}
+              <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-left font-medium leading-relaxed animate-in fade-in space-y-1">
+                <div className="font-bold text-rose-800 flex items-center gap-1.5">
+                  <span>⚠️ Atenção na Autenticação:</span>
+                </div>
+                <div>{errorMsg}</div>
               </div>
             )}
 
-            {/* Ação de Login Oficial Google */}
-            <div className="space-y-4">
-              
-              <div className="flex flex-col items-center justify-center min-h-[44px]">
-                {/* Botão Oficial Google */}
-                <div id="google-btn-container" className="flex justify-center w-full min-h-[40px]" />
+            {/* Alternador de Método de Autenticação */}
+            <div className="flex rounded-xl bg-slate-100 p-1 mb-5 text-xs font-bold text-slate-600">
+              <button
+                type="button"
+                onClick={() => { setAuthMode('GOOGLE'); setErrorMsg(''); }}
+                className={`flex-1 py-2 rounded-lg transition-all ${authMode === 'GOOGLE' ? 'bg-white text-[#1A44C8] shadow-xs' : 'hover:text-slate-900'}`}
+              >
+                Google
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('EMAIL'); setErrorMsg(''); }}
+                className={`flex-1 py-2 rounded-lg transition-all ${authMode === 'EMAIL' ? 'bg-white text-[#1A44C8] shadow-xs' : 'hover:text-slate-900'}`}
+              >
+                E-mail & Senha
+              </button>
+            </div>
 
-                {/* Botão Fallback estilizado */}
-                {!gsiReady && (
+            {/* Ação de Login Oficial Google */}
+            {authMode === 'GOOGLE' && (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center justify-center min-h-[44px]">
+                  {/* Botão Oficial Google */}
+                  <div id="google-btn-container" className="flex justify-center w-full min-h-[40px]" />
+
+                  {/* Botão Fallback estilizado */}
+                  {!gsiReady && (
+                    <button
+                      type="button"
+                      onClick={handleGoogleClick}
+                      disabled={loading}
+                      className="w-full py-3 px-5 bg-white hover:bg-slate-50 border-2 border-[#E2E8F0] hover:border-[#1A44C8] text-[#181B22] rounded-full font-bold text-xs transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-3 active:scale-98 disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <div className="w-4 h-4 border-2 border-[#1A44C8]/30 border-t-[#1A44C8] rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                          </svg>
+                          <span>Continuar com o Google</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Selo de Proteção */}
+                <div className="pt-2 text-[11px] text-[#64748B] flex items-center justify-center gap-1.5 font-medium">
+                  <ShieldCheck size={14} className="text-[#059669]" />
+                  <span>Autenticação criptografada oficial Google</span>
+                </div>
+              </div>
+            )}
+
+            {/* Login com E-mail e Senha */}
+            {authMode === 'EMAIL' && (
+              <form onSubmit={handleEmailAuth} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Seu E-mail</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seuemail@exemplo.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#1A44C8] focus:ring-2 focus:ring-[#1A44C8]/20 outline-none text-xs text-slate-900 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Sua Senha</label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#1A44C8] focus:ring-2 focus:ring-[#1A44C8]/20 outline-none text-xs text-slate-900 transition-all"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 px-5 bg-[#1A44C8] hover:bg-[#1537A5] text-white rounded-full font-bold text-xs transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span>{isSignUp ? 'Criar Nova Conta' : 'Entrar com E-mail'}</span>
+                  )}
+                </button>
+
+                <div className="text-center pt-2">
                   <button
                     type="button"
-                    onClick={handleGoogleClick}
-                    disabled={loading}
-                    className="w-full py-3 px-5 bg-white hover:bg-slate-50 border-2 border-[#E2E8F0] hover:border-[#1A44C8] text-[#181B22] rounded-full font-bold text-xs transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-3 active:scale-98 disabled:opacity-50"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    className="text-xs font-semibold text-[#1A44C8] hover:underline"
                   >
-                    {loading ? (
-                      <div className="w-4 h-4 border-2 border-[#1A44C8]/30 border-t-[#1A44C8] rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                        </svg>
-                        <span>Continuar com o Google</span>
-                      </>
-                    )}
+                    {isSignUp ? 'Já tem uma conta? Fazer login' : 'Não tem conta? Criar nova conta'}
                   </button>
-                )}
-              </div>
-
-              {/* Selo de Proteção */}
-              <div className="pt-2 text-[11px] text-[#64748B] flex items-center justify-center gap-1.5 font-medium">
-                <ShieldCheck size={14} className="text-[#059669]" />
-                <span>Autenticação criptografada oficial Google</span>
-              </div>
-            </div>
+                </div>
+              </form>
+            )}
 
             {/* Rodapé / Microtermos */}
             <div className="mt-7 pt-4 border-t border-[#F1F5F9] text-center">
