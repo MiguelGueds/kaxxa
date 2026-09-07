@@ -5,7 +5,8 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
+  supported-color-schemes: light dark;
 }
 
 html {
@@ -19,6 +20,26 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Proteção contra Modo Escuro Forçado (Samsung Internet, Xiaomi & Edge Mobile) */
+html:not(.dark) {
+  color-scheme: light !important;
+}
+
+html:not(.dark) .text-\[\#181B22\],
+html:not(.dark) .text-slate-900,
+html:not(.dark) .text-gray-900 {
+  color: #181B22 !important;
+}
+
+html:not(.dark) .text-\[\#64748B\],
+html:not(.dark) .text-slate-600 {
+  color: #64748B !important;
+}
+
+html:not(.dark) .bg-white {
+  background-color: #FFFFFF !important;
 }
 
 /* Modo Escuro Global */
