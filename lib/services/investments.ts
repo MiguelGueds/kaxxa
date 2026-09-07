@@ -1,4 +1,4 @@
-import { supabase, getAuthenticatedUser } from '@/lib/supabase';
+import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
 
 export interface DbInvestment {
   id: string;
