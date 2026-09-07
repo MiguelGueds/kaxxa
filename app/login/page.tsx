@@ -206,6 +206,7 @@ export default function LoginPage() {
             {/* Formulário de Autenticação */}
             <form onSubmit={handleAuth} className="space-y-4">
               
+              {/* Campo Nome Completo (exibido apenas ao Criar Conta) */}
               {/* Campo Nome (exibido apenas ao Criar Conta) */}
               {isSignUp && (
                 <div className="animate-in fade-in duration-200">
