@@ -820,7 +820,7 @@ export default function InvestimentosPage() {
           };
         }));
       } else {
-        let createdId = 'rf-' + Date.now();
+        let createdId = 'inv-rf-' + Date.now();
         let createdAtIso = selectedIsoDate;
         try {
           const created = await investmentsService.createInvestment({
@@ -920,7 +920,7 @@ export default function InvestimentosPage() {
           };
         }));
       } else {
-        let createdId = 'rv-' + Date.now();
+        let createdId = 'inv-rv-' + Date.now();
         let createdAtIso = selectedIsoDate;
         try {
           const created = await investmentsService.createInvestment({
