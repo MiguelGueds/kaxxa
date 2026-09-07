@@ -210,7 +210,6 @@ export default function LoginPage() {
               {/* Campo Nome (exibido apenas ao Criar Conta) */}
               {isSignUp && (
                 <div className="animate-in fade-in duration-200">
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Nome Completo</label>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Nome</label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -219,7 +218,6 @@ export default function LoginPage() {
                       required={isSignUp}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Seu nome e sobrenome"
                       placeholder="Seu nome"
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-[#1A44C8] focus:ring-2 focus:ring-[#1A44C8]/20 outline-none text-xs text-slate-900 font-medium transition-all"
                     />
