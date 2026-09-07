@@ -264,6 +264,12 @@ CREATE TABLE IF NOT EXISTS coupons (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Leitura de cupons" ON coupons;
+CREATE POLICY "Leitura de cupons" ON coupons FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Modificacao de cupons" ON coupons;
+CREATE POLICY "Modificacao de cupons" ON coupons FOR ALL USING (true) WITH CHECK (true);
+
 -- ============================================================
 -- 11. TRIGGERS AUTOMÁTICOS PARA UPDATED_AT
 -- ============================================================
