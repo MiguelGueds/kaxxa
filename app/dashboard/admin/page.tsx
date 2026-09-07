@@ -172,7 +172,7 @@ export default function AdminDashboardPage() {
             <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-[#1A44C8] text-white rounded-md shadow-sm">
               Administração
             </span>
-            <span className="text-xs text-[#64748B] font-medium">somoskaxxa@gmail.com</span>
+            <span className="text-xs text-[#64748B] font-medium">{currentUserEmail || 'Admin Kaxxa'}</span>
           </div>
           <h1 className="text-xl font-extrabold text-[#181B22] mt-1">Gestão Kaxxa</h1>
           <p className="text-xs text-[#64748B]">Monitore usuários cadastrados, receita recorrente e pedidos de estorno em tempo real.</p>

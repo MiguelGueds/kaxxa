@@ -135,9 +135,14 @@ export const couponService = {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && data && data.length > 0) {
-          saveLocalCoupons(data as Coupon[]);
-          return data as Coupon[];
+        if (!error && data) {
+          const local = ensureLocalFile();
+          const map = new Map<string, Coupon>();
+          for (const l of local) map.set(l.code, l);
+          for (const d of data) map.set(d.code, d as Coupon);
+          const merged = Array.from(map.values());
+          saveLocalCoupons(merged);
+          return merged;
         }
       } catch {
         // Fallback local
@@ -339,14 +344,20 @@ export const couponService = {
         const client = supabaseAdmin || supabase;
         await client
           .from('coupons')
-          .update({
+          .upsert({
+            id: coupon.id,
+            code: coupon.code,
+            type: coupon.type,
+            value: coupon.value,
+            discount_duration_months: coupon.discount_duration_months || 1,
+            max_uses: coupon.max_uses || 99999,
             used_count: newUsedCount,
             used_by: updatedUsedBy,
             active: isNowActive,
-          })
-          .eq('id', coupon.id);
-      } catch {
-        // Fallback
+            created_at: coupon.created_at || new Date().toISOString(),
+          }, { onConflict: 'id' });
+      } catch (err) {
+        console.warn('Erro ao atualizar cupom no Supabase:', err);
       }
     }
 

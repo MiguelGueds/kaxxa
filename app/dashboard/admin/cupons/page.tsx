@@ -37,6 +37,7 @@ export default function AdminCouponsPage() {
   const [newCouponValue, setNewCouponValue] = useState<number>(2);
   const [newCouponDurationMonths, setNewCouponDurationMonths] = useState<number>(1);
   const [newCouponMaxUses, setNewCouponMaxUses] = useState(1);
+  const [adminEmail, setAdminEmail] = useState('');
   const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +47,7 @@ export default function AdminCouponsPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const email = session?.user?.email || '';
+      setAdminEmail(email);
       if (!isAdminEmail(email)) {
         router.replace('/dashboard');
         return;
@@ -191,7 +193,7 @@ export default function AdminCouponsPage() {
             <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-[#1A44C8] text-white rounded-md shadow-sm">
               Administração
             </span>
-            <span className="text-xs text-[#64748B] font-medium">somoskaxxa@gmail.com</span>
+            <span className="text-xs text-[#64748B] font-medium">{adminEmail || 'Admin Kaxxa'}</span>
           </div>
           <h1 className="text-xl font-extrabold text-[#181B22] mt-1">Cupons</h1>
           <p className="text-xs text-[#64748B]">Crie cupons de degustação gratuita ou descontos promocionais para seus clientes.</p>
