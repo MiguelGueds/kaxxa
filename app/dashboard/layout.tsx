@@ -202,7 +202,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen h-screen w-screen bg-[#F5F6F9] flex font-sans selection:bg-[#1A44C8] selection:text-white text-[#181B22] overflow-hidden relative">
+    <div className="min-h-screen h-screen w-full bg-[#F5F6F9] flex font-sans selection:bg-[#1A44C8] selection:text-white text-[#181B22] overflow-x-hidden overflow-y-hidden relative">
       
       {/* Overlay Mobile */}
       {mobileMenuOpen && (
@@ -213,10 +213,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Sidebar Flutuante em Formato de Card Sofisticado (#FFFFFF) */}
-      <aside className={`my-3 ml-3 flex-shrink-0 rounded-[24px] border border-[#E5E7EB] flex flex-col bg-[#FFFFFF] z-50 h-[calc(100vh-24px)] shadow-[0_8px_28px_rgba(0,0,0,0.03)] transition-all duration-300 overflow-hidden ${
+      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-[#E5E7EB] flex flex-col bg-[#FFFFFF] z-50 h-[calc(100vh-16px)] sm:h-[calc(100vh-24px)] shadow-[0_8px_28px_rgba(0,0,0,0.03)] transition-all duration-300 overflow-hidden ${
         isSidebarCollapsed ? 'w-[68px]' : 'w-[220px]'
       } ${
-        mobileMenuOpen ? 'fixed inset-y-3 left-3 !w-[230px]' : 'hidden lg:flex'
+        mobileMenuOpen ? 'fixed inset-y-2 sm:inset-y-3 left-2 sm:left-3 !w-[230px]' : 'hidden lg:flex'
       }`}>
         
         {/* Brand Header do Card */}
@@ -319,25 +319,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Área Principal */}
-      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden bg-[#F5F6F9]">
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-x-hidden overflow-y-hidden bg-[#F5F6F9]">
         
         {/* Topbar Flutuante no Formato de Card Sofisticado */}
-        <header className="my-3 mr-3 ml-2.5 h-14 px-4 sm:px-5 rounded-[22px] bg-[#FFFFFF] border border-[#E5E7EB] shadow-[0_8px_28px_rgba(0,0,0,0.03)] flex items-center justify-between z-30 flex-shrink-0">
-          <div className="flex items-center gap-2.5">
+        <header className="my-2 sm:my-3 mr-2 sm:mr-3 ml-2 sm:ml-2.5 h-14 px-3 sm:px-5 rounded-[22px] bg-[#FFFFFF] border border-[#E5E7EB] shadow-[0_8px_28px_rgba(0,0,0,0.03)] flex items-center justify-between z-30 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
             <button 
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden text-[#64748B] hover:text-[#181B22] p-1.5 rounded-xl hover:bg-[#F1F3F7] transition-colors"
+              className="lg:hidden text-[#64748B] hover:text-[#181B22] p-1.5 rounded-xl hover:bg-[#F1F3F7] transition-colors shrink-0"
             >
               <Menu size={18} />
             </button>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-[#94A3B8] font-medium">Kaxxa</span>
-              <ChevronRight size={11} className="text-[#CBD5E1]" />
-              <span className="text-[#181B22] font-bold">{pageTitle}</span>
+            <div className="flex items-center gap-1.5 text-xs truncate">
+              <span className="text-[#94A3B8] font-medium hidden sm:inline">Kaxxa</span>
+              <ChevronRight size={11} className="text-[#CBD5E1] hidden sm:inline" />
+              <span className="text-[#181B22] font-bold truncate max-w-[110px] sm:max-w-none">{pageTitle}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Campo de Busca Rápida (Abre Command Palette) */}
             <div 
               onClick={() => setIsCommandPaletteOpen(true)}
@@ -348,14 +348,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <span className="text-xs text-[#94A3B8] group-hover:text-[#64748B] w-36 font-sans select-none truncate">
                 Buscar no Kaxxa...
               </span>
+              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-mono text-[#94A3B8] bg-white border border-[#E5E7EB] rounded-md shadow-2xs font-bold">
+                ⌘K
+              </kbd>
             </div>
 
-            {/* Botão de Busca Mobile */}
+            {/* Ícone de Busca em Telas Menores */}
             <button
-              type="button"
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="md:hidden h-8 w-8 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F3F7] border border-[#E5E7EB] flex items-center justify-center text-[#64748B] hover:text-[#181B22]"
-              title="Buscar no Kaxxa"
+              className="md:hidden h-8 w-8 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] hover:bg-[#F1F3F7] text-[#64748B] hover:text-[#181B22] flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
+              title="Buscar"
             >
               <Search size={14} />
             </button>
@@ -390,10 +392,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               {isConcealed ? <EyeOff size={14} className="text-amber-600" /> : <Eye size={14} className="text-[#1A44C8]" />}
             </button>
 
-            {/* Perfil no Topbar (Avatar Redondo + Acesso Pro / Período teste) */}
+            {/* Perfil no Topbar (Avatar Redondo + Acesso Pro / Dias Restantes) */}
             <Link 
               href="/dashboard/minha-conta"
-              className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full hover:bg-[#F1F3F7] transition-colors border border-transparent hover:border-[#E5E7EB]"
+              className="flex items-center gap-2 pl-1 pr-2 sm:pr-2.5 py-1 rounded-full hover:bg-[#F1F3F7] transition-colors border border-transparent hover:border-[#E5E7EB]"
               title="Minha Conta"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-xs border border-white/60 shrink-0">
@@ -404,11 +406,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
               </div>
               <div className="flex flex-col text-left hidden sm:flex min-w-0">
-                <span className="text-xs font-bold text-[#181B22] max-w-[120px] truncate leading-tight">{userInfo.name}</span>
+                <span className="text-xs font-bold text-[#181B22] max-w-[110px] truncate leading-tight">{userInfo.name}</span>
                 <span className={`text-[9.5px] font-extrabold tracking-tight leading-none mt-0.5 ${
-                  isTrialUser ? 'text-amber-600' : 'text-emerald-600'
+                  subInfo.isRecurringPro ? 'text-emerald-600' : 'text-amber-600'
                 }`}>
-                  {isTrialUser ? 'Período teste' : 'Acesso Pro'}
+                  {subInfo.isRecurringPro 
+                    ? 'Plano Pro Ativado' 
+                    : subInfo.daysRemaining === 1 
+                      ? '1 dia restante' 
+                      : `${subInfo.daysRemaining} dias restantes`
+                  }
                 </span>
               </div>
               <ChevronRight size={11} className="text-[#94A3B8] hidden sm:block shrink-0 ml-0.5" />
@@ -417,7 +424,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Conteúdo com Scroll Próprio */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar relative px-3 md:px-5 pb-6 z-10">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative px-2.5 sm:px-5 pb-6 z-10">
           {children}
         </main>
 

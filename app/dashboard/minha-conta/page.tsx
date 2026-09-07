@@ -54,7 +54,24 @@ function MinhaContaContent() {
   const [refundReason, setRefundReason] = useState('');
   const [refundPixKey, setRefundPixKey] = useState('');
 
+  // --- EXCLUIR DADOS STATE ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingData, setIsDeletingData] = useState(false);
+
   const isAdmin = isAdminEmail(userEmail);
+
+  // Cálculo de Recorrência x Dias Restantes de Teste
+  const isCreditCardRecurring = subscription?.payment_method === 'CREDIT_CARD' && subscription?.status === 'ACTIVE' && (subscription?.amount || 0) > 0;
+  
+  const getDaysRemaining = (endDateStr?: string) => {
+    if (!endDateStr) return 0;
+    const end = new Date(endDateStr).getTime();
+    const now = Date.now();
+    return Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24)));
+  };
+
+  const daysRemaining = getDaysRemaining(subscription?.current_period_end);
 
   useEffect(() => {
     fetchData();
@@ -139,6 +156,53 @@ function MinhaContaContent() {
       setErrorMsg(err?.message || 'Erro ao atualizar perfil.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAllUserData = async () => {
+    if (deleteConfirmText.trim() !== 'CONFIRMAR') return;
+    setIsDeletingData(true);
+    resetMessages();
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('Sessão expirada. Faça login novamente.');
+
+      const uid = session.user.id;
+
+      // 1. Deleta todas as tabelas do usuário no Supabase
+      await Promise.all([
+        supabase.from('transactions').delete().eq('user_id', uid),
+        supabase.from('investments').delete().eq('user_id', uid),
+        supabase.from('debts').delete().eq('user_id', uid),
+        supabase.from('amortizations').delete().eq('user_id', uid),
+        supabase.from('third_party_debts').delete().eq('user_id', uid),
+        supabase.from('third_parties').delete().eq('user_id', uid),
+        supabase.from('credit_cards').delete().eq('user_id', uid),
+        supabase.from('accounts').delete().eq('user_id', uid),
+        supabase.from('categories').delete().eq('user_id', uid),
+      ]);
+
+      // 2. Limpa o cache local no navegador
+      if (typeof window !== 'undefined') {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (k.includes(uid) || k.startsWith('kaxxa_') || k.startsWith('mindfinance_'))) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+      }
+
+      await supabase.auth.signOut();
+      router.replace('/login');
+    } catch (err: any) {
+      console.error('Erro ao excluir dados do usuário:', err);
+      setErrorMsg(err?.message || 'Erro ao excluir dados.');
+    } finally {
+      setIsDeletingData(false);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -373,6 +437,27 @@ function MinhaContaContent() {
                 </button>
               </div>
 
+              {/* Zona de Perigo - Exclusão Definitiva de Dados */}
+              <div className="pt-6 border-t border-[#F1F5F9] mt-6">
+                <div className="bg-rose-50/60 border border-rose-200/70 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2 text-rose-800 font-bold text-xs">
+                    <AlertTriangle size={16} className="text-rose-600 shrink-0" />
+                    <span>Zona de Perigo - Exclusão Definitiva de Dados</span>
+                  </div>
+                  <p className="text-[11px] text-rose-700/90 font-medium leading-relaxed">
+                    Deseja zerar seu histórico? Essa ação apagará permanentemente todas as suas contas bancárias, cartões, lançamentos e investimentos do Kaxxa.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setDeleteConfirmText(''); setIsDeleteModalOpen(true); }}
+                    className="py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 flex items-center gap-1.5"
+                  >
+                    <AlertTriangle size={13} />
+                    <span>Excluir Meus Dados Permanentemente</span>
+                  </button>
+                </div>
+              </div>
+
             </form>
           </div>
         )}
@@ -467,14 +552,21 @@ function MinhaContaContent() {
 
                     <div>
                       <span className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full ${
-                        subscription?.status === 'ACTIVE' 
+                        isCreditCardRecurring 
                           ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
                           : subscription?.status === 'CANCELED' 
                             ? 'bg-amber-50 text-amber-800 border border-amber-200' 
-                            : 'bg-blue-50 text-[#1A44C8] border border-blue-200'
+                            : 'bg-amber-50 text-amber-800 border border-amber-200'
                       }`}>
                         <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-                        {subscription?.status === 'ACTIVE' ? 'Assinatura Ativa' : subscription?.status === 'CANCELED' ? 'Cancelamento Agendado' : 'Ativa'}
+                        {isCreditCardRecurring 
+                          ? 'Plano Pro Ativado' 
+                          : subscription?.status === 'CANCELED' 
+                            ? 'Cancelamento Agendado' 
+                            : daysRemaining === 1 
+                              ? '1 dia restante' 
+                              : `${daysRemaining} dias restantes`
+                        }
                       </span>
                     </div>
                   </div>
@@ -659,6 +751,66 @@ function MinhaContaContent() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação para Exclusão Definitiva de Dados */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-rose-200 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2 text-rose-700 font-extrabold text-sm">
+                <AlertTriangle size={18} className="text-rose-600" />
+                <span>Confirmar Exclusão de Todos os Dados</span>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-700 font-medium leading-relaxed">
+              <p className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">
+                ⚠️ ATENÇÃO: Esta ação é irreversível! Todos os seus lançamentos, contas, cartões, dívidas e investimentos serão apagados do Kaxxa para sempre.
+              </p>
+              <p>
+                Para confirmar a exclusão definitiva, digite a palavra <strong className="text-rose-700 font-black">CONFIRMAR</strong> no campo abaixo:
+              </p>
+
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Digite CONFIRMAR em maiúsculas"
+                className="w-full bg-slate-50 border border-slate-300 focus:border-rose-600 rounded-xl px-4 py-2.5 text-xs text-slate-900 font-bold placeholder-slate-400 outline-none uppercase"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleteConfirmText.trim() !== 'CONFIRMAR' || isDeletingData}
+                onClick={handleDeleteAllUserData}
+                className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                {isDeletingData ? (
+                  <span>Excluindo...</span>
+                ) : (
+                  <span>Excluir Definitivamente</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
