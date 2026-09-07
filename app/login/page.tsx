@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ShieldCheck, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { KaxxaKLogo, KaxxaWordmark } from '@/app/components/KaxxaLogo';
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +35,12 @@ export default function LoginPage() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSignUp && !name.trim()) {
+      setErrorMsg('Por favor, informe seu nome completo.');
+      return;
+    }
+
     if (!email || !password) {
       setErrorMsg('Por favor, informe seu e-mail e sua senha.');
       return;
@@ -50,10 +57,16 @@ export default function LoginPage() {
       setSuccessMsg('');
 
       if (isSignUp) {
-        // Criar Nova Conta
+        // Criar Nova Conta (salvando nome nos metadados do usuário)
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: {
+            data: {
+              full_name: name.trim(),
+              name: name.trim(),
+            }
+          }
         });
 
         if (error) throw error;
@@ -67,7 +80,7 @@ export default function LoginPage() {
             router.push('/dashboard');
           }
         } else if (data.user) {
-          setSuccessMsg('Conta criada com sucesso! Faça login com suas credenciais.');
+          setSuccessMsg('Conta criada com sucesso! Faça login com seu e-mail e senha.');
           setIsSignUp(false);
         }
       } else {
@@ -95,7 +108,7 @@ export default function LoginPage() {
       } else if (err.message?.includes('Invalid login credentials')) {
         setErrorMsg('E-mail ou senha incorretos. Verifique seus dados.');
       } else if (err.message?.includes('User already registered')) {
-        setErrorMsg('Este e-mail já está cadastrado. Faça login ou use outro e-mail.');
+        setErrorMsg('Este e-mail já está cadastrado. Faça login com suas credenciais.');
       } else {
         setErrorMsg(err.message || 'Erro ao realizar autenticação.');
       }
@@ -190,8 +203,28 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Formulário de E-mail e Senha */}
+            {/* Formulário de Autenticação */}
             <form onSubmit={handleAuth} className="space-y-4">
+              
+              {/* Campo Nome Completo (exibido apenas ao Criar Conta) */}
+              {isSignUp && (
+                <div className="animate-in fade-in duration-200">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Nome Completo</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      required={isSignUp}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Seu nome e sobrenome"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:border-[#1A44C8] focus:ring-2 focus:ring-[#1A44C8]/20 outline-none text-xs text-slate-900 font-medium transition-all"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Campo E-mail */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">E-mail</label>
                 <div className="relative">
@@ -207,6 +240,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {/* Campo Senha */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Senha</label>
                 <div className="relative">
@@ -242,11 +276,12 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Rodapé / Microtermos */}
-            <div className="mt-7 pt-4 border-t border-[#F1F5F9] text-center">
-              <p className="text-[10px] text-[#94A3B8] leading-relaxed">
-                Ambiente seguro • Proteção de dados bancários LGPD
-              </p>
+            {/* Selo de Proteção */}
+            <div className="mt-6 pt-4 border-t border-[#F1F5F9] text-center">
+              <div className="text-[11px] text-[#64748B] flex items-center justify-center gap-1.5 font-medium">
+                <ShieldCheck size={14} className="text-[#059669]" />
+                <span>Autenticação direta criptografada LGPD</span>
+              </div>
             </div>
 
           </div>
