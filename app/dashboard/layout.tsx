@@ -79,6 +79,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const [accessGranted, setAccessGranted] = useState<boolean | null>(null);
   const [isTrialUser, setIsTrialUser] = useState<boolean>(false);
+  const [subInfo, setSubInfo] = useState<{ isRecurringPro: boolean; daysRemaining: number }>({
+    isRecurringPro: false,
+    daysRemaining: 0
+  });
 
   // Verificação de Paywall / Assinatura
   useEffect(() => {
@@ -92,8 +96,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           return;
         }
         if (subscription) {
-          const isTrial = subscription.status === 'TRIAL' || (subscription.amount === 0 && !isAdminEmail(userInfo.email));
-          if (isMounted) setIsTrialUser(isTrial);
+          const isCreditCardPro = subscription.payment_method === 'CREDIT_CARD' && subscription.status === 'ACTIVE' && (subscription.amount || 0) > 0;
+          let remaining = 0;
+          if (subscription.current_period_end) {
+            const end = new Date(subscription.current_period_end).getTime();
+            remaining = Math.max(0, Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24)));
+          }
+          if (isMounted) {
+            setIsTrialUser(!isCreditCardPro);
+            setSubInfo({
+              isRecurringPro: isCreditCardPro || isAdminEmail(userInfo.email),
+              daysRemaining: remaining
+            });
+          }
         }
         if (isMounted) setAccessGranted(true);
       } catch (err) {
@@ -104,7 +119,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }
     checkSubscription();
     return () => { isMounted = false; };
-  }, [pathname, router]);
+  }, [pathname, router, userInfo.email]);
 
   // Fechar menu mobile ao navegar
   useEffect(() => {
