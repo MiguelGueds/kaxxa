@@ -745,9 +745,8 @@ export default function TerceirosPage() {
 
       {/* MODAL DETALHES DO DEVEDOR */}
       {selectedPersonPopup && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#0A0D14]/80 backdrop-blur-md" onClick={() => setSelectedPersonPopup(null)}></div>
-          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto animate-scale-in-center">
             <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
                 <UserCheck size={16} className="text-[#1A44C8]" />
@@ -865,10 +864,9 @@ export default function TerceirosPage() {
 
       {/* MODAL NOVO LANÇAMENTO */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#0A0D14]/80 backdrop-blur-md" onClick={() => setIsNewModalOpen(false)}></div>
-          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto animate-scale-in-center">
+            <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
                 <Plus size={16} className="text-[#1A44C8]" />
                 Novo Lançamento com Terceiro
@@ -876,7 +874,7 @@ export default function TerceirosPage() {
               <button onClick={() => setIsNewModalOpen(false)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={16}/></button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
               <div>
                 <label className="block text-[11px] font-bold text-[#64748B] mb-1">Nome do Devedor/Responsável</label>
                 <input
@@ -901,29 +899,24 @@ export default function TerceirosPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Tipo de Origem</label>
+                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Origem do Dinheiro</label>
                   <select
                     value={formOriginType}
                     onChange={e => {
-                      const newType = e.target.value as 'CARD' | 'ACCOUNT';
-                      setFormOriginType(newType);
-                      if (newType === 'CARD') {
-                        setFormBankOrCard(userCards[0]?.name || '');
-                      } else {
-                        setFormBankOrCard(userAccounts[0]?.name || '');
-                      }
+                      const val = e.target.value as 'CARD' | 'ACCOUNT';
+                      setFormOriginType(val);
+                      if (val === 'CARD' && userCards.length > 0) setFormBankOrCard(userCards[0].name);
+                      if (val === 'ACCOUNT' && userAccounts.length > 0) setFormBankOrCard(userAccounts[0].name);
                     }}
                     className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
                   >
                     <option value="CARD">Cartão de Crédito</option>
-                    <option value="ACCOUNT">Conta Bancária</option>
+                    <option value="ACCOUNT">Conta Bancária / PIX</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">
-                    {formOriginType === 'CARD' ? 'Cartão' : 'Conta Bancária'}
-                  </label>
+                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Conta ou Cartão Usado</label>
                   {formOriginType === 'CARD' ? (
                     userCards.length > 0 ? (
                       <select
@@ -1014,23 +1007,23 @@ export default function TerceirosPage() {
                   className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
                 />
               </div>
+            </div>
 
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsNewModalOpen(false)}
-                  className="flex-1 py-2 rounded-xl border border-[#E5E7EB] text-xs font-bold text-[#64748B] hover:bg-[#F8FAFC] transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveDebt}
-                  className="flex-1 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-bold transition-all shadow-md"
-                >
-                  Salvar Lançamento
-                </button>
-              </div>
+            <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsNewModalOpen(false)}
+                className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDebt}
+                className="flex-1 py-2 px-3 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs shadow-md"
+              >
+                Salvar Lançamento
+              </button>
             </div>
           </div>
         </div>

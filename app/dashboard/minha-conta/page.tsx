@@ -659,9 +659,9 @@ function MinhaContaContent() {
 
       {/* --- MODAL CANCELAR RENOVAÇÃO --- */}
       {isCancelModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-[#E5E7EB] animate-fade-in-up">
-            <div className="flex items-center gap-3 text-rose-600">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-fade-in-up flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto overflow-hidden">
+            <div className="flex items-center gap-3 text-rose-600 shrink-0 pb-3 border-b border-[#E5E7EB]">
               <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
                 <AlertTriangle size={20} />
               </div>
@@ -671,11 +671,13 @@ function MinhaContaContent() {
               </div>
             </div>
 
-            <p className="text-xs text-[#64748B] leading-relaxed bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
-              Ao confirmar o cancelamento da renovação, você continuará com acesso total ao Kaxxa até o final do seu período pago atual. Nenhuma cobrança futura será realizada.
-            </p>
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 py-3">
+              <p className="text-xs text-[#64748B] leading-relaxed bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
+                Ao confirmar o cancelamento da renovação, você continuará com acesso total ao Kaxxa até o final do seu período pago atual. Nenhuma cobrança futura será realizada.
+              </p>
+            </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-3 border-t border-[#E5E7EB] shrink-0">
               <button
                 type="button"
                 onClick={() => setIsCancelModalOpen(false)}
@@ -698,9 +700,9 @@ function MinhaContaContent() {
 
       {/* --- MODAL REEMBOLSO --- */}
       {isRefundModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-[#E5E7EB] animate-fade-in-up">
-            <div className="flex items-center gap-3 text-amber-600">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-fade-in-up flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto overflow-hidden">
+            <div className="flex items-center gap-3 text-amber-600 shrink-0 pb-3 border-b border-[#E5E7EB]">
               <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
                 <ShieldCheck size={20} />
               </div>
@@ -710,31 +712,33 @@ function MinhaContaContent() {
               </div>
             </div>
 
-            <form onSubmit={handleRequestRefund} className="space-y-3">
-              <div>
-                <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Motivo da solicitação</label>
-                <textarea
-                  required
-                  value={refundReason}
-                  onChange={e => setRefundReason(e.target.value)}
-                  placeholder="Conte-nos brevemente o motivo..."
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] resize-none h-20 font-medium"
-                />
+            <form onSubmit={handleRequestRefund} className="flex flex-col flex-1 min-h-0 pt-3">
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3 pb-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Motivo da solicitação</label>
+                  <textarea
+                    required
+                    value={refundReason}
+                    onChange={e => setRefundReason(e.target.value)}
+                    placeholder="Conte-nos brevemente o motivo..."
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] resize-none h-20 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Chave Pix para estorno</label>
+                  <input
+                    type="text"
+                    required
+                    value={refundPixKey}
+                    onChange={e => setRefundPixKey(e.target.value)}
+                    placeholder="CPF, E-mail, Telefone ou Chave Aleatória"
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Chave Pix para estorno</label>
-                <input
-                  type="text"
-                  required
-                  value={refundPixKey}
-                  onChange={e => setRefundPixKey(e.target.value)}
-                  placeholder="CPF, E-mail, Telefone ou Chave Aleatória"
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2 pt-3 border-t border-[#E5E7EB] shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsRefundModalOpen(false)}
@@ -757,11 +761,11 @@ function MinhaContaContent() {
 
       {/* Modal de Confirmação para Exclusão Definitiva de Dados */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-rose-200 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-rose-200 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
               <div className="flex items-center gap-2 text-rose-700 font-extrabold text-sm">
-                <AlertTriangle size={18} className="text-rose-600" />
+                <AlertTriangle size={18} className="text-rose-600 shrink-0" />
                 <span>Confirmar Exclusão de Todos os Dados</span>
               </div>
               <button 
@@ -773,7 +777,7 @@ function MinhaContaContent() {
               </button>
             </div>
 
-            <div className="space-y-3 text-xs text-slate-700 font-medium leading-relaxed">
+            <div className="space-y-3 text-xs text-slate-700 font-medium leading-relaxed flex-1 overflow-y-auto custom-scrollbar pr-1 py-3">
               <p className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">
                 ⚠️ ATENÇÃO: Esta ação é irreversível! Todos os seus lançamentos, contas, cartões, dívidas e investimentos serão apagados do Kaxxa para sempre.
               </p>
@@ -790,7 +794,7 @@ function MinhaContaContent() {
               />
             </div>
 
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex items-center gap-2 pt-3 border-t border-slate-100 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsDeleteModalOpen(false)}

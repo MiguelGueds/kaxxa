@@ -681,14 +681,15 @@ function SettingsContent() {
       )}
 
       {/* Modal Kaxxa Proprietário de Confirmação de Exclusão */}
+      {/* Modal Kaxxa Proprietário de Confirmação de Exclusão */}
       {deleteTarget && (
         <div 
-          className="fixed inset-0 z-[9999] bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
           onClick={() => setDeleteTarget(null)}
         >
           <div 
             onClick={e => e.stopPropagation()} 
-            className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center space-y-4 scale-in-center"
+            className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center space-y-4 my-auto scale-in-center"
           >
             <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center mx-auto text-rose-600">
               <Trash2 size={22} />
@@ -753,14 +754,14 @@ function TabButton({ active, onClick, icon, label, badge }: { active: boolean, o
 function ModalWrapper({ children, title, onClose }: { children: React.ReactNode, title: string, onClose: () => void }) {
   return (
     <div 
-      className="fixed inset-0 z-[9999] bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
         onClick={e => e.stopPropagation()} 
-        className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col scale-in-center"
+        className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto scale-in-center"
       >
-        <div className="px-6 py-4 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC]">
+        <div className="px-6 py-4 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
           <h2 className="text-sm font-bold text-[#181B22]">{title}</h2>
           <button 
             type="button" 
@@ -770,7 +771,7 @@ function ModalWrapper({ children, title, onClose }: { children: React.ReactNode,
             <X size={15} />
           </button>
         </div>
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
           {children}
         </div>
       </div>

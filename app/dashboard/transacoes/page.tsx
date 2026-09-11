@@ -969,8 +969,8 @@ export default function SaldoExtratoPage() {
           MODAL 1: NOVO OU EDITAR LANÇAMENTO
       ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
               <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
@@ -1091,61 +1091,62 @@ export default function SaldoExtratoPage() {
                     type="date" 
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium mb-1"
                   />
                 </div>
               </div>
 
+              {/* Categoria */}
+              <div>
+                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Categoria</label>
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
+                >
+                  {(transactionType === 'EXPENSE' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Conta Bancária */}
               <div>
-                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Conta / Origem do Recurso</label>
+                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Conta Bancária</label>
                 <select 
                   value={selectedBank}
                   onChange={(e) => setSelectedBank(e.target.value)}
                   className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
                 >
                   {banks.map(b => (
-                    <option key={b.id} value={b.name}>{b.name} (R$ {formatCurrency(b.balance)})</option>
+                    <option key={b.id} value={b.name}>{b.name}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Categoria */}
-              {!isThirdParty && (
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Categoria</label>
-                  <select 
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
-                  >
-                    {(transactionType === 'EXPENSE' ? expenseCategories : incomeCategories).map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Gasto de Terceiro */}
+              {/* Toggle de Terceiros (apenas se for despesa) */}
               {transactionType === 'EXPENSE' && (
-                <div className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="pt-2 border-t border-[#E5E7EB] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-[#181B22]">Esta despesa é de Terceiros?</span>
+                      <p className="text-[10px] text-[#64748B]">Marque se comprou algo para outra pessoa te pagar</p>
+                    </div>
                     <input 
                       type="checkbox" 
                       checked={isThirdParty}
                       onChange={(e) => setIsThirdParty(e.target.checked)}
-                      className="rounded accent-[#1A44C8] w-4 h-4 cursor-pointer"
+                      className="rounded text-[#1A44C8] focus:ring-[#1A44C8] w-4 h-4 cursor-pointer"
                     />
-                    <span className="text-xs font-bold text-[#181B22]">É um empréstimo ou gasto feito para outra pessoa?</span>
-                  </label>
+                  </div>
 
                   {isThirdParty && (
-                    <div className="pt-1.5">
-                      <label className="block text-[10px] text-[#64748B] mb-1 font-medium">Pessoa Responsável pelo Pagamento</label>
+                    <div className="mt-2 animate-fade-in">
+                      <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Pessoa Responsável</label>
                       <select 
                         value={thirdPartyName}
                         onChange={(e) => setThirdPartyName(e.target.value)}
-                        className="w-full bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none"
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
                       >
                         {AVAILABLE_RESPONSIBLES.map(r => (
                           <option key={r} value={r}>{r}</option>
@@ -1183,8 +1184,8 @@ export default function SaldoExtratoPage() {
           MODAL 2: TRANSFERIR ENTRE CONTAS
       ========================================================================= */}
       {isTransferModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
               <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
@@ -1274,8 +1275,8 @@ export default function SaldoExtratoPage() {
           MODAL 3: PAGAR FATURA COM SALDO
       ========================================================================= */}
       {isPayInvoiceModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
               <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
@@ -1362,8 +1363,8 @@ export default function SaldoExtratoPage() {
           MODAL 4: IMPORTAR EXTRATO
       ========================================================================= */}
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
               <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
@@ -1476,8 +1477,8 @@ export default function SaldoExtratoPage() {
           MODAL 5: CONFIRMAR EXCLUSÃO
       ========================================================================= */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             <div>
               <h3 className="text-sm font-bold text-[#181B22] mb-1">Excluir Lançamento?</h3>
               <p className="text-xs text-[#64748B]">
@@ -1485,7 +1486,7 @@ export default function SaldoExtratoPage() {
               </p>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-2 shrink-0">
               <button 
                 onClick={() => setDeleteCandidate(null)}
                 className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7] transition-all"

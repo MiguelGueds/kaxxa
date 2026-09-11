@@ -697,20 +697,22 @@ export default function PlanosCheckoutPage() {
 
       {/* Modal de Sucesso */}
       {isApproved && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-in fade-in zoom-in duration-300">
-            <div className="w-14 h-14 bg-[#059669]/10 text-[#059669] rounded-2xl flex items-center justify-center mx-auto mb-3 border border-[#059669]/20 shadow-sm">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6">
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto overflow-hidden">
+            <div className="w-14 h-14 bg-[#059669]/10 text-[#059669] rounded-2xl flex items-center justify-center mx-auto mb-3 border border-[#059669]/20 shadow-sm shrink-0">
               <CheckCircle2 size={32} className="animate-bounce" />
             </div>
-            <h3 className="text-lg font-black text-[#181B22] mb-1">
-              {appliedCoupon?.type === 'TRIAL_DAYS' ? 'Acesso Liberado!' : 'Pagamento Aprovado!'}
-            </h3>
-            <p className="text-xs text-[#64748B] mb-4 leading-relaxed">
-              {appliedCoupon?.type === 'TRIAL_DAYS' 
-                ? `Seu teste de ${appliedCoupon.value} dias foi ativado com sucesso. Redirecionando para seu painel...`
-                : 'Sua Assinatura Kaxxa foi liberada com sucesso. Redirecionando para seu painel...'}
-            </p>
-            <div className="w-full bg-[#F1F5F9] h-2 rounded-full overflow-hidden">
+            <div className="flex-1 overflow-y-auto custom-scrollbar mb-4">
+              <h3 className="text-lg font-black text-[#181B22] mb-1">
+                {appliedCoupon?.type === 'TRIAL_DAYS' ? 'Acesso Liberado!' : 'Pagamento Aprovado!'}
+              </h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                {appliedCoupon?.type === 'TRIAL_DAYS' 
+                  ? `Seu teste de ${appliedCoupon.value} dias foi ativado com sucesso. Redirecionando para seu painel...`
+                  : 'Sua Assinatura Kaxxa foi liberada com sucesso. Redirecionando para seu painel...'}
+              </p>
+            </div>
+            <div className="w-full bg-[#F1F5F9] h-2 rounded-full overflow-hidden shrink-0">
               <div className="bg-[#1A44C8] h-full animate-[pulse_1s_infinite] w-full" />
             </div>
           </div>

@@ -1966,8 +1966,8 @@ export default function InvestimentosPage() {
           MODAL UNIFICADO: NOVO APORTE / EDIÇÃO DE INVESTIMENTO
       ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
             {/* Header com Abas Macro */}
             <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
@@ -2321,20 +2321,20 @@ export default function InvestimentosPage() {
           MODAL DE EXCLUSÃO
       ========================================================================= */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 text-center space-y-3 my-auto animate-scale-in-center">
-            <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 text-center space-y-3 flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+            <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shrink-0">
               <Trash2 size={18} />
             </div>
 
-            <div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
               <h3 className="text-xs font-bold text-[#181B22] mb-1">Excluir Investimento?</h3>
               <p className="text-[11px] text-[#64748B]">
                 Remover <strong>&quot;{deleteCandidate.name}&quot;</strong> da sua carteira?
               </p>
             </div>
 
-            <div className="flex gap-2 pt-1">
+            <div className="flex gap-2 pt-1 shrink-0">
               <button 
                 onClick={() => setDeleteCandidate(null)}
                 className="flex-1 py-1.5 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7]"

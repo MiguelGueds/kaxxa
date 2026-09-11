@@ -1173,8 +1173,8 @@ export default function DividasPage() {
           MODAL 1: CADASTRAR OU EDITAR DÍVIDA (SEM BOTÃO X)
       ========================================================================= */}
       {isNewDebtModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6">
-          <div className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6">
+          <div className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
               <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
@@ -1407,8 +1407,8 @@ export default function DividasPage() {
           MODAL 2: REGISTRAR PAGAMENTO (SEM BOTÃO X)
       ========================================================================= */}
       {isAmortizeModalOpen && selectedDebtForAmortize && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6">
+          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
               <div>
@@ -1520,8 +1520,8 @@ export default function DividasPage() {
           MODAL 3: HISTÓRICO DE PAGAMENTOS (COMPACTO, CLARO & DIRETO)
       ========================================================================= */}
       {viewingHistoryDebt && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4">
-          <div className="w-full max-w-2xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6">
+          <div className="w-full max-w-2xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
             {/* Cabeçalho Compacto */}
             <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between gap-3 shrink-0">
@@ -1699,10 +1699,10 @@ export default function DividasPage() {
           MODAL 4: CONFIRMAÇÃO DE EXCLUSÃO (SEM BOTÃO X)
       ========================================================================= */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 shadow-2xl space-y-4 my-auto animate-scale-in-center">
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6">
+          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 shadow-2xl space-y-4 flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+            <div className="flex items-center gap-3 text-rose-600 shrink-0">
+              <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
                 <Trash2 size={18} />
               </div>
               <div>
@@ -1711,11 +1711,13 @@ export default function DividasPage() {
               </div>
             </div>
 
-            <p className="text-xs text-[#64748B] bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
-              O contrato <strong className="text-[#181B22]">{deleteCandidate.name}</strong> será excluído permanentemente do painel.
-            </p>
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+              <p className="text-xs text-[#64748B] bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
+                O contrato <strong className="text-[#181B22]">{deleteCandidate.name}</strong> será excluído permanentemente do painel.
+              </p>
+            </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 shrink-0">
               <button 
                 onClick={() => setDeleteCandidate(null)}
                 className="px-4 py-2 rounded-xl text-xs text-[#64748B] hover:text-[#181B22] font-semibold"

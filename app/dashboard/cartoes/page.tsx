@@ -1560,16 +1560,16 @@ export default function MinhasFaturasPage() {
       </div>
 
       {isNewCardModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#0A0D14]/80 backdrop-blur-md transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-in-center">
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
               <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
                 <CreditCard size={14} className="text-[#1A44C8]" />
                 Cadastrar Novo Cartão de Crédito
               </h2>
             </div>
 
-            <div className="p-4 space-y-3 max-h-[75vh] overflow-y-auto custom-scrollbar">
+            <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
               <div>
                 <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Nome do Cartão</label>
                 <input 
@@ -1665,7 +1665,7 @@ export default function MinhasFaturasPage() {
               </div>
             </div>
 
-            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2">
+            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
               <button 
                 type="button"
                 onClick={() => setIsNewCardModalOpen(false)}
@@ -1686,10 +1686,10 @@ export default function MinhasFaturasPage() {
       )}
 
       {isNewExpenseModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#0A0D14]/80 backdrop-blur-md transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
             
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center">
+            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
               <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
                 {editingExpense ? (
                   <>
@@ -1705,7 +1705,7 @@ export default function MinhasFaturasPage() {
               </h2>
             </div>
 
-            <div className="p-4 space-y-3 max-h-[75vh] overflow-y-auto custom-scrollbar">
+            <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
               <div>
                 <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Cartão de Crédito</label>
                 <select 
@@ -1752,40 +1752,18 @@ export default function MinhasFaturasPage() {
                         key={val}
                         type="button"
                         onClick={() => setFormAmount(val.toString())}
-                        className="text-[9px] px-1.5 py-0.5 rounded bg-[#F8FAFC] text-[#64748B] hover:text-[#181B22] hover:bg-[#E2E8F0] border border-[#E5E7EB] font-bold transition-all"
+                        className="px-1.5 py-0.5 rounded-lg bg-[#F1F3F7] hover:bg-[#E5E7EB] text-[9px] text-[#64748B] font-semibold border border-[#E5E7EB] transition-colors"
                       >
-                        +R$ {val}
+                        +{val}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-[10.5px] text-[#64748B] font-bold">Data da Compra</label>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setFormDate(new Date().toISOString().split('T')[0])}
-                        className="text-[8.5px] px-1.5 py-0.5 rounded bg-[#1A44C8]/10 text-[#1A44C8] font-bold hover:bg-[#1A44C8]/20"
-                      >
-                        Hoje
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const d = new Date();
-                          d.setDate(d.getDate() - 1);
-                          setFormDate(d.toISOString().split('T')[0]);
-                        }}
-                        className="text-[8.5px] px-1.5 py-0.5 rounded bg-[#F1F3F7] text-[#64748B] font-bold hover:bg-[#E2E8F0]"
-                      >
-                        Ontem
-                      </button>
-                    </div>
-                  </div>
+                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data da Compra</label>
                   <input 
-                    type="date" 
+                    type="date"
                     value={formDate}
                     onChange={(e) => setFormDate(e.target.value)}
                     className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
@@ -1793,87 +1771,69 @@ export default function MinhasFaturasPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Categoria</label>
-                <select 
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value)}
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                >
-                  {categoriesList.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Parcelamento</label>
+                  <select 
+                    value={formInstallments}
+                    onChange={(e) => setFormInstallments(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                  >
+                    <option value={1}>À Vista (1x)</option>
+                    {[2,3,4,5,6,7,8,9,10,11,12,18,24].map(n => (
+                      <option key={n} value={n}>{n}x parcelado</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Categoria</label>
+                  <select 
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                  >
+                    {categoriesList.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {!editingExpense && (
-                <div className="p-2.5 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={formIsInstallment}
-                      onChange={(e) => setFormIsInstallment(e.target.checked)}
-                      className="rounded accent-[#1A44C8] w-3.5 h-3.5 cursor-pointer"
-                    />
-                    <span className="text-[11px] text-[#181B22] font-bold">Compra Parcelada</span>
-                  </label>
-
-                  {formIsInstallment && (
-                    <div>
-                      <select 
-                        value={formInstallments}
-                        onChange={(e) => setFormInstallments(e.target.value)}
-                        className="w-full bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg py-1 px-2 text-xs text-[#181B22] focus:outline-none"
-                      >
-                        {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24].map(n => (
-                          <option key={n} value={n}>{n}x de R$ {formAmount ? (parseFloat(formAmount.replace(',', '.')) / n).toFixed(2) : '0,00'}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+              <div>
+                <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Responsável / Pessoa</label>
+                <div className="flex items-center gap-1.5">
+                  <select 
+                    value={formThirdPartyName}
+                    onChange={(e) => setFormThirdPartyName(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                  >
+                    <option value="Titular (Você)">Titular (Você)</option>
+                    {registeredThirdParties.map(tp => (
+                      <option key={tp} value={tp}>{tp}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
-
-              <div className="p-2.5 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={formIsThirdParty}
-                    onChange={(e) => setFormIsThirdParty(e.target.checked)}
-                    className="rounded accent-[#1A44C8] w-3.5 h-3.5 cursor-pointer"
-                  />
-                  <span className="text-[11px] text-[#181B22] font-bold">Gasto de Terceiro / Amigo</span>
-                </label>
-
-                {formIsThirdParty && (
-                  <div>
-                    <label className="block text-[9.5px] text-[#64748B] mb-1 font-medium">Nome da Pessoa Responsável</label>
-                    <input 
-                      type="text" 
-                      value={formThirdPartyName}
-                      onChange={(e) => setFormThirdPartyName(e.target.value)}
-                      placeholder="Ex: Lucas Ferreira, Mariana..."
-                      className="w-full bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg py-1 px-2.5 text-xs text-[#181B22] focus:outline-none"
-                    />
-                  </div>
-                )}
               </div>
             </div>
 
-            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2">
+            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
               <button 
-                type="button" 
-                onClick={() => setIsNewExpenseModalOpen(false)}
+                type="button"
+                onClick={() => {
+                  setIsNewExpenseModalOpen(false);
+                  setEditingExpense(null);
+                }}
                 className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
               >
                 Cancelar
               </button>
               <button 
                 onClick={handleSaveExpense}
-                disabled={!formDesc.trim() || !formAmount || parseFloat(formAmount.replace(',', '.')) <= 0}
+                disabled={!formDesc.trim() || (parseFloat(formAmount.replace(',', '.')) || 0) <= 0}
                 className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95 disabled:opacity-50"
               >
-                {editingExpense ? 'Salvar Alterações' : 'Salvar no Cartão'}
+                {editingExpense ? 'Salvar Alterações' : 'Adicionar Compra'}
               </button>
             </div>
           </div>
@@ -1881,16 +1841,16 @@ export default function MinhasFaturasPage() {
       )}
 
       {isPaymentModalOpen && paymentTargetCard && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#0A0D14]/80 backdrop-blur-md transition-all duration-300">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-in-center">
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
               <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
                 <CheckCheck size={14} className="text-[#1A44C8]" />
                 Registrar Pagamento de Fatura
               </h2>
             </div>
 
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
               <div className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] flex items-center justify-between">
                 <div>
                   <p className="text-[10px] text-[#64748B] font-medium">{paymentTargetCard.name}</p>
@@ -1944,7 +1904,7 @@ export default function MinhasFaturasPage() {
               )}
             </div>
 
-            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2">
+            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
               <button 
                 type="button" 
                 onClick={() => setIsPaymentModalOpen(false)}
@@ -1965,9 +1925,9 @@ export default function MinhasFaturasPage() {
       )}
 
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#0A0D14]/80 backdrop-blur-md transition-all duration-300">
-          <div className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-in-center">
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center">
+            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
               <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
                 <Upload size={14} className="text-[#1A44C8]" />
                 Importar Fatura de Cartão
@@ -1986,7 +1946,7 @@ export default function MinhasFaturasPage() {
               className="hidden" 
             />
 
-            <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
               {importStep === 1 ? (
                 <div>
                   <div className="mb-3">
@@ -2137,7 +2097,7 @@ export default function MinhasFaturasPage() {
               )}
             </div>
 
-            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2">
+            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
               <button 
                 type="button" 
                 onClick={() => {
@@ -2163,8 +2123,8 @@ export default function MinhasFaturasPage() {
       )}
 
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#0A0D14]/80 backdrop-blur-md transition-all duration-300">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 text-center animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 text-center my-auto animate-scale-in-center">
             <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 size={18} />
             </div>
