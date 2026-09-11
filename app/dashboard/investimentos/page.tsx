@@ -412,6 +412,42 @@ export default function InvestimentosPage() {
   const [rvYieldRate, setRvYieldRate] = useState('');
   const [aporteDate, setAporteDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
+  // Cotação ao Vivo e Preenchimento Automático
+  const [fetchingQuote, setFetchingQuote] = useState(false);
+  const [liveQuoteInfo, setLiveQuoteInfo] = useState<{ price: number; name: string } | null>(null);
+
+  const fetchQuoteForTicker = async (ticker: string) => {
+    if (!ticker || ticker.length < 3) return;
+    const clean = ticker.split(' - ')[0].trim().toUpperCase();
+    setFetchingQuote(true);
+    try {
+      const res = await fetch(`/api/quote?ticker=${encodeURIComponent(clean)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.price > 0) {
+          setLiveQuoteInfo({ price: data.price, name: data.name });
+          setRvPrice(data.price.toString());
+
+          if (clean.endsWith('11') && !['BOVA11', 'IVVB11', 'SMAL11', 'HASH11'].includes(clean)) {
+            setRvCategory('FIIs');
+          } else if (clean.endsWith('34')) {
+            setRvCategory('BDRs');
+          } else if (['BTC', 'ETH', 'SOL', 'USDT', 'BNB', 'XRP', 'ADA', 'AVAX', 'LINK', 'DOGE'].includes(clean)) {
+            setRvCategory('Criptomoedas');
+          } else if (['BOVA11', 'IVVB11', 'SMAL11', 'HASH11', 'GOLD11', 'XINA11', 'NASD11'].includes(clean)) {
+            setRvCategory('ETFs');
+          } else if (clean.endsWith('3') || clean.endsWith('4') || clean.endsWith('6')) {
+            setRvCategory('Ações');
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Cotação em tempo real indisponível:', e);
+    } finally {
+      setFetchingQuote(false);
+    }
+  };
+
   const formatCurrency = (val: number) => {
     if (isConcealed) return '•••••';
     return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1965,8 +2001,22 @@ export default function InvestimentosPage() {
                       value={rfRate}
                       onChange={(e) => setRfRate(e.target.value)}
                       placeholder="Ex: 100% do CDI, IPCA + 6.2%"
-                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-medium"
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-medium mb-1.5"
                     />
+                    <div className="flex flex-wrap gap-1">
+                      {['100% do CDI', '110% do CDI', '120% do CDI', 'IPCA + 6.5%', 'Tesouro Selic'].map(preset => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setRfRate(preset)}
+                          className={`text-[9px] px-2 py-0.5 rounded-lg border font-bold transition-all ${
+                            rfRate === preset ? 'bg-[#1A44C8] text-white border-[#1A44C8]' : 'bg-[#F8FAFC] text-[#64748B] border-[#E5E7EB] hover:bg-[#F1F3F7]'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
@@ -2015,7 +2065,7 @@ export default function InvestimentosPage() {
                         <button
                           key={type}
                           type="button"
-                          onClick={() => { setRvCategory(type); setRvSearchTicker(''); }}
+                          onClick={() => { setRvCategory(type); setRvSearchTicker(''); setLiveQuoteInfo(null); }}
                           className={`py-1.5 px-2 rounded-xl border text-[10.5px] font-bold transition-all ${
                             rvCategory === type ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
                           }`}
@@ -2027,11 +2077,31 @@ export default function InvestimentosPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Código / Ticker</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[10.5px] text-[#64748B] font-bold">Código / Ticker</label>
+                      {rvSearchTicker && (
+                        <button
+                          type="button"
+                          onClick={() => fetchQuoteForTicker(rvSearchTicker)}
+                          disabled={fetchingQuote}
+                          className="text-[9.5px] font-bold text-[#1A44C8] hover:underline flex items-center gap-1"
+                        >
+                          <Sparkles size={10} />
+                          {fetchingQuote ? 'Buscando cotação...' : 'Buscar Cotação ao Vivo'}
+                        </button>
+                      )}
+                    </div>
+
                     <input 
                       type="text" 
                       value={rvSearchTicker}
-                      onChange={(e) => setRvSearchTicker(e.target.value)}
+                      onChange={(e) => {
+                        setRvSearchTicker(e.target.value);
+                        setLiveQuoteInfo(null);
+                      }}
+                      onBlur={() => {
+                        if (rvSearchTicker && !rvPrice) fetchQuoteForTicker(rvSearchTicker);
+                      }}
                       placeholder="Ex: PETR4, MXRF11, AAPL34, BTC..."
                       className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none uppercase font-extrabold"
                     />
@@ -2041,7 +2111,10 @@ export default function InvestimentosPage() {
                         {filteredAutocomplete.map((item, idx) => (
                           <div 
                             key={idx} 
-                            onClick={() => setRvSearchTicker(item)}
+                            onClick={() => {
+                              setRvSearchTicker(item);
+                              fetchQuoteForTicker(item);
+                            }}
                             className="px-2 py-1 rounded hover:bg-[#F1F3F7] cursor-pointer text-[11px] text-[#64748B] hover:text-[#181B22] flex justify-between items-center"
                           >
                             <span className="font-bold text-[#181B22]">{item.split(' - ')[0]}</span>
@@ -2087,6 +2160,23 @@ export default function InvestimentosPage() {
                       />
                     </div>
                   </div>
+
+                  {/* BANNER DE RESUMO DE TOTAL EM TEMPO REAL */}
+                  {((parseFloat(rvQuantity.replace(',', '.')) || 0) > 0 || liveQuoteInfo) && (
+                    <div className="p-2.5 bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-[9.5px] text-[#64748B] font-bold uppercase tracking-wider block">Total Calculado do Aporte</span>
+                        <span className="text-sm font-extrabold text-[#1A44C8]">
+                          R$ {formatCurrency((parseFloat(rvQuantity.replace(',', '.')) || 0) * (parseFloat(rvPrice.replace(',', '.')) || 0))}
+                        </span>
+                      </div>
+                      {liveQuoteInfo && (
+                        <div className="text-right text-[9.5px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg font-bold">
+                          ⚡ Cotação Mercado: R$ {liveQuoteInfo.price.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
 
