@@ -24,7 +24,9 @@ import {
   Pencil,
   BarChart3,
   ListFilter,
-  LayoutGrid
+  LayoutGrid,
+  Calendar,
+  ArrowUpDown
 } from 'lucide-react';
 import { usePrivacy } from '@/app/contexts/PrivacyContext';
 import { BankLogo } from '@/app/components/BankLogo';
@@ -125,7 +127,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     currentBalance: 21450.00,
     monthlyEstimatedYield: 185.00,
     totalDividendsReceived: 1450.00,
-    isFgcProtected: true
+    isFgcProtected: true,
+    createdAt: '2026-01-10T12:00:00Z'
   },
   {
     id: 'rf-2',
@@ -140,7 +143,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     currentBalance: 6380.00,
     monthlyEstimatedYield: 55.00,
     totalDividendsReceived: 380.00,
-    isFgcProtected: true
+    isFgcProtected: true,
+    createdAt: '2026-02-15T12:00:00Z'
   },
   {
     id: 'rf-3',
@@ -155,7 +159,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     currentBalance: 16820.00,
     monthlyEstimatedYield: 145.00,
     totalDividendsReceived: 0.00,
-    isFgcProtected: false
+    isFgcProtected: false,
+    createdAt: '2026-03-01T12:00:00Z'
   },
   {
     id: 'rf-4',
@@ -170,7 +175,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     currentBalance: 11150.00,
     monthlyEstimatedYield: 98.00,
     totalDividendsReceived: 1150.00,
-    isFgcProtected: true
+    isFgcProtected: true,
+    createdAt: '2026-04-12T12:00:00Z'
   },
   {
     id: 'rf-5',
@@ -185,7 +191,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     currentBalance: 8740.00,
     monthlyEstimatedYield: 72.00,
     totalDividendsReceived: 740.00,
-    isFgcProtected: true
+    isFgcProtected: true,
+    createdAt: '2026-05-20T12:00:00Z'
   },
 
   // ==================== RENDA VARIÁVEL ====================
@@ -203,7 +210,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     totalInvested: 8125.00,
     currentBalance: 9600.00,
     monthlyEstimatedYield: 115.00,
-    totalDividendsReceived: 1180.00
+    totalDividendsReceived: 1180.00,
+    createdAt: '2026-06-05T12:00:00Z'
   },
   {
     id: 'rv-2',
@@ -219,7 +227,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     totalInvested: 7260.00,
     currentBalance: 8340.00,
     monthlyEstimatedYield: 68.00,
-    totalDividendsReceived: 710.00
+    totalDividendsReceived: 710.00,
+    createdAt: '2026-07-18T12:00:00Z'
   },
   {
     id: 'rv-3a',
@@ -235,7 +244,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     totalInvested: 7000.00,
     currentBalance: 7315.00,
     monthlyEstimatedYield: 77.00,
-    totalDividendsReceived: 756.00
+    totalDividendsReceived: 756.00,
+    createdAt: '2026-08-02T12:00:00Z'
   },
   {
     id: 'rv-3b',
@@ -251,7 +261,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     totalInvested: 5120.00,
     currentBalance: 5225.00,
     monthlyEstimatedYield: 55.00,
-    totalDividendsReceived: 540.00
+    totalDividendsReceived: 540.00,
+    createdAt: '2026-08-25T12:00:00Z'
   },
   {
     id: 'rv-4',
@@ -267,7 +278,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     totalInvested: 9480.00,
     currentBalance: 9870.00,
     monthlyEstimatedYield: 73.00,
-    totalDividendsReceived: 657.00
+    totalDividendsReceived: 657.00,
+    createdAt: '2026-09-01T12:00:00Z'
   },
   {
     id: 'rv-5',
@@ -283,7 +295,8 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     totalInvested: 3360.00,
     currentBalance: 4144.00,
     monthlyEstimatedYield: 12.00,
-    totalDividendsReceived: 95.00
+    totalDividendsReceived: 95.00,
+    createdAt: '2026-09-08T12:00:00Z'
   },
   {
     id: 'rv-6',
@@ -299,9 +312,20 @@ const INITIAL_INVESTMENTS: InvestmentItem[] = [
     totalInvested: 10150.00,
     currentBalance: 12075.00,
     monthlyEstimatedYield: 0.00,
-    totalDividendsReceived: 0.00
+    totalDividendsReceived: 0.00,
+    createdAt: '2026-09-10T12:00:00Z'
   }
 ];
+
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return '-';
+  const cleanDate = dateStr.split('T')[0];
+  const parts = cleanDate.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return cleanDate;
+}
 
 export default function InvestimentosPage() {
   const { isConcealed } = usePrivacy();
@@ -311,6 +335,7 @@ export default function InvestimentosPage() {
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
   const [consolidatedFilter, setConsolidatedFilter] = useState<'ALL' | 'FIIS' | 'ACOES' | 'FIXA' | 'BDRS' | 'CRIPTO'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [historyDateSortOrder, setHistoryDateSortOrder] = useState<'desc' | 'asc'>('desc');
 
   const [loading, setLoading] = useState(false);
 
@@ -797,9 +822,9 @@ export default function InvestimentosPage() {
     return classes.filter(c => c.id === consolidatedFilter && c.items.length > 0);
   }, [filteredConsolidated, consolidatedFilter, totalFIIs, totalAcoes, totalFixed, totalBDRs, totalCripto, pctFIIs, pctAcoes, pctFixed, pctBDRs, pctCripto]);
 
-  // Filtragem da Tabela de Lançamentos
+  // Filtragem e Ordenação por Data da Tabela de Lançamentos
   const filteredInvestments = useMemo(() => {
-    return investments.filter(item => {
+    const list = investments.filter(item => {
       if (selectedFilter === 'FIXA' && item.macroType !== 'FIXA') return false;
       if (selectedFilter === 'VARIAVEL' && item.macroType !== 'VARIAVEL') return false;
       if (selectedFilter === 'CAIXINHA_PORQUINHO' && item.category !== 'CAIXINHA_PORQUINHO') return false;
@@ -817,7 +842,13 @@ export default function InvestimentosPage() {
       }
       return true;
     });
-  }, [investments, selectedFilter, searchQuery]);
+
+    return [...list].sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return historyDateSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    });
+  }, [investments, selectedFilter, searchQuery, historyDateSortOrder]);
 
   // Autocomplete Renda Variável
   const filteredAutocomplete = useMemo(() => {
@@ -1671,16 +1702,30 @@ export default function InvestimentosPage() {
               </div>
             )}
 
-            {/* Busca */}
-            <div className="relative w-full lg:w-56">
-              <Search size={12} className="absolute left-3 top-2.5 text-[#94A3B8]" />
-              <input 
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar ativo ou banco..."
-                className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-full pl-8 pr-3 py-1.5 text-[10.5px] text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
-              />
+            {/* Busca & Ordenação por Data do Aporte */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
+              {viewMode === 'LANCAMENTOS' && (
+                <button 
+                  type="button"
+                  onClick={() => setHistoryDateSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F1F3F7] hover:bg-[#E5E7EB] border border-[#E5E7EB] text-[10.5px] font-bold text-[#181B22] transition-all whitespace-nowrap w-full sm:w-auto"
+                  title="Alterar ordenação por data do aporte"
+                >
+                  <Calendar size={12} className="text-[#1A44C8]" />
+                  <span>{historyDateSortOrder === 'desc' ? 'Mais Recentes (⬇)' : 'Mais Antigos (⬆)'}</span>
+                </button>
+              )}
+
+              <div className="relative w-full lg:w-56">
+                <Search size={12} className="absolute left-3 top-2.5 text-[#94A3B8]" />
+                <input 
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar ativo ou banco..."
+                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-full pl-8 pr-3 py-1.5 text-[10.5px] text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
+                />
+              </div>
             </div>
 
           </div>
@@ -1844,6 +1889,17 @@ export default function InvestimentosPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-[#E5E7EB] text-[9px] uppercase tracking-wider text-[#94A3B8] font-bold">
+                      <th 
+                        className="pb-2 px-2 cursor-pointer select-none hover:text-[#1A44C8] transition-colors"
+                        onClick={() => setHistoryDateSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                        title="Clique para alternar a ordem da data do aporte"
+                      >
+                        <div className="flex items-center gap-1 text-[#1A44C8]">
+                          <Calendar size={11} />
+                          <span>Data do Aporte</span>
+                          <ArrowUpDown size={10} className="text-[#64748B]" />
+                        </div>
+                      </th>
                       <th className="pb-2 px-2">Ativo / Investimento</th>
                       <th className="pb-2 px-2">Tipo / Classe</th>
                       <th className="pb-2 px-2">Taxa / Condição</th>
@@ -1865,6 +1921,14 @@ export default function InvestimentosPage() {
                         return (
                           <tr key={item.id} className="hover:bg-[#F8FAFC] transition-colors group">
                             
+                            {/* Data do Aporte / Compra */}
+                            <td className="py-2.5 px-2 text-[#181B22] font-semibold text-[10.5px] whitespace-nowrap">
+                              <span className="flex items-center gap-1.5 font-bold text-[#181B22]">
+                                <Calendar size={11} className="text-[#1A44C8] shrink-0" />
+                                {formatDate(item.createdAt)}
+                              </span>
+                            </td>
+
                             {/* Nome / Ticker */}
                             <td className="py-2.5 px-2">
                               <div className="flex items-center gap-2">
