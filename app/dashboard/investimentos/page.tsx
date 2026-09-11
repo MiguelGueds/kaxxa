@@ -319,26 +319,44 @@ export default function InvestimentosPage() {
       try {
         const dbInvestments = await investmentsService.fetchInvestments();
         if (dbInvestments && dbInvestments.length > 0) {
-          setInvestments(dbInvestments.map(inv => ({
-            id: inv.id,
-            macroType: inv.macro_type,
-            category: inv.category as AssetCategory,
-            name: inv.name,
-            ticker: inv.ticker,
-            institution: inv.institution,
-            rateOrYield: inv.rate_or_yield,
-            liquidity: (inv.liquidity as 'DIARIA' | 'D+1' | 'VENCIMENTO') || 'DIARIA',
-            dueDate: inv.due_date,
-            quantity: inv.quantity,
-            averagePrice: inv.average_price,
-            currentPrice: inv.average_price,
-            totalInvested: inv.invested_amount,
-            currentBalance: inv.current_value,
-            monthlyEstimatedYield: inv.macro_type === 'FIXA' ? inv.current_value * 0.0092 : (inv.category === 'FIIS' ? inv.current_value * 0.0085 : inv.current_value * 0.006),
-            totalDividendsReceived: 0,
-            isFgcProtected: inv.category !== 'TESOURO_DIRETO',
-            createdAt: inv.created_at || new Date().toISOString()
-          })));
+          setInvestments(dbInvestments.map(inv => {
+            const qty = Number(inv.quantity || 0);
+            const avgPrice = Number(inv.average_price || 0);
+            const totalInv = Number(inv.invested_amount || (qty * avgPrice));
+            let curVal = Number(inv.current_value || totalInv);
+
+            // Se for Renda Variável e continha o multiplicador fictício de +2% (1.02), corrige para o saldo real sem ganho fictício
+            if (inv.macro_type === 'VARIAVEL' && qty > 0) {
+              if (Math.abs(curVal - totalInv * 1.02) < 0.08 || (avgPrice > 0 && Math.abs(curVal - totalInv * 1.02) < 0.08)) {
+                curVal = totalInv;
+                // Sincroniza a correção de volta com o banco de dados/localStorage de forma transparente
+                investmentsService.updateInvestment(inv.id, { current_value: totalInv, profitability_pct: 0 });
+              }
+            }
+
+            const calculatedPrice = qty > 0 ? (curVal / qty) : avgPrice;
+
+            return {
+              id: inv.id,
+              macroType: inv.macro_type,
+              category: inv.category as AssetCategory,
+              name: inv.name,
+              ticker: inv.ticker,
+              institution: inv.institution,
+              rateOrYield: inv.rate_or_yield,
+              liquidity: (inv.liquidity as 'DIARIA' | 'D+1' | 'VENCIMENTO') || 'DIARIA',
+              dueDate: inv.due_date,
+              quantity: qty,
+              averagePrice: avgPrice,
+              currentPrice: calculatedPrice,
+              totalInvested: totalInv,
+              currentBalance: curVal,
+              monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
+              totalDividendsReceived: 0,
+              isFgcProtected: inv.category !== 'TESOURO_DIRETO',
+              createdAt: inv.created_at || new Date().toISOString()
+            };
+          }));
         } else {
           setInvestments([]);
         }
@@ -872,7 +890,7 @@ export default function InvestimentosPage() {
       const tickerSymbol = rvSearchTicker.split(' - ')[0].trim().toUpperCase();
       const assetFullName = rvSearchTicker.split(' - ')[1] || tickerSymbol;
       const totalInv = q * p;
-      const curBal = q * p * 1.02;
+      const curBal = q * p;
 
       let cat: AssetCategory = 'ACOES';
       if (rvCategory === 'FIIs') cat = 'FIIS';
@@ -894,7 +912,7 @@ export default function InvestimentosPage() {
             average_price: p,
             invested_amount: totalInv,
             current_value: curBal,
-            profitability_pct: 2.0,
+            profitability_pct: 0,
             created_at: selectedIsoDate,
           });
         } catch (e) {
@@ -934,7 +952,7 @@ export default function InvestimentosPage() {
             average_price: p,
             invested_amount: totalInv,
             current_value: curBal,
-            profitability_pct: 2.0,
+            profitability_pct: 0,
             created_at: selectedIsoDate,
           });
           if (created) {
