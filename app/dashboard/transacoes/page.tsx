@@ -388,9 +388,12 @@ export default function SaldoExtratoPage() {
   };
 
   // Transferência entre Contas
-  const handleConfirmTransfer = () => {
+  const handleConfirmTransfer = async () => {
     const parsedAmount = parseFloat(transferAmount.replace(',', '.')) || 0;
     if (parsedAmount <= 0 || transferOrigin === transferDest) return;
+
+    const originAcc = banks.find(b => b.name === transferOrigin);
+    const destAcc = banks.find(b => b.name === transferDest);
 
     setBanks(prev => prev.map(b => {
       if (b.name === transferOrigin) {
@@ -402,8 +405,30 @@ export default function SaldoExtratoPage() {
       return b;
     }));
 
+    if (originAcc?.id) {
+      accountsService.updateBalance(originAcc.id, -parsedAmount);
+    }
+    if (destAcc?.id) {
+      accountsService.updateBalance(destAcc.id, parsedAmount);
+    }
+
+    let createdId: string | number = Date.now();
+    try {
+      const dbTx = await transactionsService.createTransaction({
+        description: `Transferência: ${transferOrigin} → ${transferDest}`,
+        amount: parsedAmount,
+        date: transferDate,
+        type: 'EXPENSE',
+        account_id: originAcc?.id,
+        category_name: 'Transferência entre Contas'
+      });
+      if (dbTx) createdId = dbTx.id;
+    } catch (err) {
+      console.error('Erro ao salvar transferência no Supabase:', err);
+    }
+
     const newTx: TransactionItem = {
-      id: Date.now(),
+      id: createdId,
       name: `Transferência: ${transferOrigin} → ${transferDest}`,
       date: 'Hoje, ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       rawDate: transferDate,
@@ -419,9 +444,11 @@ export default function SaldoExtratoPage() {
   };
 
   // Pagar Fatura com Saldo
-  const handleConfirmPayInvoice = () => {
+  const handleConfirmPayInvoice = async () => {
     const parsedAmount = parseFloat(payAmount.replace(',', '.')) || 0;
     if (parsedAmount <= 0) return;
+
+    const originAcc = banks.find(b => b.name === payOriginBank);
 
     setBanks(prev => prev.map(b => {
       if (b.name === payOriginBank) {
@@ -430,8 +457,27 @@ export default function SaldoExtratoPage() {
       return b;
     }));
 
+    if (originAcc?.id) {
+      accountsService.updateBalance(originAcc.id, -parsedAmount);
+    }
+
+    let createdId: string | number = Date.now();
+    try {
+      const dbTx = await transactionsService.createTransaction({
+        description: `Pagamento de Fatura: ${payCardName}`,
+        amount: parsedAmount,
+        date: payDate,
+        type: 'EXPENSE',
+        account_id: originAcc?.id,
+        category_name: 'Pagamento de Cartão / Fatura'
+      });
+      if (dbTx) createdId = dbTx.id;
+    } catch (err) {
+      console.error('Erro ao salvar pagamento de fatura no Supabase:', err);
+    }
+
     const newTx: TransactionItem = {
-      id: Date.now(),
+      id: createdId,
       name: `Pagamento de Fatura: ${payCardName}`,
       date: 'Hoje, ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       rawDate: payDate,
@@ -446,24 +492,46 @@ export default function SaldoExtratoPage() {
   };
 
   // Confirmar Importação
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     const selectedRows = extractedExtrato.filter(r => r.checked);
     if (selectedRows.length === 0) return;
 
+    const targetBankAcc = banks.find(b => b.name === selectedImportBank);
+
     let deltaBal = 0;
-    const newItems: TransactionItem[] = selectedRows.map((r, i) => {
+    const newItems: TransactionItem[] = [];
+
+    for (let i = 0; i < selectedRows.length; i++) {
+      const r = selectedRows[i];
+      const absAmt = Math.abs(r.amount);
       deltaBal += r.amount;
-      return {
-        id: Date.now() + i,
+
+      let dbId: string | number = Date.now() + i;
+      try {
+        const dbTx = await transactionsService.createTransaction({
+          description: r.name,
+          amount: absAmt,
+          date: r.date || new Date().toISOString().split('T')[0],
+          type: r.type,
+          account_id: targetBankAcc?.id,
+          category_name: r.category
+        });
+        if (dbTx) dbId = dbTx.id;
+      } catch (err) {
+        console.error('Erro ao salvar item importado no Supabase:', err);
+      }
+
+      newItems.push({
+        id: dbId,
         name: r.name,
         date: r.date,
-        rawDate: new Date().toISOString().split('T')[0],
+        rawDate: r.date || new Date().toISOString().split('T')[0],
         amount: r.amount,
         bank: selectedImportBank,
         category: r.category,
         type: r.type
-      };
-    });
+      });
+    }
 
     setBanks(prev => prev.map(b => {
       if (b.name === selectedImportBank) {
@@ -471,6 +539,10 @@ export default function SaldoExtratoPage() {
       }
       return b;
     }));
+
+    if (targetBankAcc?.id) {
+      accountsService.updateBalance(targetBankAcc.id, deltaBal);
+    }
 
     setTransactions(prev => [...newItems, ...prev]);
     setIsImportModalOpen(false);
