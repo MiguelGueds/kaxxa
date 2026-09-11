@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { investmentsService } from '@/lib/services/investments';
+import { transactionsService } from '@/lib/services/transactions';
 import { 
   TrendingUp, 
   Plus, 
@@ -317,7 +318,23 @@ export default function InvestimentosPage() {
     async function loadData() {
       setLoading(true);
       try {
-        const dbInvestments = await investmentsService.fetchInvestments();
+        const [dbInvestments, userTxs] = await Promise.all([
+          investmentsService.fetchInvestments(),
+          transactionsService.fetchTransactions(500)
+        ]);
+
+        if (userTxs && userTxs.length > 0) {
+          const divTxTotal = userTxs
+            .filter(t => t.type === 'INCOME' && (
+              (t.category_name && /dividendo|rendimento|jcp|provento/i.test(t.category_name)) ||
+              (t.description && /dividendo|rendimento|jcp|provento/i.test(t.description))
+            ))
+            .reduce((sum, t) => sum + (t.amount || 0), 0);
+          setTransactionDividends(divTxTotal);
+        } else {
+          setTransactionDividends(0);
+        }
+
         if (dbInvestments && dbInvestments.length > 0) {
           // Coleta tickers de renda variável para buscar cotações de mercado ao vivo
           const tickersToFetch = Array.from(new Set(
@@ -375,7 +392,7 @@ export default function InvestimentosPage() {
               totalInvested: totalInv,
               currentBalance: curVal,
               monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
-              totalDividendsReceived: 0,
+              totalDividendsReceived: Number(inv.total_dividends_received || 0),
               isFgcProtected: inv.category !== 'TESOURO_DIRETO',
               createdAt: inv.created_at || new Date().toISOString()
             };
@@ -434,6 +451,8 @@ export default function InvestimentosPage() {
   const [rvPrice, setRvPrice] = useState(''); // Preço Médio Pago na Compra
   const [rvCurrentPrice, setRvCurrentPrice] = useState(''); // Cotação Atual de Mercado
   const [rvYieldRate, setRvYieldRate] = useState('');
+  const [rvDividends, setRvDividends] = useState(''); // Proventos Recebidos do Ativo
+  const [transactionDividends, setTransactionDividends] = useState(0); // Proventos vindos do Extrato de Transações
   const [aporteDate, setAporteDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   // Cotação ao Vivo e Preenchimento Automático
@@ -484,9 +503,12 @@ export default function InvestimentosPage() {
   const totalInvestedGlobal = useMemo(() => investments.reduce((acc, i) => acc + i.totalInvested, 0), [investments]);
   const currentBalanceGlobal = useMemo(() => investments.reduce((acc, i) => acc + i.currentBalance, 0), [investments]);
   
-  // Lucro por Ganho de Capital & Lucro por Dividendos Recebidos
+  // Lucro por Ganho de Capital & Lucro por Dividendos Recebidos (Ativos + Extrato)
   const capitalGainTotal = currentBalanceGlobal - totalInvestedGlobal;
-  const dividendsReceivedTotal = useMemo(() => investments.reduce((acc, i) => acc + (i.totalDividendsReceived || 0), 0), [investments]);
+  const dividendsReceivedTotal = useMemo(() => {
+    const fromAssets = investments.reduce((acc, i) => acc + (i.totalDividendsReceived || 0), 0);
+    return fromAssets + transactionDividends;
+  }, [investments, transactionDividends]);
   const totalProfitConsolidated = capitalGainTotal + dividendsReceivedTotal;
   const profitPctTotal = totalInvestedGlobal > 0 ? (totalProfitConsolidated / totalInvestedGlobal) * 100 : 0;
 
@@ -821,6 +843,7 @@ export default function InvestimentosPage() {
     setRvQuantity('');
     setRvPrice('');
     setRvCurrentPrice('');
+    setRvDividends('');
     setLiveQuoteInfo(null);
     setRvYieldRate('');
     setAporteDate(new Date().toISOString().split('T')[0]);
@@ -853,6 +876,7 @@ export default function InvestimentosPage() {
       setRvQuantity(item.quantity?.toString() || '');
       setRvPrice(item.averagePrice?.toString() || '');
       setRvCurrentPrice(item.currentPrice?.toString() || item.averagePrice?.toString() || '');
+      setRvDividends(item.totalDividendsReceived ? item.totalDividendsReceived.toString() : '');
       setRvYieldRate(item.rateOrYield || '');
     }
     setIsModalOpen(true);
@@ -866,7 +890,7 @@ export default function InvestimentosPage() {
       const amt = parseFloat(rfAmount.replace(',', '.')) || 0;
       if (!rfName || amt <= 0) return;
 
-      const monthlyEst = amt * 0.0092;
+      const monthlyEst = rfCategory === 'CAIXINHA_PORQUINHO' || rfCategory === 'CDB_LCI_LCA' ? amt * 0.0085 : amt * 0.0092;
 
       if (editingInvestment) {
         try {
@@ -887,7 +911,6 @@ export default function InvestimentosPage() {
 
         setInvestments(prev => prev.map(inv => {
           if (inv.id !== editingInvestment.id) return inv;
-          const diff = amt - inv.totalInvested;
           return {
             ...inv,
             category: rfCategory,
@@ -897,9 +920,8 @@ export default function InvestimentosPage() {
             liquidity: rfLiquidity,
             dueDate: rfLiquidity === 'DIARIA' ? 'Liquidez Imediata (D+0)' : (rfDueDate || 'No Vencimento'),
             totalInvested: amt,
-            currentBalance: Math.max(0, inv.currentBalance + diff),
+            currentBalance: amt,
             monthlyEstimatedYield: monthlyEst,
-            isFgcProtected: rfCategory !== 'TESOURO_DIRETO',
             createdAt: selectedIsoDate
           };
         }));
@@ -952,6 +974,7 @@ export default function InvestimentosPage() {
       const q = parseFloat(rvQuantity.replace(',', '.')) || 0;
       const p = parseFloat(rvPrice.replace(',', '.')) || 0; // Preço Médio Pago
       const cp = parseFloat(rvCurrentPrice.replace(',', '.')) || (liveQuoteInfo?.price && liveQuoteInfo.price > 0 ? liveQuoteInfo.price : p); // Cotação Atual de Mercado
+      const divRec = parseFloat(rvDividends.replace(',', '.')) || 0; // Proventos Recebidos
 
       if (!rvSearchTicker || q <= 0 || p <= 0) return;
 
@@ -982,6 +1005,7 @@ export default function InvestimentosPage() {
             invested_amount: totalInv,
             current_value: curBal,
             profitability_pct: profitPct,
+            total_dividends_received: divRec,
             created_at: selectedIsoDate,
           });
         } catch (e) {
@@ -1003,6 +1027,7 @@ export default function InvestimentosPage() {
             totalInvested: totalInv,
             currentBalance: curBal,
             monthlyEstimatedYield: estDividends,
+            totalDividendsReceived: divRec,
             createdAt: selectedIsoDate
           };
         }));
@@ -1022,6 +1047,7 @@ export default function InvestimentosPage() {
             invested_amount: totalInv,
             current_value: curBal,
             profitability_pct: profitPct,
+            total_dividends_received: divRec,
             created_at: selectedIsoDate,
           });
           if (created) {
@@ -1046,7 +1072,7 @@ export default function InvestimentosPage() {
           totalInvested: totalInv,
           currentBalance: curBal,
           monthlyEstimatedYield: estDividends,
-          totalDividendsReceived: 0,
+          totalDividendsReceived: divRec,
           createdAt: createdAtIso
         };
         setInvestments([newItem, ...investments]);
@@ -2206,6 +2232,18 @@ export default function InvestimentosPage() {
                         value={rvCurrentPrice}
                         onChange={(e) => setRvCurrentPrice(e.target.value)}
                         placeholder={liveQuoteInfo ? liveQuoteInfo.price.toFixed(2) : rvPrice || "0,00"}
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Proventos / Dividendos Recebidos Acumulados (R$)</label>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        value={rvDividends}
+                        onChange={(e) => setRvDividends(e.target.value)}
+                        placeholder="Ex: 150,00 (opcional)"
                         className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
                       />
                     </div>

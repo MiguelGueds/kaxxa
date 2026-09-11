@@ -16,6 +16,7 @@ export interface DbInvestment {
   invested_amount: number;
   current_value: number;
   profitability_pct: number;
+  total_dividends_received?: number;
   notes?: string;
   created_at?: string;
 }
@@ -61,6 +62,7 @@ export const investmentsService = {
           invested_amount: Number(inv.invested_amount || 0),
           current_value: Number(inv.current_value || 0),
           profitability_pct: Number(inv.profitability_pct || 0),
+          total_dividends_received: Number(inv.total_dividends_received || 0),
         })) as DbInvestment[];
 
         // Purga apenas os IDs estáticos fictícios de demonstração antiga
