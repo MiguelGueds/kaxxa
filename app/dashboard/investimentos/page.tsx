@@ -319,22 +319,45 @@ export default function InvestimentosPage() {
       try {
         const dbInvestments = await investmentsService.fetchInvestments();
         if (dbInvestments && dbInvestments.length > 0) {
+          // Coleta tickers de renda variável para buscar cotações de mercado ao vivo
+          const tickersToFetch = Array.from(new Set(
+            dbInvestments
+              .filter(i => i.macro_type === 'VARIAVEL' && i.ticker)
+              .map(i => i.ticker!.trim().toUpperCase())
+          ));
+
+          const quoteMap: Record<string, number> = {};
+          if (tickersToFetch.length > 0) {
+            await Promise.all(
+              tickersToFetch.map(async (t) => {
+                try {
+                  const res = await fetch(`/api/quote?ticker=${encodeURIComponent(t)}`);
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.price > 0) {
+                      quoteMap[t] = data.price;
+                    }
+                  }
+                } catch {
+                  // Silencioso se offline
+                }
+              })
+            );
+          }
+
           setInvestments(dbInvestments.map(inv => {
             const qty = Number(inv.quantity || 0);
             const avgPrice = Number(inv.average_price || 0);
             const totalInv = Number(inv.invested_amount || (qty * avgPrice));
-            let curVal = Number(inv.current_value || totalInv);
 
-            // Se for Renda Variável e continha o multiplicador fictício de +2% (1.02), corrige para o saldo real sem ganho fictício
-            if (inv.macro_type === 'VARIAVEL' && qty > 0) {
-              if (Math.abs(curVal - totalInv * 1.02) < 0.08 || (avgPrice > 0 && Math.abs(curVal - totalInv * 1.02) < 0.08)) {
-                curVal = totalInv;
-                // Sincroniza a correção de volta com o banco de dados/localStorage de forma transparente
-                investmentsService.updateInvestment(inv.id, { current_value: totalInv, profitability_pct: 0 });
-              }
-            }
+            const tickerKey = inv.ticker ? inv.ticker.trim().toUpperCase() : '';
+            // Se temos a cotação ao vivo do ativo no mercado, ela define o Preço Atual
+            const livePrice = quoteMap[tickerKey] || (inv.current_value && qty > 0 ? Number((inv.current_value / qty).toFixed(2)) : avgPrice);
 
-            const calculatedPrice = qty > 0 ? (curVal / qty) : avgPrice;
+            // Saldo Atual de Mercado = Quantidade x Cotação Atual de Mercado
+            const curVal = (inv.macro_type === 'VARIAVEL' && qty > 0) 
+              ? Number((qty * livePrice).toFixed(2))
+              : Number(inv.current_value || totalInv);
 
             return {
               id: inv.id,
@@ -348,7 +371,7 @@ export default function InvestimentosPage() {
               dueDate: inv.due_date,
               quantity: qty,
               averagePrice: avgPrice,
-              currentPrice: calculatedPrice,
+              currentPrice: livePrice,
               totalInvested: totalInv,
               currentBalance: curVal,
               monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
@@ -408,7 +431,8 @@ export default function InvestimentosPage() {
   const [rvSearchTicker, setRvSearchTicker] = useState('');
   const [rvInstitution, setRvInstitution] = useState('');
   const [rvQuantity, setRvQuantity] = useState('');
-  const [rvPrice, setRvPrice] = useState('');
+  const [rvPrice, setRvPrice] = useState(''); // Preço Médio Pago na Compra
+  const [rvCurrentPrice, setRvCurrentPrice] = useState(''); // Cotação Atual de Mercado
   const [rvYieldRate, setRvYieldRate] = useState('');
   const [aporteDate, setAporteDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
@@ -426,7 +450,10 @@ export default function InvestimentosPage() {
         const data = await res.json();
         if (data && data.price > 0) {
           setLiveQuoteInfo({ price: data.price, name: data.name });
-          setRvPrice(data.price.toString());
+          setRvCurrentPrice(data.price.toString());
+          if (!rvPrice) {
+            setRvPrice(data.price.toString());
+          }
 
           if (clean.endsWith('11') && !['BOVA11', 'IVVB11', 'SMAL11', 'HASH11'].includes(clean)) {
             setRvCategory('FIIs');
@@ -793,6 +820,8 @@ export default function InvestimentosPage() {
     setRvInstitution('');
     setRvQuantity('');
     setRvPrice('');
+    setRvCurrentPrice('');
+    setLiveQuoteInfo(null);
     setRvYieldRate('');
     setAporteDate(new Date().toISOString().split('T')[0]);
     setIsModalOpen(true);
@@ -823,6 +852,7 @@ export default function InvestimentosPage() {
       setRvInstitution(item.institution);
       setRvQuantity(item.quantity?.toString() || '');
       setRvPrice(item.averagePrice?.toString() || '');
+      setRvCurrentPrice(item.currentPrice?.toString() || item.averagePrice?.toString() || '');
       setRvYieldRate(item.rateOrYield || '');
     }
     setIsModalOpen(true);
@@ -920,13 +950,16 @@ export default function InvestimentosPage() {
       }
     } else {
       const q = parseFloat(rvQuantity.replace(',', '.')) || 0;
-      const p = parseFloat(rvPrice.replace(',', '.')) || 0;
+      const p = parseFloat(rvPrice.replace(',', '.')) || 0; // Preço Médio Pago
+      const cp = parseFloat(rvCurrentPrice.replace(',', '.')) || (liveQuoteInfo?.price && liveQuoteInfo.price > 0 ? liveQuoteInfo.price : p); // Cotação Atual de Mercado
+
       if (!rvSearchTicker || q <= 0 || p <= 0) return;
 
       const tickerSymbol = rvSearchTicker.split(' - ')[0].trim().toUpperCase();
       const assetFullName = rvSearchTicker.split(' - ')[1] || tickerSymbol;
       const totalInv = q * p;
-      const curBal = q * p;
+      const curBal = q * cp;
+      const profitPct = totalInv > 0 ? ((curBal - totalInv) / totalInv) * 100 : 0;
 
       let cat: AssetCategory = 'ACOES';
       if (rvCategory === 'FIIs') cat = 'FIIS';
@@ -948,7 +981,7 @@ export default function InvestimentosPage() {
             average_price: p,
             invested_amount: totalInv,
             current_value: curBal,
-            profitability_pct: 0,
+            profitability_pct: profitPct,
             created_at: selectedIsoDate,
           });
         } catch (e) {
@@ -966,7 +999,7 @@ export default function InvestimentosPage() {
             rateOrYield: rvYieldRate || (cat === 'FIIS' ? 'DY ~10.5% a.a.' : 'Ganho de Capital'),
             quantity: q,
             averagePrice: p,
-            currentPrice: p,
+            currentPrice: cp,
             totalInvested: totalInv,
             currentBalance: curBal,
             monthlyEstimatedYield: estDividends,
@@ -988,7 +1021,7 @@ export default function InvestimentosPage() {
             average_price: p,
             invested_amount: totalInv,
             current_value: curBal,
-            profitability_pct: 0,
+            profitability_pct: profitPct,
             created_at: selectedIsoDate,
           });
           if (created) {
@@ -1009,7 +1042,7 @@ export default function InvestimentosPage() {
           rateOrYield: rvYieldRate || (cat === 'FIIS' ? 'DY ~10.5% a.a.' : 'Ganho de Capital'),
           quantity: q,
           averagePrice: p,
-          currentPrice: p,
+          currentPrice: cp,
           totalInvested: totalInv,
           currentBalance: curBal,
           monthlyEstimatedYield: estDividends,
@@ -2125,7 +2158,7 @@ export default function InvestimentosPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data do Aporte</label>
                       <input 
@@ -2149,7 +2182,7 @@ export default function InvestimentosPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Preço Médio (R$)</label>
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Preço Pago na Compra (R$)</label>
                       <input 
                         type="number" 
                         step="0.01"
@@ -2159,24 +2192,67 @@ export default function InvestimentosPage() {
                         className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
                       />
                     </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-[10.5px] text-[#64748B] font-bold">Cotação Atual (R$)</label>
+                        {liveQuoteInfo && (
+                          <span className="text-[9px] text-emerald-600 font-extrabold bg-emerald-50 px-1 rounded">Ao vivo</span>
+                        )}
+                      </div>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        value={rvCurrentPrice}
+                        onChange={(e) => setRvCurrentPrice(e.target.value)}
+                        placeholder={liveQuoteInfo ? liveQuoteInfo.price.toFixed(2) : rvPrice || "0,00"}
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
+                      />
+                    </div>
                   </div>
 
                   {/* BANNER DE RESUMO DE TOTAL EM TEMPO REAL */}
-                  {((parseFloat(rvQuantity.replace(',', '.')) || 0) > 0 || liveQuoteInfo) && (
-                    <div className="p-2.5 bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl flex items-center justify-between text-xs">
-                      <div>
-                        <span className="text-[9.5px] text-[#64748B] font-bold uppercase tracking-wider block">Total Calculado do Aporte</span>
-                        <span className="text-sm font-extrabold text-[#1A44C8]">
-                          R$ {formatCurrency((parseFloat(rvQuantity.replace(',', '.')) || 0) * (parseFloat(rvPrice.replace(',', '.')) || 0))}
-                        </span>
-                      </div>
-                      {liveQuoteInfo && (
-                        <div className="text-right text-[9.5px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg font-bold">
-                          ⚡ Cotação Mercado: R$ {liveQuoteInfo.price.toFixed(2)}
+                  {(() => {
+                    const q = parseFloat(rvQuantity.replace(',', '.')) || 0;
+                    const p = parseFloat(rvPrice.replace(',', '.')) || 0;
+                    const cp = parseFloat(rvCurrentPrice.replace(',', '.')) || (liveQuoteInfo?.price && liveQuoteInfo.price > 0 ? liveQuoteInfo.price : p);
+                    const totalInv = q * p;
+                    const curBal = q * cp;
+                    const profit = curBal - totalInv;
+                    const profitPct = totalInv > 0 ? (profit / totalInv) * 100 : 0;
+                    const isPositive = profit >= 0;
+
+                    if (q <= 0 && !liveQuoteInfo) return null;
+
+                    return (
+                      <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-[9.5px] text-[#64748B] font-bold uppercase tracking-wider block">Total Aportado</span>
+                            <span className="text-xs font-bold text-[#181B22]">
+                              R$ {formatCurrency(totalInv)}
+                            </span>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-[9.5px] text-[#64748B] font-bold uppercase tracking-wider block">Saldo Atual de Mercado</span>
+                            <span className="text-xs font-extrabold text-[#1A44C8]">
+                              R$ {formatCurrency(curBal)}
+                            </span>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  )}
+
+                        {totalInv > 0 && (
+                          <div className={`pt-1 border-t border-[#E2E8F0] flex items-center justify-between text-[11px] font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            <span>Resultado (Ganho/Perda):</span>
+                            <span>
+                              {isPositive ? '+' : ''}R$ {formatCurrency(profit)} ({isPositive ? '+' : ''}{profitPct.toFixed(2)}%)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </>
               )}
 
