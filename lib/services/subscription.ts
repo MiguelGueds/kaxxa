@@ -104,7 +104,7 @@ export function saveSubscriptionLocal(sub: DbSubscription) {
 
 export const subscriptionService = {
   /**
-   * Retorna a assinatura ativa do usuário, com fallback resiliente e auto-recuperação.
+   * Retorna a assinatura ativa ou mais recente do usuário, com fallback resiliente e auto-recuperação.
    */
   async getSubscription(): Promise<DbSubscription | null> {
     const user = await getAuthenticatedUser();
@@ -130,6 +130,9 @@ export const subscriptionService = {
                 current_period_end: endsAt,
                 created_at: parsed.createdAt || new Date().toISOString()
               };
+            } else {
+              // Limpa cache expirado
+              localStorage.removeItem('kaxxa_trial_active');
             }
           }
         }
@@ -165,23 +168,15 @@ export const subscriptionService = {
           .maybeSingle();
 
         if (!error && data) {
-          if (data.current_period_end) {
-            const isExpired = new Date(data.current_period_end).getTime() < Date.now();
-            if (!isExpired) {
-              saveSubscriptionLocal(data as DbSubscription);
-              return data as DbSubscription;
-            }
-          } else {
-            saveSubscriptionLocal(data as DbSubscription);
-            return data as DbSubscription;
-          }
+          saveSubscriptionLocal(data as DbSubscription);
+          return data as DbSubscription;
         }
       } catch (err) {
         console.warn('Supabase subscriptions indisponível, usando fallback local:', err);
       }
 
-      // 2.1 AUTO-HEAL: Se não encontrou assinatura ativa na tabela subscriptions,
-      // verifica se o usuário usou um cupom de degustação ou possui investimentos no banco
+      // 2.1 AUTO-HEAL: Se não encontrou assinatura na tabela subscriptions,
+      // verifica se o usuário usou um cupom de degustação registrado
       try {
         const client = supabaseAdmin || supabase;
 
@@ -199,8 +194,9 @@ export const subscriptionService = {
               const usedAt = usage.used_at ? new Date(usage.used_at).getTime() : Date.now();
               const days = c.type === 'TRIAL_DAYS' ? (c.value || 2) : 30;
               const periodEnd = new Date(usedAt + days * 24 * 60 * 60 * 1000).toISOString();
+              const isExpired = new Date(periodEnd).getTime() <= Date.now();
 
-              if (new Date(periodEnd).getTime() > Date.now()) {
+              if (!isExpired) {
                 const healedSub = await this.activateSubscription({
                   userId: user.id,
                   status: 'TRIAL',
@@ -211,29 +207,21 @@ export const subscriptionService = {
                   durationDays: days,
                 });
                 return healedSub;
+              } else {
+                // Retorna assinatura sintética expirada baseada no cupom usado anteriormente
+                return {
+                  id: `expired-coupon-${c.code.toLowerCase()}`,
+                  user_id: user.id,
+                  status: 'TRIAL',
+                  plan_type: 'MENSAL',
+                  payment_method: 'PIX',
+                  amount: 0,
+                  current_period_end: periodEnd,
+                  created_at: new Date(usedAt).toISOString()
+                };
               }
             }
           }
-        }
-
-        // B) Verificar se o usuário possui investimentos já salvos no Supabase
-        const { data: invs } = await client
-          .from('investments')
-          .select('created_at')
-          .eq('user_id', user.id)
-          .limit(1);
-
-        if (invs && invs.length > 0) {
-          const healedSub = await this.activateSubscription({
-            userId: user.id,
-            status: 'TRIAL',
-            planType: 'MENSAL',
-            paymentMethod: 'PIX',
-            paymentId: `auto-heal-user-investments`,
-            amount: 0,
-            durationDays: 2,
-          });
-          return healedSub;
         }
       } catch (e) {
         console.warn('Erro na auto-recuperação de assinatura:', e);
@@ -246,9 +234,13 @@ export const subscriptionService = {
   },
 
   /**
-   * Verifica se o usuário possui acesso liberado ao sistema.
+   * Verifica se o usuário possui acesso liberado ao sistema e identifica o motivo de expiração.
    */
-  async isAccessGranted(): Promise<{ granted: boolean; subscription: DbSubscription | null }> {
+  async isAccessGranted(): Promise<{ 
+    granted: boolean; 
+    subscription: DbSubscription | null; 
+    expiredReason?: 'TRIAL_EXPIRED' | 'SUBSCRIPTION_EXPIRED' | null 
+  }> {
     const user = await getAuthenticatedUser();
 
     // 1. Verificação PRIORITÁRIA no navegador para trials recém-ativados (se bater com user)
@@ -272,7 +264,9 @@ export const subscriptionService = {
                 current_period_end: endsAt,
                 created_at: parsed.createdAt || new Date().toISOString()
               };
-              return { granted: true, subscription: trialSub };
+              return { granted: true, subscription: trialSub, expiredReason: null };
+            } else {
+              localStorage.removeItem('kaxxa_trial_active');
             }
           }
         }
@@ -282,7 +276,7 @@ export const subscriptionService = {
     }
 
     if (!user) {
-      return { granted: false, subscription: null };
+      return { granted: false, subscription: null, expiredReason: null };
     }
 
     // Administradores Master têm acesso irrestrito garantido
@@ -297,23 +291,28 @@ export const subscriptionService = {
         current_period_end: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString(),
         created_at: new Date().toISOString(),
       };
-      return { granted: true, subscription: adminSub };
+      return { granted: true, subscription: adminSub, expiredReason: null };
     }
 
     const sub = await this.getSubscription();
     if (!sub) {
-      return { granted: false, subscription: null };
+      return { granted: false, subscription: null, expiredReason: null };
     }
 
     if (sub.status === 'ACTIVE' || sub.status === 'TRIAL') {
       if (sub.current_period_end) {
         const isExpired = new Date(sub.current_period_end).getTime() < Date.now();
-        return { granted: !isExpired, subscription: sub };
+        if (isExpired) {
+          const reason = sub.status === 'TRIAL' || (sub.amount === 0) ? 'TRIAL_EXPIRED' : 'SUBSCRIPTION_EXPIRED';
+          return { granted: false, subscription: sub, expiredReason: reason };
+        }
+        return { granted: true, subscription: sub, expiredReason: null };
       }
-      return { granted: true, subscription: sub };
+      return { granted: true, subscription: sub, expiredReason: null };
     }
 
-    return { granted: false, subscription: sub };
+    const reason = sub.status === 'TRIAL' || (sub.amount === 0) ? 'TRIAL_EXPIRED' : 'SUBSCRIPTION_EXPIRED';
+    return { granted: false, subscription: sub, expiredReason: reason };
   },
 
   /**

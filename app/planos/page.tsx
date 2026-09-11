@@ -79,6 +79,9 @@ export default function PlanosCheckoutPage() {
   // Polling interval
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Expiração / Paywall Reason
+  const [expirationReason, setExpirationReason] = useState<'trial_expired' | 'subscription_expired' | null>(null);
+
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '1013913072699-93aluj2vckav760pp05t7pcriipk1n5b.apps.googleusercontent.com';
 
   // Sincronização e Monitoramento de Sessão
@@ -89,6 +92,11 @@ export default function PlanosCheckoutPage() {
       try {
         const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
         const isChangeMethod = searchParams?.get('change_method') === 'true' || searchParams?.get('mudar_metodo') === 'true';
+        const reasonParam = searchParams?.get('reason');
+
+        if (reasonParam === 'trial_expired' || reasonParam === 'subscription_expired') {
+          if (isMounted) setExpirationReason(reasonParam);
+        }
 
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && isMounted) {
@@ -103,6 +111,12 @@ export default function PlanosCheckoutPage() {
           if (access.granted && isMounted) {
             router.push('/dashboard');
             return;
+          } else if (!access.granted && access.expiredReason && isMounted) {
+            if (access.expiredReason === 'TRIAL_EXPIRED') {
+              setExpirationReason('trial_expired');
+            } else if (access.expiredReason === 'SUBSCRIPTION_EXPIRED') {
+              setExpirationReason('subscription_expired');
+            }
           }
         }
       } catch (err) {
@@ -705,6 +719,39 @@ export default function PlanosCheckoutPage() {
 
       {/* Conteúdo Principal Ultra Compacto */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-4 sm:py-6">
+
+        {/* Banner de Aviso de Expiração (Degustação ou Assinatura) */}
+        {expirationReason === 'trial_expired' && (
+          <div className="mb-4 p-4 bg-amber-50/90 border-2 border-amber-300 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+              <Clock size={20} />
+            </div>
+            <div className="space-y-0.5">
+              <h3 className="text-xs font-black text-amber-950 uppercase tracking-wide">
+                Seu período de teste expirou
+              </h3>
+              <p className="text-xs text-amber-800 font-semibold leading-relaxed">
+                Seu tempo de degustação expirou. Assine agora mesmo e garanta todas as funções do Kaxxa Pro!
+              </p>
+            </div>
+          </div>
+        )}
+
+        {expirationReason === 'subscription_expired' && (
+          <div className="mb-4 p-4 bg-rose-50/90 border-2 border-rose-300 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+              <AlertCircle size={20} />
+            </div>
+            <div className="space-y-0.5">
+              <h3 className="text-xs font-black text-rose-950 uppercase tracking-wide">
+                Sua assinatura expirou
+              </h3>
+              <p className="text-xs text-rose-800 font-semibold leading-relaxed">
+                Sua assinatura anterior expirou. Assine novamente abaixo para reativar seu acesso instantaneamente.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Notificação Compacta de Login se não estiver logado */}
         {!user && !authLoading && (

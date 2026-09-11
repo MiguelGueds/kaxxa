@@ -89,10 +89,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     let isMounted = true;
     async function checkSubscription() {
       try {
-        const { granted, subscription } = await subscriptionService.isAccessGranted();
+        const { granted, subscription, expiredReason } = await subscriptionService.isAccessGranted();
         if (!granted) {
           if (isMounted) setAccessGranted(false);
-          router.replace('/planos');
+          if (expiredReason === 'TRIAL_EXPIRED') {
+            router.replace('/planos?reason=trial_expired');
+          } else if (expiredReason === 'SUBSCRIPTION_EXPIRED') {
+            router.replace('/planos?reason=subscription_expired');
+          } else {
+            router.replace('/planos');
+          }
           return;
         }
         if (subscription) {
