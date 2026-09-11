@@ -55,6 +55,52 @@ const INCOME_CATEGORIES = [
   'Outras Entradas'
 ];
 
+function autoDetectTransactionCategory(text: string, type: 'EXPENSE' | 'INCOME'): string | null {
+  const q = text.toLowerCase().trim();
+  if (!q) return null;
+
+  if (type === 'EXPENSE') {
+    if (/uber|99|cabify|indrive|combustivel|gasolina|posto|shell|ipiranga|estacionamento|pedagio/i.test(q)) {
+      return 'Transporte & Combustível';
+    }
+    if (/ifood|rappi|ze delivery|restaurante|padaria|mercado|carrefour|pao de acucar|assai|atacadao|mcdonald|burger|outback|spoleto|almoço|jantar|lanche|supermercado/i.test(q)) {
+      return 'Alimentação & Supermercado';
+    }
+    if (/aluguel|condominio|iptu|enel|celesc|sabesp|copel|cemig|luz|agua|gas|internet|vivo|claro|tim|fibra/i.test(q)) {
+      return 'Moradia & Contas';
+    }
+    if (/farmacia|drogaria|drogasil|pague menos|panvel|ultrafarma|medico|hospital|consulta|exame|dentista|unimed/i.test(q)) {
+      return 'Saúde & Farmácia';
+    }
+    if (/netflix|spotify|amazon prime|hbo|disney|cinema|ingressos|steam|playstation|xbox|smartfit|gympass|academia/i.test(q)) {
+      return 'Lazer & Assinaturas';
+    }
+    if (/fatura|cartao|pagamento cartao/i.test(q)) {
+      return 'Pagamento de Cartão / Fatura';
+    }
+    if (/faculdade|escola|curso|udemy|alura|livro|livraria/i.test(q)) {
+      return 'Educação';
+    }
+  } else {
+    if (/salario|provento|folha|pagamento empresa|holerite|remuneracao/i.test(q)) {
+      return 'Salário & Remuneração';
+    }
+    if (/dividendos|jcp|rendimento|fii|proventos|lucro/i.test(q)) {
+      return 'Dividendos & Rendimentos';
+    }
+    if (/venda|freelance|cliente|servico|projeto|trabalho/i.test(q)) {
+      return 'Vendas / Freelance';
+    }
+    if (/pix|transferencia|ted|doc/i.test(q)) {
+      return 'Pix / Transferência Recebida';
+    }
+    if (/reembolso|estorno|devolucao/i.test(q)) {
+      return 'Reembolso';
+    }
+  }
+  return null;
+}
+
 interface BankAccount {
   id: string;
   name: string;
@@ -908,8 +954,13 @@ export default function SaldoExtratoPage() {
                 <input 
                   type="text" 
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ex: Supermercado, Salário, Freela..."
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDescription(val);
+                    const detected = autoDetectTransactionCategory(val, transactionType);
+                    if (detected) setSelectedCategory(detected);
+                  }}
+                  placeholder="Ex: Supermercado, Uber, iFood, Salário..."
                   className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
                 />
               </div>
@@ -924,12 +975,46 @@ export default function SaldoExtratoPage() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0,00"
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] font-bold placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8]"
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] font-bold placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] mb-1"
                   />
+                  <div className="flex flex-wrap gap-1">
+                    {[20, 50, 100, 200, 500].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setAmount(val.toString())}
+                        className="text-[9px] px-1.5 py-0.5 rounded bg-[#F8FAFC] text-[#64748B] hover:text-[#181B22] hover:bg-[#E2E8F0] border border-[#E5E7EB] font-bold transition-all"
+                      >
+                        +R$ {val}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Data</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-[11px] text-[#64748B] font-bold">Data</label>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setDate(new Date().toISOString().split('T')[0])}
+                        className="text-[8.5px] px-1.5 py-0.5 rounded bg-[#1A44C8]/10 text-[#1A44C8] font-bold hover:bg-[#1A44C8]/20"
+                      >
+                        Hoje
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() - 1);
+                          setDate(d.toISOString().split('T')[0]);
+                        }}
+                        className="text-[8.5px] px-1.5 py-0.5 rounded bg-[#F1F3F7] text-[#64748B] font-bold hover:bg-[#E2E8F0]"
+                      >
+                        Ontem
+                      </button>
+                    </div>
+                  </div>
                   <input 
                     type="date" 
                     value={date}

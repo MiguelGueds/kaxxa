@@ -46,6 +46,37 @@ const CATEGORIES_FLAT_LIST = [
   'Compras Pessoais e Outros'
 ];
 
+function autoDetectCardCategory(text: string): string | null {
+  const q = text.toLowerCase().trim();
+  if (!q) return null;
+
+  if (/ifood|rappi|ze delivery|restaurante|outback|mcdonald|burger|spoleto|almoço|jantar|lanche|padaria/i.test(q)) {
+    return 'Restaurante e Delivery';
+  }
+  if (/mercado|carrefour|pao de acucar|assai|atacadao|supermercado|açougue/i.test(q)) {
+    return 'Alimentação e Supermercado';
+  }
+  if (/uber|99|cabify|indrive|combustivel|gasolina|posto|shell|ipiranga|estacionamento|pedagio/i.test(q)) {
+    return 'Transporte e Combustível';
+  }
+  if (/netflix|spotify|amazon prime|hbo|disney|cinema|ingressos|steam|playstation|xbox|smartfit|gympass|academia|streaming/i.test(q)) {
+    return 'Lazer e Assinaturas (Streaming)';
+  }
+  if (/farmacia|drogaria|drogasil|pague menos|panvel|ultrafarma|medico|consulta|dentista/i.test(q)) {
+    return 'Saúde e Farmácia';
+  }
+  if (/zara|renner|c&a|riachuelo|shein|nike|adidas|centauro|roupa|calcado/i.test(q)) {
+    return 'Vestuário e Moda';
+  }
+  if (/aluguel|condominio|iptu|enel|luz|agua|gas|internet/i.test(q)) {
+    return 'Moradia e Casa';
+  }
+  if (/faculdade|escola|curso|udemy|alura|livro|livraria/i.test(q)) {
+    return 'Educação e Livros';
+  }
+  return null;
+}
+
 interface CardItem {
   id: string;
   name: string;
@@ -1693,8 +1724,13 @@ export default function MinhasFaturasPage() {
                 <input 
                   type="text"
                   value={formDesc}
-                  onChange={(e) => setFormDesc(e.target.value)}
-                  placeholder="Ex: Supermercado, iFood, Assinatura..."
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormDesc(val);
+                    const detected = autoDetectCardCategory(val);
+                    if (detected) setFormCategory(detected);
+                  }}
+                  placeholder="Ex: Supermercado, iFood, Uber, Zara..."
                   className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
                 />
               </div>
@@ -1708,12 +1744,46 @@ export default function MinhasFaturasPage() {
                     value={formAmount}
                     onChange={(e) => setFormAmount(e.target.value)}
                     placeholder="0,00"
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-bold focus:border-[#1A44C8]"
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-bold focus:border-[#1A44C8] mb-1"
                   />
+                  <div className="flex flex-wrap gap-1">
+                    {[30, 50, 100, 250, 500].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setFormAmount(val.toString())}
+                        className="text-[9px] px-1.5 py-0.5 rounded bg-[#F8FAFC] text-[#64748B] hover:text-[#181B22] hover:bg-[#E2E8F0] border border-[#E5E7EB] font-bold transition-all"
+                      >
+                        +R$ {val}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data da Compra</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-[10.5px] text-[#64748B] font-bold">Data da Compra</label>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setFormDate(new Date().toISOString().split('T')[0])}
+                        className="text-[8.5px] px-1.5 py-0.5 rounded bg-[#1A44C8]/10 text-[#1A44C8] font-bold hover:bg-[#1A44C8]/20"
+                      >
+                        Hoje
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() - 1);
+                          setFormDate(d.toISOString().split('T')[0]);
+                        }}
+                        className="text-[8.5px] px-1.5 py-0.5 rounded bg-[#F1F3F7] text-[#64748B] font-bold hover:bg-[#E2E8F0]"
+                      >
+                        Ontem
+                      </button>
+                    </div>
+                  </div>
                   <input 
                     type="date" 
                     value={formDate}
