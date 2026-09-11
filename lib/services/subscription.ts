@@ -311,7 +311,7 @@ export const subscriptionService = {
       return { granted: true, subscription: sub, expiredReason: null };
     }
 
-    const reason = sub.status === 'TRIAL' || (sub.amount === 0) ? 'TRIAL_EXPIRED' : 'SUBSCRIPTION_EXPIRED';
+    const reason = (sub.status as string) === 'TRIAL' || (sub.amount === 0) ? 'TRIAL_EXPIRED' : 'SUBSCRIPTION_EXPIRED';
     return { granted: false, subscription: sub, expiredReason: reason };
   },
 
