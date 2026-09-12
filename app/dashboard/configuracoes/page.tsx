@@ -248,7 +248,7 @@ function SettingsContent() {
         const retry = await supabase.from('third_parties').insert({ user_id: session?.user.id, name: thirdPartyName.trim() });
         error = retry.error;
       }
-      if (error) setErrorMsg(error.message); else { setSuccessMsg('Contato salvo!'); fetchData(); setTimeout(() => setIsThirdPartyModalOpen(false), 800); }
+      if (error) setErrorMsg(error.message); else { setSuccessMsg('Pessoa salva!'); fetchData(); setTimeout(() => setIsThirdPartyModalOpen(false), 800); }
     } catch (err: any) {
       setErrorMsg(err?.message || "Erro ao salvar terceiro");
     } finally {
@@ -541,18 +541,18 @@ function SettingsContent() {
           <div className="animate-fade-in-up">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-sm font-bold text-[#181B22]">Terceiros / Contatos</h2>
-                <p className="text-[10px] text-[#64748B] font-medium mt-0.5">Pessoas ou empresas que você transaciona.</p>
+                <h2 className="text-sm font-bold text-[#181B22]">Terceiros / Pessoas</h2>
+                <p className="text-[10px] text-[#64748B] font-medium mt-0.5">Pessoas registradas para empréstimos e controle de terceiros.</p>
               </div>
               <button onClick={handleOpenThirdPartyModal} className="text-[10px] font-bold bg-[#1A44C8] text-white px-3 py-1.5 rounded-full hover:bg-[#1538A5] transition-all shadow-sm flex items-center gap-1 uppercase tracking-widest active:scale-95">
-                <Plus size={12} /> Novo Terceiro
+                <Plus size={12} /> Nova Pessoa
               </button>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {thirdParties.length === 0 ? (
                 <div className="col-span-full p-8 border border-dashed border-[#E5E7EB] rounded-2xl text-center text-xs text-[#94A3B8] font-medium">
-                  Nenhum terceiro cadastrado.
+                  Nenhuma pessoa cadastrada.
                 </div>
               ) : (
                 thirdParties.map(tp => (
@@ -567,7 +567,7 @@ function SettingsContent() {
                       )}
                       <div>
                         <span className="text-sm text-[#181B22] font-bold">{tp.name}</span>
-                        <p className="text-[10px] text-[#64748B] font-semibold">{tp.phone || 'Pessoa Física / Contato'}</p>
+                        <p className="text-[10px] text-[#64748B] font-semibold">{tp.phone || 'Pessoa Física'}</p>
                       </div>
                     </div>
                     <button 
@@ -680,9 +680,9 @@ function SettingsContent() {
         </ModalWrapper>
       )}
 
-      {/* Modal Terceiros / Contato */}
+      {/* Modal Terceiros / Pessoa */}
       {isThirdPartyModalOpen && (
-        <ModalWrapper title="Novo Terceiro (Contato)" onClose={() => setIsThirdPartyModalOpen(false)}>
+        <ModalWrapper title="Nova Pessoa (Terceiro)" onClose={() => setIsThirdPartyModalOpen(false)}>
           <form onSubmit={handleSaveThirdParty} className="space-y-4">
             <Alerts error={errorMsg} success={successMsg} />
             
@@ -724,7 +724,7 @@ function SettingsContent() {
             <Input label="Nome da Pessoa" value={thirdPartyName} onChange={setThirdPartyName} placeholder="Ex: Lucas Ferreira, Rodrigo" required />
             <Input label="Telefone / WhatsApp (opcional)" value={thirdPartyPhone} onChange={setThirdPartyPhone} placeholder="Ex: (11) 99999-9999" />
             
-            <SubmitButton label="Salvar Contato" loading={isSubmitting} />
+            <SubmitButton label="Salvar Pessoa" loading={isSubmitting} />
           </form>
         </ModalWrapper>
       )}
@@ -808,7 +808,7 @@ function ModalWrapper({ children, title, onClose }: { children: React.ReactNode,
     >
       <div 
         onClick={e => e.stopPropagation()} 
-        className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto scale-in-center shrink-0"
+        className="bg-white border border-[#E5E7EB] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[85dvh] sm:max-h-[88vh] m-auto animate-scale-in-center shrink-0"
       >
         <div className="px-6 py-4 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
           <h2 className="text-sm font-bold text-[#181B22]">{title}</h2>

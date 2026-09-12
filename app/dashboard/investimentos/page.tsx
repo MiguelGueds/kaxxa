@@ -399,6 +399,7 @@ export default function InvestimentosPage() {
         totalInvested: totalInv,
         currentBalance: curVal,
         monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
+        totalDividendsReceived: inv.total_dividends_received || 0,
         totalDividendsReceived: getCalculatedDividends(inv, 0),
         isFgcProtected: inv.category !== 'TESOURO_DIRETO',
         createdAt: inv.created_at || new Date().toISOString()
@@ -413,6 +414,10 @@ export default function InvestimentosPage() {
 
   const [loading, setLoading] = useState(false);
 
+  const getExactDividends = (inv: any) => {
+    return Number(inv.total_dividends_received || 0);
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -424,6 +429,9 @@ export default function InvestimentosPage() {
         if (userTxs && userTxs.length > 0) {
           const divTxTotal = userTxs
             .filter(t => t.type === 'INCOME' && (
+              (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.category_name)) ||
+              (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.description)) ||
+              (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.notes))
               (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.category_name)) ||
               (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.description)) ||
               (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.notes))
@@ -439,11 +447,15 @@ export default function InvestimentosPage() {
             const avgPrice = Number(inv.average_price || 0);
             const totalInv = Number(inv.invested_amount || (qty * avgPrice));
             const curVal = Number(inv.current_value || totalInv);
+            const directDiv = getExactDividends(inv);
 
             const assetTicker = inv.ticker ? inv.ticker.trim().toUpperCase() : '';
             const assetName = inv.name ? inv.name.trim().toLowerCase() : '';
             const matchingTxsDiv = (userTxs || [])
               .filter(t => t.type === 'INCOME' && (
+                (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.category_name)) ||
+                (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.description)) ||
+                (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.notes))
                 (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.category_name)) ||
                 (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.description)) ||
                 (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.notes))
@@ -453,6 +465,7 @@ export default function InvestimentosPage() {
               ))
               .reduce((sum, t) => sum + (t.amount || 0), 0);
 
+            const exactDiv = directDiv + matchingTxsDiv;
             const exactDiv = getCalculatedDividends(inv, matchingTxsDiv);
 
             return {
@@ -641,6 +654,7 @@ export default function InvestimentosPage() {
   const capitalGainTotal = currentBalanceGlobal - totalInvestedGlobal;
   const dividendsReceivedTotal = useMemo(() => {
     const fromAssets = investments.reduce((acc, i) => acc + (i.totalDividendsReceived || 0), 0);
+    return fromAssets + transactionDividends;
     const unlinkedTransactionDividends = Math.max(0, transactionDividends - fromAssets);
     return fromAssets + unlinkedTransactionDividends;
   }, [investments, transactionDividends]);
