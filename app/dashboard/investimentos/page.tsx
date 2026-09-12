@@ -646,7 +646,6 @@ export default function InvestimentosPage() {
   const capitalGainTotal = currentBalanceGlobal - totalInvestedGlobal;
   const dividendsReceivedTotal = useMemo(() => {
     const fromAssets = investments.reduce((acc, i) => acc + (i.totalDividendsReceived || 0), 0);
-    return fromAssets + transactionDividends;
     const unlinkedTransactionDividends = Math.max(0, transactionDividends - fromAssets);
     return fromAssets + unlinkedTransactionDividends;
   }, [investments, transactionDividends]);
