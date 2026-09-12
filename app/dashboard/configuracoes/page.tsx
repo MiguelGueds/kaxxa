@@ -39,7 +39,7 @@ import { BankLogo } from '@/app/components/BankLogo';
 type Category = { id: string; name: string; type: string; parent_id: string | null; };
 type Account = { id: string; name: string; type: string; balance: number; };
 type Card = { id: string; name: string; limit: number; due_day: number; };
-type ThirdParty = { id: string; name: string; type: string; };
+type ThirdParty = { id: string; name: string; type?: string; phone?: string; avatar_url?: string; };
 
 function SettingsContent() {
   const router = useRouter();
@@ -73,11 +73,12 @@ function SettingsContent() {
   const [cardLimit, setCardLimit] = useState('');
   const [cardDueDay, setCardDueDay] = useState('10');
 
-  // Terceiros
+  // Terceiros / Contatos
   const [thirdParties, setThirdParties] = useState<ThirdParty[]>([]);
   const [isThirdPartyModalOpen, setIsThirdPartyModalOpen] = useState(false);
   const [thirdPartyName, setThirdPartyName] = useState('');
-  const [thirdPartyType, setThirdPartyType] = useState('CLIENTE');
+  const [thirdPartyPhone, setThirdPartyPhone] = useState('');
+  const [thirdPartyAvatar, setThirdPartyAvatar] = useState('');
 
   // Modal Proprietário Kaxxa de Confirmação de Exclusão
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -226,18 +227,28 @@ function SettingsContent() {
 
   // --- TERCEIROS ---
   const handleOpenThirdPartyModal = () => {
-    setThirdPartyName(''); setThirdPartyType('CLIENTE'); resetMessages(); setIsThirdPartyModalOpen(true);
+    setThirdPartyName(''); setThirdPartyPhone(''); setThirdPartyAvatar(''); resetMessages(); setIsThirdPartyModalOpen(true);
   };
   const handleSaveThirdParty = async (e: React.FormEvent) => {
-    e.preventDefault(); setIsSubmitting(true); resetMessages();
+    e.preventDefault(); 
+    if (!thirdPartyName.trim()) {
+      setErrorMsg('Por favor, informe o nome da pessoa.');
+      return;
+    }
+    setIsSubmitting(true); resetMessages();
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      let { error } = await supabase.from('third_parties').insert({ user_id: session?.user.id, name: thirdPartyName, type: thirdPartyType });
-      if (error && (error.message.includes('type') || error.code === 'PGRST204' || error.message.includes('schema cache'))) {
-        const retry = await supabase.from('third_parties').insert({ user_id: session?.user.id, name: thirdPartyName });
+      let { error } = await supabase.from('third_parties').insert({ 
+        user_id: session?.user.id, 
+        name: thirdPartyName.trim(), 
+        phone: thirdPartyPhone.trim() || null, 
+        avatar_url: thirdPartyAvatar || null 
+      });
+      if (error && (error.message.includes('phone') || error.message.includes('avatar_url') || error.code === 'PGRST204')) {
+        const retry = await supabase.from('third_parties').insert({ user_id: session?.user.id, name: thirdPartyName.trim() });
         error = retry.error;
       }
-      if (error) setErrorMsg(error.message); else { setSuccessMsg('Terceiro salvo!'); fetchData(); setTimeout(() => setIsThirdPartyModalOpen(false), 800); }
+      if (error) setErrorMsg(error.message); else { setSuccessMsg('Contato salvo!'); fetchData(); setTimeout(() => setIsThirdPartyModalOpen(false), 800); }
     } catch (err: any) {
       setErrorMsg(err?.message || "Erro ao salvar terceiro");
     } finally {
@@ -547,12 +558,16 @@ function SettingsContent() {
                 thirdParties.map(tp => (
                   <div key={tp.id} className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl p-5 flex justify-between items-center group hover:shadow-sm transition-all">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#1A44C8]/10 border border-[#1A44C8]/20 flex items-center justify-center text-[#1A44C8]">
-                        <UserCircle2 size={18} />
-                      </div>
+                      {tp.avatar_url ? (
+                        <img src={tp.avatar_url} alt={tp.name} className="w-10 h-10 rounded-full object-cover border border-[#E5E7EB]" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#1A44C8]/10 border border-[#1A44C8]/20 flex items-center justify-center text-[#1A44C8] font-extrabold text-sm">
+                          {tp.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <span className="text-sm text-[#181B22] font-bold">{tp.name}</span>
-                        <p className="text-[10px] text-[#64748B] uppercase tracking-widest font-semibold">{tp.type}</p>
+                        <p className="text-[10px] text-[#64748B] font-semibold">{tp.phone || 'Pessoa Física / Contato'}</p>
                       </div>
                     </div>
                     <button 
@@ -665,17 +680,51 @@ function SettingsContent() {
         </ModalWrapper>
       )}
 
-      {/* Modal Terceiros */}
+      {/* Modal Terceiros / Contato */}
       {isThirdPartyModalOpen && (
         <ModalWrapper title="Novo Terceiro (Contato)" onClose={() => setIsThirdPartyModalOpen(false)}>
           <form onSubmit={handleSaveThirdParty} className="space-y-4">
             <Alerts error={errorMsg} success={successMsg} />
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setThirdPartyType('CLIENTE')} className={`py-2 text-[10px] font-bold rounded-xl border transition-all ${thirdPartyType==='CLIENTE'?'bg-[#1A44C8]/10 border-[#1A44C8]/30 text-[#1A44C8]':'border-[#E5E7EB] text-[#64748B] hover:bg-[#F1F3F7]'}`}>Cliente</button>
-              <button type="button" onClick={() => setThirdPartyType('FORNECEDOR')} className={`py-2 text-[10px] font-bold rounded-xl border transition-all ${thirdPartyType==='FORNECEDOR'?'bg-[#1A44C8]/10 border-[#1A44C8]/30 text-[#1A44C8]':'border-[#E5E7EB] text-[#64748B] hover:bg-[#F1F3F7]'}`}>Fornecedor</button>
+            
+            {/* Foto de Perfil Opcional */}
+            <div className="flex flex-col items-center justify-center mb-1">
+              <label className="relative cursor-pointer group">
+                <div className="w-16 h-16 rounded-full bg-[#F8FAFC] border-2 border-dashed border-[#1A44C8]/30 flex items-center justify-center overflow-hidden hover:border-[#1A44C8] transition-all">
+                  {thirdPartyAvatar ? (
+                    <img src={thirdPartyAvatar} alt="Foto de Perfil" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera size={22} className="text-[#1A44C8]/60 group-hover:scale-110 transition-transform" />
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 3 * 1024 * 1024) {
+                        setErrorMsg('A imagem deve ter no máximo 3MB.');
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = (evt) => {
+                        setThirdPartyAvatar(evt.target?.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-[10px] text-[#64748B] font-semibold mt-1">
+                {thirdPartyAvatar ? 'Foto adicionada (Clique para alterar)' : 'Adicionar foto de perfil (Opcional)'}
+              </span>
             </div>
-            <Input label="Nome / Empresa" value={thirdPartyName} onChange={setThirdPartyName} placeholder="Ex: João da Silva / Apple" />
-            <SubmitButton label="Salvar Terceiro" loading={isSubmitting} />
+
+            <Input label="Nome da Pessoa" value={thirdPartyName} onChange={setThirdPartyName} placeholder="Ex: Lucas Ferreira, Rodrigo" required />
+            <Input label="Telefone / WhatsApp (opcional)" value={thirdPartyPhone} onChange={setThirdPartyPhone} placeholder="Ex: (11) 99999-9999" />
+            
+            <SubmitButton label="Salvar Contato" loading={isSubmitting} />
           </form>
         </ModalWrapper>
       )}
