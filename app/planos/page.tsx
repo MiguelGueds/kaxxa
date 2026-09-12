@@ -697,7 +697,7 @@ export default function PlanosCheckoutPage() {
 
       {/* Modal de Sucesso */}
       {isApproved && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6">
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0">
             <div className="w-14 h-14 bg-[#059669]/10 text-[#059669] rounded-2xl flex items-center justify-center mx-auto mb-3 border border-[#059669]/20 shadow-sm shrink-0">
               <CheckCircle2 size={32} className="animate-bounce" />

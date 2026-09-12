@@ -76,6 +76,67 @@ export default function DashboardPage() {
   >([]);
 
   useEffect(() => {
+    function applyMetrics(
+      dbAccounts: any[] | null,
+      dbDebts: any[] | null,
+      dbInvestments: any[] | null,
+      dbTransactions: any[] | null,
+      dbCards: any[] | null,
+      dbCardExpenses: any[] | null
+    ) {
+      if (dbAccounts && dbAccounts.length > 0) {
+        setSaldoEmContas(dbAccounts.reduce((acc, a) => acc + (a.balance || 0), 0));
+      }
+      if (dbDebts && dbDebts.length > 0) {
+        setDividasAtivas(dbDebts.reduce((acc, d) => acc + (d.current_balance || 0), 0));
+      }
+      if (dbInvestments && dbInvestments.length > 0) {
+        const totalInvest = dbInvestments.reduce((acc, i) => acc + (i.current_value || i.invested_amount || 0), 0);
+        setPatrimonio(totalInvest);
+
+        const fixed = dbInvestments.filter(i => i.macro_type === 'FIXA').reduce((acc, i) => acc + (i.current_value || i.invested_amount || 0), 0);
+        const acoes = dbInvestments.filter(i => i.category === 'ACOES').reduce((acc, i) => acc + (i.current_value || i.invested_amount || 0), 0);
+        const fiis = dbInvestments.filter(i => i.category === 'FIIS').reduce((acc, i) => acc + (i.current_value || i.invested_amount || 0), 0);
+        const inter = dbInvestments.filter(i => i.category === 'BDRS_STOCKS' || i.category === 'ETFS').reduce((acc, i) => acc + (i.current_value || i.invested_amount || 0), 0);
+        const cripto = dbInvestments.filter(i => i.category === 'CRIPTO').reduce((acc, i) => acc + (i.current_value || i.invested_amount || 0), 0);
+
+        setInvestmentBreakdown([
+          { label: 'Renda fixa', value: fixed, color: '#1A44C8' },
+          { label: 'Ações', value: acoes, color: '#60A5FA' },
+          { label: 'FIIs', value: fiis, color: '#0EA5E9' },
+          { label: 'Internacional', value: inter, color: '#8B5CF6' },
+          { label: 'Cripto', value: cripto, color: '#F59E0B' },
+        ].filter(item => item.value > 0));
+      }
+      if (dbTransactions && dbTransactions.length > 0) {
+        const totalExp = dbTransactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + Math.abs(t.amount || 0), 0);
+        const totalInc = dbTransactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + Math.abs(t.amount || 0), 0);
+        setDespesasMes(totalExp);
+        setAportesMes(totalInc);
+      }
+      if (dbCards && dbCards.length > 0) {
+        setTotalLimiteCartoes(dbCards.reduce((acc, c) => acc + (c.credit_limit || 0), 0));
+        setQtdCartoes(dbCards.length);
+        const totalCardExpenses = (dbCardExpenses || []).reduce((acc, e) => acc + (e.amount || 0), 0);
+        const explicitUsed = dbCards.reduce((acc, c) => acc + (c.limit_used || 0), 0);
+        setLimiteComprometido(totalCardExpenses > 0 ? totalCardExpenses : explicitUsed);
+      }
+    }
+
+    // 1. Exibe instantaneamente dados do cache local sem delay (0ms)
+    try {
+      const cachedAcc = accountsService.getCachedAccounts();
+      const cachedDeb = debtsService.getCachedDebts();
+      const cachedInv = investmentsService.getCachedInvestments();
+      const cachedTx = transactionsService.getCachedTransactions();
+      const cachedCrd = cardsService.getCachedCards();
+      const cachedExp = cardsService.getCachedCardExpenses();
+      applyMetrics(cachedAcc, cachedDeb, cachedInv, cachedTx, cachedCrd, cachedExp);
+    } catch (e) {
+      console.warn('Erro ao carregar cache local do dashboard:', e);
+    }
+
+    // 2. Atualiza em segundo plano via rede de forma transparente
     async function loadDashboardData() {
       try {
         const [dbAccounts, dbDebts, dbInvestments, dbTransactions, dbCards, dbCardExpenses] = await Promise.all([
@@ -86,67 +147,7 @@ export default function DashboardPage() {
           cardsService.fetchCards(),
           cardsService.fetchCardExpenses()
         ]);
-
-        if (dbAccounts && dbAccounts.length > 0) {
-          const totalSaldo = dbAccounts.reduce((acc, a) => acc + (a.balance || 0), 0);
-          setSaldoEmContas(totalSaldo);
-        } else {
-          setSaldoEmContas(0);
-        }
-
-        if (dbDebts && dbDebts.length > 0) {
-          const totalDebts = dbDebts.reduce((acc, d) => acc + (d.current_balance || 0), 0);
-          setDividasAtivas(totalDebts);
-        } else {
-          setDividasAtivas(0);
-        }
-
-        if (dbInvestments && dbInvestments.length > 0) {
-          const totalInvest = dbInvestments.reduce((acc, i) => acc + (i.current_value || 0), 0);
-          setPatrimonio(totalInvest);
-
-          const fixed = dbInvestments.filter(i => i.macro_type === 'FIXA').reduce((acc, i) => acc + i.current_value, 0);
-          const acoes = dbInvestments.filter(i => i.category === 'ACOES').reduce((acc, i) => acc + i.current_value, 0);
-          const fiis = dbInvestments.filter(i => i.category === 'FIIS').reduce((acc, i) => acc + i.current_value, 0);
-          const inter = dbInvestments.filter(i => i.category === 'BDRS_STOCKS' || i.category === 'ETFS').reduce((acc, i) => acc + i.current_value, 0);
-          const cripto = dbInvestments.filter(i => i.category === 'CRIPTO').reduce((acc, i) => acc + i.current_value, 0);
-
-          setInvestmentBreakdown([
-            { label: 'Renda fixa', value: fixed, color: '#1A44C8' },
-            { label: 'Ações', value: acoes, color: '#60A5FA' },
-            { label: 'FIIs', value: fiis, color: '#0EA5E9' },
-            { label: 'Internacional', value: inter, color: '#8B5CF6' },
-            { label: 'Cripto', value: cripto, color: '#F59E0B' },
-          ].filter(item => item.value > 0));
-        } else {
-          setPatrimonio(0);
-          setInvestmentBreakdown([]);
-        }
-
-        if (dbTransactions && dbTransactions.length > 0) {
-          const totalExp = dbTransactions
-            .filter(t => t.type === 'EXPENSE')
-            .reduce((acc, t) => acc + Math.abs(t.amount || 0), 0);
-          const totalInc = dbTransactions
-            .filter(t => t.type === 'INCOME')
-            .reduce((acc, t) => acc + Math.abs(t.amount || 0), 0);
-          setDespesasMes(totalExp);
-          setAportesMes(totalInc);
-        } else {
-          setDespesasMes(0);
-          setAportesMes(0);
-        }
-
-        // Cartões reais
-        if (dbCards && dbCards.length > 0) {
-          const totalLimit = dbCards.reduce((acc, c) => acc + (c.credit_limit || 0), 0);
-          setTotalLimiteCartoes(totalLimit);
-          setQtdCartoes(dbCards.length);
-
-          const totalCardExpenses = (dbCardExpenses || []).reduce((acc, e) => acc + (e.amount || 0), 0);
-          const explicitUsed = dbCards.reduce((acc, c) => acc + (c.limit_used || 0), 0);
-          setLimiteComprometido(totalCardExpenses > 0 ? totalCardExpenses : explicitUsed);
-        }
+        applyMetrics(dbAccounts, dbDebts, dbInvestments, dbTransactions, dbCards, dbCardExpenses);
       } catch (err) {
         console.error('Erro ao carregar métricas consolidadas do Supabase:', err);
       }
@@ -839,7 +840,7 @@ export default function DashboardPage() {
           MODAL DE SUBCATEGORIAS
       ========================================================================= */}
       {activeCategoryModal && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6">
           <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">

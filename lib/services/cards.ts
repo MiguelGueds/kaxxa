@@ -1,4 +1,5 @@
 import { supabase, getAuthenticatedUser } from '@/lib/supabase';
+import { transactionsService } from './transactions';
 
 export interface DbCard {
   id: string;
@@ -61,6 +62,33 @@ export const cardsService = {
     } catch {
       return [];
     }
+  },
+
+  getCachedCardExpenses(cardId?: string): DbCardExpense[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const cachedTxs = transactionsService.getCachedTransactions();
+      if (cachedTxs && cachedTxs.length > 0) {
+        let filtered = cachedTxs.filter(t => !!t.credit_card_id);
+        if (cardId) {
+          filtered = filtered.filter(t => t.credit_card_id === cardId);
+        }
+        return filtered.map(e => ({
+          id: e.id,
+          credit_card_id: e.credit_card_id!,
+          description: e.description,
+          amount: Number(e.amount || 0),
+          date: e.date,
+          category_name: e.category_name,
+          installments: e.installments || 1,
+          current_installment: e.current_installment || 1,
+          third_party_name: e.third_party_name,
+        }));
+      }
+    } catch {
+      return [];
+    }
+    return [];
   },
 
   async fetchCards(): Promise<DbCard[] | null> {

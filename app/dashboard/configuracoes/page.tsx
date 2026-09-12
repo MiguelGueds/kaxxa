@@ -733,7 +733,7 @@ function SettingsContent() {
       {/* Modal Kaxxa Proprietário de Confirmação de Exclusão */}
       {deleteTarget && (
         <div 
-          className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
           onClick={() => setDeleteTarget(null)}
         >
           <div 
@@ -803,7 +803,7 @@ function TabButton({ active, onClick, icon, label, badge }: { active: boolean, o
 function ModalWrapper({ children, title, onClose }: { children: React.ReactNode, title: string, onClose: () => void }) {
   return (
     <div 
-      className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 

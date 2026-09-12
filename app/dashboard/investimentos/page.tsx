@@ -384,13 +384,12 @@ export default function InvestimentosPage() {
         if (userTxs && userTxs.length > 0) {
           const divTxTotal = userTxs
             .filter(t => t.type === 'INCOME' && (
-              (t.category_name && /dividendo|rendimento|jcp|provento/i.test(t.category_name)) ||
-              (t.description && /dividendo|rendimento|jcp|provento/i.test(t.description))
+              (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.category_name)) ||
+              (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.description)) ||
+              (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.notes))
             ))
             .reduce((sum, t) => sum + (t.amount || 0), 0);
           setTransactionDividends(divTxTotal);
-        } else {
-          setTransactionDividends(0);
         }
 
         if (dbInvestments && dbInvestments.length > 0) {
@@ -400,7 +399,22 @@ export default function InvestimentosPage() {
             const avgPrice = Number(inv.average_price || 0);
             const totalInv = Number(inv.invested_amount || (qty * avgPrice));
             const curVal = Number(inv.current_value || totalInv);
-            const exactDiv = getExactDividends(inv);
+            const directDiv = getExactDividends(inv);
+
+            const assetTicker = inv.ticker ? inv.ticker.trim().toUpperCase() : '';
+            const assetName = inv.name ? inv.name.trim().toLowerCase() : '';
+            const matchingTxsDiv = (userTxs || [])
+              .filter(t => t.type === 'INCOME' && (
+                (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.category_name)) ||
+                (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.description)) ||
+                (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.notes))
+              ) && (
+                (assetTicker && (t.description?.toUpperCase().includes(assetTicker) || t.notes?.toUpperCase().includes(assetTicker))) ||
+                (assetName && assetName.length > 3 && (t.description?.toLowerCase().includes(assetName) || t.notes?.toLowerCase().includes(assetName)))
+              ))
+              .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+            const exactDiv = directDiv + matchingTxsDiv;
 
             return {
               id: inv.id,
@@ -516,7 +530,24 @@ export default function InvestimentosPage() {
   const [rvCurrentPrice, setRvCurrentPrice] = useState(''); // Cotação Atual de Mercado
   const [rvYieldRate, setRvYieldRate] = useState('');
   const [rvDividends, setRvDividends] = useState(''); // Proventos Recebidos do Ativo
-  const [transactionDividends, setTransactionDividends] = useState(0); // Proventos vindos do Extrato de Transações
+  const [transactionDividends, setTransactionDividends] = useState<number>(() => {
+    if (typeof window === 'undefined') return 0;
+    try {
+      const cached = transactionsService.getCachedTransactions();
+      if (cached && cached.length > 0) {
+        return cached
+          .filter(t => t.type === 'INCOME' && (
+            (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.category_name)) ||
+            (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.description)) ||
+            (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.notes))
+          ))
+          .reduce((sum, t) => sum + (t.amount || 0), 0);
+      }
+    } catch {
+      return 0;
+    }
+    return 0;
+  }); // Proventos vindos do Extrato de Transações
   const [aporteDate, setAporteDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   // Cotação ao Vivo e Preenchimento Automático
@@ -2069,7 +2100,7 @@ export default function InvestimentosPage() {
           MODAL UNIFICADO: NOVO APORTE / EDIÇÃO DE INVESTIMENTO
       ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             
             {/* Header com Abas Macro */}
@@ -2424,7 +2455,7 @@ export default function InvestimentosPage() {
           MODAL DE EXCLUSÃO
       ========================================================================= */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 text-center space-y-3 flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shrink-0">
               <Trash2 size={18} />

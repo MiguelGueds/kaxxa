@@ -711,7 +711,7 @@ function MinhaContaContent() {
 
       {/* --- MODAL CANCELAR RENOVAÇÃO --- */}
       {isCancelModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-fade-in-up flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0">
             <div className="flex items-center gap-3 text-rose-600 shrink-0 pb-3 border-b border-[#E5E7EB]">
               <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
@@ -752,7 +752,7 @@ function MinhaContaContent() {
 
       {/* --- MODAL REEMBOLSO --- */}
       {isRefundModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-fade-in-up flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0">
             <div className="flex items-center gap-3 text-amber-600 shrink-0 pb-3 border-b border-[#E5E7EB]">
               <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
@@ -813,7 +813,7 @@ function MinhaContaContent() {
 
       {/* Modal de Confirmação para Exclusão Definitiva de Dados */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-rose-200 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
               <div className="flex items-center gap-2 text-rose-700 font-extrabold text-sm">
@@ -873,7 +873,7 @@ function MinhaContaContent() {
 
       {/* --- MODAL AJUSTAR / CORTAR FOTO DE PERFIL --- */}
       {isCropModalOpen && cropImageSrc && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-5 flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto shrink-0 overflow-hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

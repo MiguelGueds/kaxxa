@@ -994,7 +994,7 @@ export default function SaldoExtratoPage() {
           MODAL 1: NOVO OU EDITAR LANÇAMENTO
       ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
@@ -1209,7 +1209,7 @@ export default function SaldoExtratoPage() {
           MODAL 2: TRANSFERIR ENTRE CONTAS
       ========================================================================= */}
       {isTransferModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
@@ -1300,7 +1300,7 @@ export default function SaldoExtratoPage() {
           MODAL 3: PAGAR FATURA COM SALDO
       ========================================================================= */}
       {isPayInvoiceModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
@@ -1388,7 +1388,7 @@ export default function SaldoExtratoPage() {
           MODAL 4: IMPORTAR EXTRATO
       ========================================================================= */}
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
@@ -1502,7 +1502,7 @@ export default function SaldoExtratoPage() {
           MODAL 5: CONFIRMAR EXCLUSÃO
       ========================================================================= */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             <div>
               <h3 className="text-sm font-bold text-[#181B22] mb-1">Excluir Lançamento?</h3>

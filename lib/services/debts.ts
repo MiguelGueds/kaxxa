@@ -37,7 +37,41 @@ export interface DbDebt {
   amortizations?: DbAmortization[];
 }
 
+const STORAGE_KEY = 'kaxxa_debts_backup';
+
+function getLocalDebts(userId: string): DbDebt[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalDebts(userId: string, items: DbDebt[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
+  } catch (e) {
+    console.error('Erro ao salvar dívidas no localStorage:', e);
+  }
+}
+
 export const debtsService = {
+  getCachedDebts(): DbDebt[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const rawUser = localStorage.getItem('kaxxa_user_cache');
+      if (!rawUser) return [];
+      const user = JSON.parse(rawUser);
+      if (!user || !user.id) return [];
+      return getLocalDebts(user.id);
+    } catch {
+      return [];
+    }
+  },
+
   async fetchDebts(): Promise<DbDebt[] | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
@@ -50,7 +84,11 @@ export const debtsService = {
 
     if (error) {
       console.error('Erro ao buscar dívidas:', error);
-      return null;
+      return getLocalDebts(user.id);
+    }
+
+    if (data) {
+      saveLocalDebts(user.id, data as DbDebt[]);
     }
 
     return data as DbDebt[];

@@ -237,10 +237,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Sidebar Flutuante em Formato de Card Sofisticado (#FFFFFF) */}
-      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-[#E5E7EB] flex flex-col bg-[#FFFFFF] z-50 h-[calc(100vh-16px)] sm:h-[calc(100vh-24px)] shadow-[0_8px_28px_rgba(0,0,0,0.03)] transition-all duration-300 overflow-hidden ${
+      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-[#E5E7EB] flex flex-col bg-[#FFFFFF] h-[calc(100vh-16px)] sm:h-[calc(100vh-24px)] shadow-[0_8px_28px_rgba(0,0,0,0.03)] transition-all duration-300 overflow-hidden ${
         isSidebarCollapsed ? 'w-[68px]' : 'w-[220px]'
       } ${
-        mobileMenuOpen ? 'fixed inset-y-2 sm:inset-y-3 left-2 sm:left-3 !w-[230px]' : 'hidden lg:flex'
+        mobileMenuOpen ? 'fixed inset-y-2 sm:inset-y-3 left-2 sm:left-3 !w-[230px] z-50' : 'hidden lg:flex z-0'
       }`}>
         
         {/* Brand Header do Card */}
@@ -346,7 +346,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-h-0 relative overflow-x-hidden overflow-y-hidden bg-[#F5F6F9]">
         
         {/* Topbar Flutuante no Formato de Card Sofisticado */}
-        <header className="my-2 sm:my-3 mr-2 sm:mr-3 ml-2 sm:ml-2.5 h-14 px-3 sm:px-5 rounded-[22px] bg-[#FFFFFF] border border-[#E5E7EB] shadow-[0_8px_28px_rgba(0,0,0,0.03)] flex items-center justify-between z-30 flex-shrink-0">
+        <header className="my-2 sm:my-3 mr-2 sm:mr-3 ml-2 sm:ml-2.5 h-14 px-3 sm:px-5 rounded-[22px] bg-[#FFFFFF] border border-[#E5E7EB] shadow-[0_8px_28px_rgba(0,0,0,0.03)] flex items-center justify-between z-0 flex-shrink-0">
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
             <button 
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -446,7 +446,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Conteúdo com Scroll Próprio */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative px-2.5 sm:px-5 pb-6 z-10">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative px-2.5 sm:px-5 pb-6 z-0">
           {children}
         </main>
 
