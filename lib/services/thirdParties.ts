@@ -184,6 +184,40 @@ export const thirdPartiesService = {
     } catch {
       return true;
     }
+  },
+
+  async fetchPeople(): Promise<{ id: string; name: string }[]> {
+    const user = await getAuthenticatedUser();
+    if (!user) return [];
+
+    try {
+      const { data } = await supabase
+        .from('third_parties')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      return (data || []) as { id: string; name: string }[];
+    } catch {
+      return [];
+    }
+  },
+
+  async createPerson(name: string): Promise<{ id: string; name: string } | null> {
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+
+    try {
+      const { data } = await supabase
+        .from('third_parties')
+        .insert({ user_id: user.id, name })
+        .select('id, name')
+        .single();
+
+      return data as { id: string; name: string } | null;
+    } catch {
+      return null;
+    }
   }
 };
 

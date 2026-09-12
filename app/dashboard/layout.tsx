@@ -33,18 +33,20 @@ import {
 
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { KaxxaLogo, KaxxaKLogo } from '@/app/components/KaxxaLogo';
-import { subscriptionService } from '@/lib/services/subscription';
+import { subscriptionService, getTrialRemainingText } from '@/lib/services/subscription';
 import { isAdminEmail } from '@/lib/admin';
 import { CommandPalette } from '@/app/components/CommandPalette';
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
+  const { isConcealed, toggleConcealed, togglePrivacy } = usePrivacy();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const { isConcealed, togglePrivacy } = usePrivacy();
-  const { theme, toggleTheme } = useTheme();
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar: string | null }>({
     name: 'Minha Conta',
     email: '',
@@ -81,7 +83,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const [accessGranted, setAccessGranted] = useState<boolean | null>(null);
   const [isTrialUser, setIsTrialUser] = useState<boolean>(false);
-  const [subInfo, setSubInfo] = useState<{ isRecurringPro: boolean; daysRemaining: number }>({
+  const [subInfo, setSubInfo] = useState<{ isRecurringPro: boolean; daysRemaining: number; periodEnd?: string }>({
     isRecurringPro: false,
     daysRemaining: 0
   });
@@ -95,9 +97,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         if (!granted) {
           if (isMounted) setAccessGranted(false);
           if (expiredReason === 'TRIAL_EXPIRED') {
-            router.replace('/planos?reason=trial_expired');
-          } else if (expiredReason === 'SUBSCRIPTION_EXPIRED') {
-            router.replace('/planos?reason=subscription_expired');
+            router.replace('/planos?expired=trial');
           } else {
             router.replace('/planos');
           }
@@ -114,7 +114,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             setIsTrialUser(!isCreditCardPro);
             setSubInfo({
               isRecurringPro: isCreditCardPro || isAdminEmail(userInfo.email),
-              daysRemaining: remaining
+              daysRemaining: remaining,
+              periodEnd: subscription.current_period_end
             });
           }
         }
@@ -435,9 +436,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 }`}>
                   {subInfo.isRecurringPro 
                     ? 'Plano Pro Ativado' 
-                    : subInfo.daysRemaining === 1 
-                      ? '1 dia restante' 
-                      : `${subInfo.daysRemaining} dias restantes`
+                    : getTrialRemainingText(subInfo.periodEnd).text
                   }
                 </span>
               </div>

@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, performGlobalSignOut } from '@/lib/supabase';
-import { subscriptionService, DbSubscription } from '@/lib/services/subscription';
+import { subscriptionService, DbSubscription, getTrialRemainingText } from '@/lib/services/subscription';
 import { isAdminEmail } from '@/lib/admin';
 
 function MinhaContaContent() {
@@ -617,9 +617,7 @@ function MinhaContaContent() {
                           ? 'Plano Pro Ativado' 
                           : subscription?.status === 'CANCELED' 
                             ? 'Cancelamento Agendado' 
-                            : daysRemaining === 1 
-                              ? '1 dia restante' 
-                              : `${daysRemaining} dias restantes`
+                            : getTrialRemainingText(subscription?.current_period_end).text
                         }
                       </span>
                     </div>

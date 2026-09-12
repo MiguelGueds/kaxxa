@@ -115,18 +115,21 @@ export default function TerceirosPage() {
   const [settleMethod, setSettleMethod] = useState<'PIX' | 'CASH' | 'BARTER_ASSET' | 'CARD'>('PIX');
   const [settleAssetNote, setSettleAssetNote] = useState('');
 
-  // Contas e Cartões reais do usuário
+  // Contas, Cartões e Pessoas registradas do usuário
   const [userAccounts, setUserAccounts] = useState<{ id: string; name: string }[]>([]);
   const [userCards, setUserCards] = useState<{ id: string; name: string }[]>([]);
+  const [registeredPeople, setRegisteredPeople] = useState<string[]>([]);
+  const [isCustomPersonName, setIsCustomPersonName] = useState(false);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const [dbDebts, dbAccounts, dbCards] = await Promise.all([
+        const [dbDebts, dbAccounts, dbCards, dbPeople] = await Promise.all([
           thirdPartiesService.fetchDebts(),
           accountsService.fetchAccounts(),
-          cardsService.fetchCards()
+          cardsService.fetchCards(),
+          thirdPartiesService.fetchPeople()
         ]);
 
         if (dbAccounts && dbAccounts.length > 0) {
@@ -134,6 +137,9 @@ export default function TerceirosPage() {
         }
         if (dbCards && dbCards.length > 0) {
           setUserCards(dbCards.map(c => ({ id: c.id, name: c.name })));
+        }
+        if (dbPeople && dbPeople.length > 0) {
+          setRegisteredPeople(dbPeople.map(p => p.name));
         }
 
         if (dbDebts && dbDebts.length > 0) {
@@ -166,7 +172,13 @@ export default function TerceirosPage() {
   }, []);
 
   const handleOpenNewModal = () => {
-    setFormPersonName('');
+    if (registeredPeople.length > 0) {
+      setFormPersonName(registeredPeople[0]);
+      setIsCustomPersonName(false);
+    } else {
+      setFormPersonName('');
+      setIsCustomPersonName(true);
+    }
     setFormDesc('');
     setFormTotalAmount('');
     setFormInstallments('1');
@@ -188,7 +200,15 @@ export default function TerceirosPage() {
   const handleSaveDebt = async () => {
     const parsedAmount = parseFloat(formTotalAmount.replace(',', '.')) || 0;
     const installments = parseInt(formInstallments, 10) || 1;
-    if (!formPersonName.trim() || !formDesc.trim() || parsedAmount <= 0) return;
+    const trimmedPersonName = formPersonName.trim();
+    if (!trimmedPersonName || !formDesc.trim() || parsedAmount <= 0) return;
+
+    if (isCustomPersonName && trimmedPersonName) {
+      thirdPartiesService.createPerson(trimmedPersonName).catch(e => console.error('Erro ao salvar nova pessoa:', e));
+      if (!registeredPeople.includes(trimmedPersonName)) {
+        setRegisteredPeople(prev => [...prev, trimmedPersonName]);
+      }
+    }
 
     let createdId = 'tp-' + Date.now();
     const finalOriginBank = formOriginType === 'ASSET_SALE' 
@@ -197,7 +217,7 @@ export default function TerceirosPage() {
 
     try {
       const created = await thirdPartiesService.createDebt({
-        person_name: formPersonName.trim(),
+        person_name: trimmedPersonName,
         description: formDesc.trim(),
         origin_type: formOriginType,
         origin_bank_or_card: finalOriginBank,
@@ -921,13 +941,47 @@ export default function TerceirosPage() {
             <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
               <div>
                 <label className="block text-[11px] font-bold text-[#64748B] mb-1">Nome do Devedor/Responsável</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Lucas Ferreira, Irmão, etc."
-                  value={formPersonName}
-                  onChange={e => setFormPersonName(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
-                />
+                {!isCustomPersonName && registeredPeople.length > 0 ? (
+                  <select
+                    value={formPersonName}
+                    onChange={e => {
+                      if (e.target.value === '__NEW__') {
+                        setIsCustomPersonName(true);
+                        setFormPersonName('');
+                      } else {
+                        setFormPersonName(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
+                  >
+                    {registeredPeople.map((personName, idx) => (
+                      <option key={idx} value={personName}>{personName}</option>
+                    ))}
+                    <option value="__NEW__">+ Cadastrar Nova Pessoa...</option>
+                  </select>
+                ) : (
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      placeholder="Ex: Lucas Ferreira, Irmão, etc."
+                      value={formPersonName}
+                      onChange={e => setFormPersonName(e.target.value)}
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                    />
+                    {registeredPeople.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomPersonName(false);
+                          setFormPersonName(registeredPeople[0] || '');
+                        }}
+                        className="text-[10px] text-[#1A44C8] font-semibold hover:underline"
+                      >
+                        ← Selecionar da lista de pessoas
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -951,13 +1005,13 @@ export default function TerceirosPage() {
                       setFormOriginType(val);
                       if (val === 'CARD' && userCards.length > 0) setFormBankOrCard(userCards[0].name);
                       else if (val === 'ACCOUNT' && userAccounts.length > 0) setFormBankOrCard(userAccounts[0].name);
-                      else if (val === 'ASSET_SALE') setFormBankOrCard('Moto Honda Fan 160');
+                      else if (val === 'ASSET_SALE') setFormBankOrCard('');
                     }}
                     className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
                   >
                     <option value="CARD">💳 Cartão de Crédito</option>
                     <option value="ACCOUNT">🏦 Conta Bancária / PIX</option>
-                    <option value="ASSET_SALE">🏍️ Venda de Bem / Veículo / Objeto</option>
+                    <option value="ASSET_SALE">🏍️ Venda de bem</option>
                   </select>
                 </div>
 

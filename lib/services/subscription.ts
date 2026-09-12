@@ -14,6 +14,32 @@ export interface DbSubscription {
   updated_at?: string;
 }
 
+export function getTrialRemainingText(endDateStr?: string): { text: string; hoursRemaining: number; isExpiringSoon: boolean } {
+  if (!endDateStr) return { text: '0h restantes', hoursRemaining: 0, isExpiringSoon: true };
+  const end = new Date(endDateStr).getTime();
+  const now = Date.now();
+  const diffMs = end - now;
+
+  if (diffMs <= 0) return { text: 'Expirado', hoursRemaining: 0, isExpiringSoon: true };
+
+  const hours = Math.ceil(diffMs / (1000 * 60 * 60));
+  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (hours <= 24) {
+    return {
+      text: `${hours}h restante${hours === 1 ? '' : 's'}`,
+      hoursRemaining: hours,
+      isExpiringSoon: true
+    };
+  }
+
+  return {
+    text: `${days} dias restantes`,
+    hoursRemaining: hours,
+    isExpiringSoon: false
+  };
+}
+
 // Armazenamento em memória e disco para resiliência (caso a tabela do Supabase ainda não tenha sido criada)
 let MEMORY_SUBSCRIPTIONS: Record<string, DbSubscription> = {};
 

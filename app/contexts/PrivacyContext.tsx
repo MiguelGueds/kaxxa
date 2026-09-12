@@ -5,11 +5,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 type PrivacyContextType = {
   isConcealed: boolean;
   togglePrivacy: () => void;
+  toggleConcealed: () => void;
 };
 
 const PrivacyContext = createContext<PrivacyContextType>({
   isConcealed: false,
   togglePrivacy: () => {},
+  toggleConcealed: () => {},
 });
 
 export function PrivacyProvider({ children }: { children: React.ReactNode }) {
@@ -31,7 +33,7 @@ export function PrivacyProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <PrivacyContext.Provider value={{ isConcealed, togglePrivacy }}>
+    <PrivacyContext.Provider value={{ isConcealed, togglePrivacy, toggleConcealed: togglePrivacy }}>
       {children}
     </PrivacyContext.Provider>
   );
