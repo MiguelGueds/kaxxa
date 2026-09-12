@@ -191,12 +191,11 @@ export default function TerceirosPage() {
   }, []);
 
   const handleOpenNewModal = () => {
-    if (registeredPeople.length > 0) {
-      setFormPersonName(registeredPeople[0]);
-      setIsCustomPersonName(false);
+    setIsCustomPersonName(false);
+    if (availablePeopleList.length > 0) {
+      setFormPersonName(availablePeopleList[0]);
     } else {
       setFormPersonName('');
-      setIsCustomPersonName(true);
     }
     setFormDesc('');
     setFormTotalAmount('');
@@ -347,6 +346,18 @@ export default function TerceirosPage() {
     if (isConcealed) return '•••••';
     return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
+
+  // Lista de pessoas disponíveis para seleção
+  const availablePeopleList = useMemo(() => {
+    const set = new Set<string>();
+    registeredPeople.forEach(name => {
+      if (name && name.trim()) set.add(name.trim());
+    });
+    debts.forEach(d => {
+      if (d.personName && d.personName.trim()) set.add(d.personName.trim());
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [registeredPeople, debts]);
 
   // Cálculos Globais
   const totalReceivable = useMemo(() => {
@@ -960,7 +971,7 @@ export default function TerceirosPage() {
             <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
               <div>
                 <label className="block text-[11px] font-bold text-[#64748B] mb-1">Nome do Devedor/Responsável</label>
-                {!isCustomPersonName && registeredPeople.length > 0 ? (
+                {!isCustomPersonName ? (
                   <select
                     value={formPersonName}
                     onChange={e => {
@@ -973,10 +984,13 @@ export default function TerceirosPage() {
                     }}
                     className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
                   >
-                    {registeredPeople.map((personName, idx) => (
+                    {availablePeopleList.length === 0 && (
+                      <option value="" disabled>Selecione ou cadastre...</option>
+                    )}
+                    {availablePeopleList.map((personName, idx) => (
                       <option key={idx} value={personName}>{personName}</option>
                     ))}
-                    <option value="__NEW__">+ Cadastrar Nova Pessoa...</option>
+                    <option value="__NEW__">+ Digitar Novo Nome / Cadastrar Pessoa...</option>
                   </select>
                 ) : (
                   <div className="space-y-1">
@@ -986,19 +1000,18 @@ export default function TerceirosPage() {
                       value={formPersonName}
                       onChange={e => setFormPersonName(e.target.value)}
                       className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                      autoFocus
                     />
-                    {registeredPeople.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsCustomPersonName(false);
-                          setFormPersonName(registeredPeople[0] || '');
-                        }}
-                        className="text-[10px] text-[#1A44C8] font-semibold hover:underline"
-                      >
-                        ← Selecionar da lista de pessoas
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomPersonName(false);
+                        setFormPersonName(availablePeopleList[0] || '');
+                      }}
+                      className="text-[10px] text-[#1A44C8] font-semibold hover:underline block"
+                    >
+                      ← Selecionar da lista suspensa
+                    </button>
                   </div>
                 )}
               </div>
