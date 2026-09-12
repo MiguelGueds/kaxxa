@@ -399,7 +399,6 @@ export default function InvestimentosPage() {
         totalInvested: totalInv,
         currentBalance: curVal,
         monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
-        totalDividendsReceived: inv.total_dividends_received || 0,
         totalDividendsReceived: getCalculatedDividends(inv, 0),
         isFgcProtected: inv.category !== 'TESOURO_DIRETO',
         createdAt: inv.created_at || new Date().toISOString()
