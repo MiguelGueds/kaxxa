@@ -453,9 +453,6 @@ export default function InvestimentosPage() {
             const assetName = inv.name ? inv.name.trim().toLowerCase() : '';
             const matchingTxsDiv = (userTxs || [])
               .filter(t => t.type === 'INCOME' && (
-                (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.category_name)) ||
-                (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.description)) ||
-                (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.notes))
                 (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.category_name)) ||
                 (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.description)) ||
                 (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.notes))
@@ -465,7 +462,6 @@ export default function InvestimentosPage() {
               ))
               .reduce((sum, t) => sum + (t.amount || 0), 0);
 
-            const exactDiv = directDiv + matchingTxsDiv;
             const exactDiv = getCalculatedDividends(inv, matchingTxsDiv);
 
             return {
