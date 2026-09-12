@@ -44,7 +44,7 @@ function getStoragePaths() {
 }
 
 function ensureLocalFile(): Coupon[] {
-  if (MEMORY_COUPONS && MEMORY_COUPONS.length > 0) {
+  if (MEMORY_COUPONS !== null) {
     return MEMORY_COUPONS;
   }
 
@@ -69,8 +69,9 @@ function ensureLocalFile(): Coupon[] {
   try {
     if (fs.existsSync(primaryFile)) {
       const data = fs.readFileSync(primaryFile, 'utf8');
-      MEMORY_COUPONS = JSON.parse(data);
-      if (MEMORY_COUPONS && MEMORY_COUPONS.length > 0) {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        MEMORY_COUPONS = parsed;
         return MEMORY_COUPONS;
       }
     }
@@ -80,12 +81,15 @@ function ensureLocalFile(): Coupon[] {
   try {
     if (fs.existsSync(tmpFile)) {
       const data = fs.readFileSync(tmpFile, 'utf8');
-      MEMORY_COUPONS = JSON.parse(data);
-      if (MEMORY_COUPONS && MEMORY_COUPONS.length > 0) return MEMORY_COUPONS;
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        MEMORY_COUPONS = parsed;
+        return MEMORY_COUPONS;
+      }
     }
   } catch {}
 
-  // 3. Se não houver em nenhum, inicializa no primary ou tmp
+  // 3. Se não houver em nenhum, inicializa com defaultInitial
   try {
     if (!fs.existsSync(primaryDir)) fs.mkdirSync(primaryDir, { recursive: true });
     fs.writeFileSync(primaryFile, JSON.stringify(defaultInitial, null, 2), 'utf8');
@@ -121,6 +125,8 @@ function saveLocalCoupons(coupons: Coupon[]) {
 
 export const couponService = {
   async listCoupons(): Promise<Coupon[]> {
+    const localCoupons = ensureLocalFile();
+
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
@@ -129,15 +135,31 @@ export const couponService = {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && data !== null) {
-          saveLocalCoupons(data as Coupon[]);
-          return data as Coupon[];
+        if (!error && Array.isArray(data)) {
+          const map = new Map<string, Coupon>();
+          
+          for (const c of localCoupons) {
+            if (c && c.id) map.set(c.id, c);
+            if (c && c.code) map.set(c.code.toUpperCase(), c);
+          }
+          
+          for (const c of data as Coupon[]) {
+            if (c && c.id) map.set(c.id, c);
+            if (c && c.code) map.set(c.code.toUpperCase(), c);
+          }
+
+          const merged = Array.from(new Set(map.values()));
+          merged.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+          saveLocalCoupons(merged);
+          return merged;
         }
-      } catch {
-        // Fallback local
+      } catch (e) {
+        console.warn('Erro ao listar cupons do Supabase:', e);
       }
     }
-    return ensureLocalFile();
+
+    return localCoupons;
   },
 
   async createCoupon(params: {
@@ -168,7 +190,7 @@ export const couponService = {
 
     // Sempre salva localmente primeiro (memória e disco resiliente)
     const local = ensureLocalFile();
-    const filtered = local.filter(c => c.code !== code);
+    const filtered = local.filter(c => c.code !== code && c.id !== newCoupon.id);
     filtered.unshift(newCoupon);
     saveLocalCoupons(filtered);
 
@@ -193,10 +215,40 @@ export const couponService = {
           .single();
 
         if (!error && data) {
+          const updatedLocal = ensureLocalFile();
+          const idx = updatedLocal.findIndex(c => c.code === code || c.id === newCoupon.id);
+          if (idx !== -1) {
+            updatedLocal[idx] = data as Coupon;
+          } else {
+            updatedLocal.unshift(data as Coupon);
+          }
+          saveLocalCoupons(updatedLocal);
           return data as Coupon;
+        } else if (error) {
+          console.warn('Erro ao inserir cupom no Supabase:', error);
+          const { data: upsertData, error: upsertErr } = await client
+            .from('coupons')
+            .upsert({
+              id: newCoupon.id,
+              code: newCoupon.code,
+              type: newCoupon.type,
+              value: newCoupon.value,
+              discount_duration_months: newCoupon.discount_duration_months,
+              max_uses: newCoupon.max_uses,
+              used_count: 0,
+              used_by: [],
+              active: true,
+              created_at: newCoupon.created_at,
+            }, { onConflict: 'code' })
+            .select()
+            .single();
+
+          if (!upsertErr && upsertData) {
+            return upsertData as Coupon;
+          }
         }
-      } catch {
-        // Fallback local já salvo acima
+      } catch (err) {
+        console.warn('Exceção ao criar cupom no Supabase:', err);
       }
     }
 
@@ -204,17 +256,18 @@ export const couponService = {
   },
 
   async deleteCoupon(idOrCode: string): Promise<boolean> {
+    const norm = idOrCode.trim().toUpperCase();
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
-        await client.from('coupons').delete().or(`id.eq.${idOrCode},code.eq.${idOrCode}`);
-      } catch {
-        // Fallback
+        await client.from('coupons').delete().or(`id.eq.${idOrCode},code.eq.${norm},code.eq.${idOrCode}`);
+      } catch (e) {
+        console.warn('Erro ao excluir cupom do Supabase:', e);
       }
     }
 
     const local = ensureLocalFile();
-    const filtered = local.filter(c => c.id !== idOrCode && c.code !== idOrCode);
+    const filtered = local.filter(c => c.id !== idOrCode && c.code !== idOrCode && c.code.toUpperCase() !== norm);
     saveLocalCoupons(filtered);
     return true;
   },
