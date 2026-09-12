@@ -839,8 +839,8 @@ export default function TerceirosPage() {
 
       {/* MODAL DETALHES DO DEVEDOR */}
       {selectedPersonPopup && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto animate-scale-in-center shrink-0">
             <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
                 <UserCheck size={16} className="text-[#1A44C8]" />
@@ -958,8 +958,8 @@ export default function TerceirosPage() {
 
       {/* MODAL NOVO LANÇAMENTO */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto animate-scale-in-center shrink-0">
             <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
                 <Plus size={16} className="text-[#1A44C8]" />
@@ -1173,8 +1173,8 @@ export default function TerceirosPage() {
 
       {/* MODAL DAR BAIXA / REGISTRAR RECEBIMENTO DE BEM OU DINHEIRO */}
       {selectedDebtForSettle && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto animate-scale-in-center">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto animate-scale-in-center shrink-0">
             <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
                 <Coins size={16} className="text-[#1A44C8]" />
