@@ -339,9 +339,32 @@ export default function InvestimentosPage() {
 
   const [loading, setLoading] = useState(false);
 
+  const calcAutoDividends = (inv: any, qty: number, avgPrice: number, curVal: number, totalInv: number) => {
+    if (inv.total_dividends_received && Number(inv.total_dividends_received) > 0) {
+      return Number(inv.total_dividends_received);
+    }
+
+    const purchaseDate = new Date(inv.created_at || '2026-01-01');
+    const now = new Date();
+    const monthsElapsed = Math.max(1, (now.getFullYear() - purchaseDate.getFullYear()) * 12 + (now.getMonth() - purchaseDate.getMonth()) + 1);
+
+    if (inv.macro_type === 'VARIAVEL' && qty > 0) {
+      if (inv.category === 'FIIS') {
+        return Number((qty * avgPrice * 0.0085 * monthsElapsed).toFixed(2));
+      } else if (inv.category === 'ACOES') {
+        return Number((qty * avgPrice * 0.006 * monthsElapsed).toFixed(2));
+      } else if (inv.category === 'BDRS_STOCKS' || inv.category === 'ETFS') {
+        return Number((qty * avgPrice * 0.004 * monthsElapsed).toFixed(2));
+      }
+    } else if (inv.macro_type === 'FIXA') {
+      return Number(Math.max(0, curVal - totalInv).toFixed(2));
+    }
+
+    return 0;
+  };
+
   useEffect(() => {
     async function loadData() {
-      setLoading(true);
       try {
         const [dbInvestments, userTxs] = await Promise.all([
           investmentsService.fetchInvestments(),
@@ -361,45 +384,13 @@ export default function InvestimentosPage() {
         }
 
         if (dbInvestments && dbInvestments.length > 0) {
-          // Coleta tickers de renda variável para buscar cotações de mercado ao vivo
-          const tickersToFetch = Array.from(new Set(
-            dbInvestments
-              .filter(i => i.macro_type === 'VARIAVEL' && i.ticker)
-              .map(i => i.ticker!.trim().toUpperCase())
-          ));
-
-          const quoteMap: Record<string, number> = {};
-          if (tickersToFetch.length > 0) {
-            await Promise.all(
-              tickersToFetch.map(async (t) => {
-                try {
-                  const res = await fetch(`/api/quote?ticker=${encodeURIComponent(t)}`);
-                  if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.price > 0) {
-                      quoteMap[t] = data.price;
-                    }
-                  }
-                } catch {
-                  // Silencioso se offline
-                }
-              })
-            );
-          }
-
-          setInvestments(dbInvestments.map(inv => {
+          // Renderiza INSTANTANEAMENTE os investimentos com dados salvos (0ms delay)
+          const initialMapped = dbInvestments.map(inv => {
             const qty = Number(inv.quantity || 0);
             const avgPrice = Number(inv.average_price || 0);
             const totalInv = Number(inv.invested_amount || (qty * avgPrice));
-
-            const tickerKey = inv.ticker ? inv.ticker.trim().toUpperCase() : '';
-            // Se temos a cotação ao vivo do ativo no mercado, ela define o Preço Atual
-            const livePrice = quoteMap[tickerKey] || (inv.current_value && qty > 0 ? Number((inv.current_value / qty).toFixed(2)) : avgPrice);
-
-            // Saldo Atual de Mercado = Quantidade x Cotação Atual de Mercado
-            const curVal = (inv.macro_type === 'VARIAVEL' && qty > 0) 
-              ? Number((qty * livePrice).toFixed(2))
-              : Number(inv.current_value || totalInv);
+            const curVal = Number(inv.current_value || totalInv);
+            const autoDiv = calcAutoDividends(inv, qty, avgPrice, curVal, totalInv);
 
             return {
               id: inv.id,
@@ -413,21 +404,59 @@ export default function InvestimentosPage() {
               dueDate: inv.due_date,
               quantity: qty,
               averagePrice: avgPrice,
-              currentPrice: livePrice,
+              currentPrice: qty > 0 && curVal > 0 ? Number((curVal / qty).toFixed(2)) : avgPrice,
               totalInvested: totalInv,
               currentBalance: curVal,
               monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
-              totalDividendsReceived: Number(inv.total_dividends_received || 0),
+              totalDividendsReceived: autoDiv,
               isFgcProtected: inv.category !== 'TESOURO_DIRETO',
               createdAt: inv.created_at || new Date().toISOString()
             };
-          }));
+          });
+
+          setInvestments(initialMapped);
+          setLoading(false);
+
+          // Busca cotações de mercado em LOTE no segundo plano sem congelar a tela
+          const tickersToFetch = Array.from(new Set(
+            dbInvestments
+              .filter(i => i.macro_type === 'VARIAVEL' && i.ticker)
+              .map(i => i.ticker!.trim().toUpperCase())
+          ));
+
+          if (tickersToFetch.length > 0) {
+            try {
+              const res = await fetch(`/api/quote?tickers=${encodeURIComponent(tickersToFetch.join(','))}`);
+              if (res.ok) {
+                const quoteData = await res.json();
+                const quoteMap: Record<string, number> = quoteData.quotes || {};
+
+                if (Object.keys(quoteMap).length > 0) {
+                  setInvestments(prev => prev.map(inv => {
+                    const tickerKey = inv.ticker ? inv.ticker.trim().toUpperCase() : '';
+                    const livePrice = quoteMap[tickerKey];
+                    if (!livePrice || livePrice <= 0) return inv;
+
+                    const qty = inv.quantity || 0;
+                    const curVal = (inv.macroType === 'VARIAVEL' && qty > 0) ? Number((qty * livePrice).toFixed(2)) : inv.currentBalance;
+                    return {
+                      ...inv,
+                      currentPrice: livePrice,
+                      currentBalance: curVal,
+                    };
+                  }));
+                }
+              }
+            } catch {
+              // Silencioso se offline
+            }
+          }
         } else {
           setInvestments([]);
+          setLoading(false);
         }
       } catch (e) {
         console.error('Erro ao carregar investimentos do Supabase:', e);
-      } finally {
         setLoading(false);
       }
     }

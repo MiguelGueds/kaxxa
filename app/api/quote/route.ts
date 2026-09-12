@@ -2,7 +2,51 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  const rawTickers = searchParams.get('tickers');
   const rawTicker = searchParams.get('ticker');
+
+  // Suporte a lote de tickers (Batch Query em 1 requisição única ultrarrápida)
+  if (rawTickers) {
+    const tickerList = rawTickers.split(',').map(t => t.trim().toUpperCase().split(' - ')[0]).filter(Boolean);
+    const symbols = tickerList.map(cleanTicker => {
+      if (['BTC', 'ETH', 'SOL', 'USDT', 'BNB', 'XRP', 'ADA', 'AVAX', 'LINK', 'DOGE'].includes(cleanTicker)) {
+        return `${cleanTicker}-USD`;
+      }
+      return cleanTicker.includes('.') || cleanTicker.includes('-') ? cleanTicker : `${cleanTicker}.SA`;
+    });
+
+    try {
+      const res = await fetch(`https://query1.finance.yahoo.com/v7/finance/spark?symbols=${encodeURIComponent(symbols.join(','))}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        next: { revalidate: 60 }
+      });
+
+      if (!res.ok) {
+        return NextResponse.json({ quotes: {} });
+      }
+
+      const data = await res.json();
+      const sparkResults = data?.spark?.result || [];
+      const quotesMap: Record<string, number> = {};
+
+      sparkResults.forEach((item: any) => {
+        const sym = item.symbol || '';
+        const cleanKey = sym.replace('.SA', '').replace('-USD', '');
+        const meta = item.response?.[0]?.meta || {};
+        let price = meta.regularMarketPrice || meta.chartPreviousClose || 0;
+        if (sym.endsWith('-USD')) price = price * 5.60;
+        if (price > 0) {
+          quotesMap[cleanKey] = Number(price.toFixed(2));
+        }
+      });
+
+      return NextResponse.json({ quotes: quotesMap });
+    } catch {
+      return NextResponse.json({ quotes: {} });
+    }
+  }
 
   if (!rawTicker) {
     return NextResponse.json({ error: 'Ticker não informado' }, { status: 400 });
@@ -12,7 +56,6 @@ export async function GET(req: NextRequest) {
 
   try {
     let symbol = cleanTicker;
-    // Se não tiver sufixo e não for cripto conhecida, insere .SA para B3
     if (!symbol.includes('.') && !symbol.includes('-')) {
       if (['BTC', 'ETH', 'SOL', 'USDT', 'BNB', 'XRP', 'ADA', 'AVAX', 'LINK', 'DOGE'].includes(cleanTicker)) {
         symbol = `${cleanTicker}-USD`;
@@ -42,7 +85,6 @@ export async function GET(req: NextRequest) {
     const meta = result.meta || {};
     let price = meta.regularMarketPrice || meta.chartPreviousClose || 0;
 
-    // Se for cripto em USD, converte aproximado para BRL se necessário
     if (symbol.endsWith('-USD')) {
       price = price * 5.60;
     }
