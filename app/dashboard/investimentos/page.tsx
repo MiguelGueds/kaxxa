@@ -369,28 +369,8 @@ export default function InvestimentosPage() {
 
   const [loading, setLoading] = useState(false);
 
-  const calcAutoDividends = (inv: any, qty: number, avgPrice: number, curVal: number, totalInv: number) => {
-    if (inv.total_dividends_received && Number(inv.total_dividends_received) > 0) {
-      return Number(inv.total_dividends_received);
-    }
-
-    const purchaseDate = new Date(inv.created_at || '2026-01-01');
-    const now = new Date();
-    const monthsElapsed = Math.max(1, (now.getFullYear() - purchaseDate.getFullYear()) * 12 + (now.getMonth() - purchaseDate.getMonth()) + 1);
-
-    if (inv.macro_type === 'VARIAVEL' && qty > 0) {
-      if (inv.category === 'FIIS') {
-        return Number((qty * avgPrice * 0.0085 * monthsElapsed).toFixed(2));
-      } else if (inv.category === 'ACOES') {
-        return Number((qty * avgPrice * 0.006 * monthsElapsed).toFixed(2));
-      } else if (inv.category === 'BDRS_STOCKS' || inv.category === 'ETFS') {
-        return Number((qty * avgPrice * 0.004 * monthsElapsed).toFixed(2));
-      }
-    } else if (inv.macro_type === 'FIXA') {
-      return Number(Math.max(0, curVal - totalInv).toFixed(2));
-    }
-
-    return 0;
+  const getExactDividends = (inv: any) => {
+    return Number(inv.total_dividends_received || 0);
   };
 
   useEffect(() => {
@@ -420,7 +400,7 @@ export default function InvestimentosPage() {
             const avgPrice = Number(inv.average_price || 0);
             const totalInv = Number(inv.invested_amount || (qty * avgPrice));
             const curVal = Number(inv.current_value || totalInv);
-            const autoDiv = calcAutoDividends(inv, qty, avgPrice, curVal, totalInv);
+            const exactDiv = getExactDividends(inv);
 
             return {
               id: inv.id,
@@ -438,7 +418,7 @@ export default function InvestimentosPage() {
               totalInvested: totalInv,
               currentBalance: curVal,
               monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
-              totalDividendsReceived: autoDiv,
+              totalDividendsReceived: exactDiv,
               isFgcProtected: inv.category !== 'TESOURO_DIRETO',
               createdAt: inv.created_at || new Date().toISOString()
             };
