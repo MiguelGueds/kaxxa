@@ -50,21 +50,6 @@ function ensureLocalFile(): Coupon[] {
 
   const { primaryDir, primaryFile, tmpDir, tmpFile } = getStoragePaths();
 
-  const defaultInitial: Coupon[] = [
-    {
-      id: 'cp_welcome_2d',
-      code: 'TESTE-2DIAS',
-      type: 'TRIAL_DAYS',
-      value: 2,
-      discount_duration_months: 1,
-      max_uses: 99999,
-      used_count: 0,
-      used_by: [],
-      active: true,
-      created_at: new Date().toISOString(),
-    }
-  ];
-
   // 1. Tenta ler do primary (process.cwd)
   try {
     if (fs.existsSync(primaryFile)) {
@@ -89,23 +74,18 @@ function ensureLocalFile(): Coupon[] {
     }
   } catch {}
 
-  // 3. Se não houver em nenhum, inicializa com defaultInitial
+  // 3. Se não houver nenhum arquivo salvo, inicializa como array VAZIO []
+  MEMORY_COUPONS = [];
   try {
     if (!fs.existsSync(primaryDir)) fs.mkdirSync(primaryDir, { recursive: true });
-    fs.writeFileSync(primaryFile, JSON.stringify(defaultInitial, null, 2), 'utf8');
-    MEMORY_COUPONS = defaultInitial;
-    return defaultInitial;
-  } catch {
-    try {
-      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-      fs.writeFileSync(tmpFile, JSON.stringify(defaultInitial, null, 2), 'utf8');
-      MEMORY_COUPONS = defaultInitial;
-      return defaultInitial;
-    } catch {
-      MEMORY_COUPONS = defaultInitial;
-      return defaultInitial;
-    }
-  }
+    fs.writeFileSync(primaryFile, JSON.stringify([], null, 2), 'utf8');
+  } catch {}
+  try {
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+    fs.writeFileSync(tmpFile, JSON.stringify([], null, 2), 'utf8');
+  } catch {}
+
+  return MEMORY_COUPONS;
 }
 
 function saveLocalCoupons(coupons: Coupon[]) {
@@ -125,8 +105,6 @@ function saveLocalCoupons(coupons: Coupon[]) {
 
 export const couponService = {
   async listCoupons(): Promise<Coupon[]> {
-    const localCoupons = ensureLocalFile();
-
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
@@ -136,30 +114,15 @@ export const couponService = {
           .order('created_at', { ascending: false });
 
         if (!error && Array.isArray(data)) {
-          const map = new Map<string, Coupon>();
-          
-          for (const c of localCoupons) {
-            if (c && c.id) map.set(c.id, c);
-            if (c && c.code) map.set(c.code.toUpperCase(), c);
-          }
-          
-          for (const c of data as Coupon[]) {
-            if (c && c.id) map.set(c.id, c);
-            if (c && c.code) map.set(c.code.toUpperCase(), c);
-          }
-
-          const merged = Array.from(new Set(map.values()));
-          merged.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-
-          saveLocalCoupons(merged);
-          return merged;
+          saveLocalCoupons(data as Coupon[]);
+          return data as Coupon[];
         }
       } catch (e) {
-        console.warn('Erro ao listar cupons do Supabase:', e);
+        console.warn('Erro ao listar cupons do Supabase, usando fallback local:', e);
       }
     }
 
-    return localCoupons;
+    return ensureLocalFile();
   },
 
   async createCoupon(params: {
@@ -188,7 +151,7 @@ export const couponService = {
       created_at: new Date().toISOString(),
     };
 
-    // Sempre salva localmente primeiro (memória e disco resiliente)
+    // Atualiza cache local primeiro
     const local = ensureLocalFile();
     const filtered = local.filter(c => c.code !== code && c.id !== newCoupon.id);
     filtered.unshift(newCoupon);
@@ -197,54 +160,60 @@ export const couponService = {
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
+        
+        const payloadWithDuration: any = {
+          id: newCoupon.id,
+          code: newCoupon.code,
+          type: newCoupon.type,
+          value: newCoupon.value,
+          discount_duration_months: newCoupon.discount_duration_months,
+          max_uses: newCoupon.max_uses,
+          used_count: 0,
+          used_by: [],
+          active: true,
+          created_at: newCoupon.created_at,
+        };
+
+        // Tenta inserir no Supabase com todas as colunas
         const { data, error } = await client
           .from('coupons')
-          .insert({
-            id: newCoupon.id,
-            code: newCoupon.code,
-            type: newCoupon.type,
-            value: newCoupon.value,
-            discount_duration_months: newCoupon.discount_duration_months,
-            max_uses: newCoupon.max_uses,
-            used_count: 0,
-            used_by: [],
-            active: true,
-            created_at: newCoupon.created_at,
-          })
+          .insert(payloadWithDuration)
           .select()
           .single();
 
         if (!error && data) {
-          const updatedLocal = ensureLocalFile();
-          const idx = updatedLocal.findIndex(c => c.code === code || c.id === newCoupon.id);
+          const currentLocal = ensureLocalFile();
+          const idx = currentLocal.findIndex(c => c.code === code || c.id === newCoupon.id);
           if (idx !== -1) {
-            updatedLocal[idx] = data as Coupon;
+            currentLocal[idx] = data as Coupon;
           } else {
-            updatedLocal.unshift(data as Coupon);
+            currentLocal.unshift(data as Coupon);
           }
-          saveLocalCoupons(updatedLocal);
+          saveLocalCoupons(currentLocal);
           return data as Coupon;
         } else if (error) {
-          console.warn('Erro ao inserir cupom no Supabase:', error);
-          const { data: upsertData, error: upsertErr } = await client
+          console.warn('Inserção no Supabase com discount_duration_months falhou, tentando fallback sem coluna:', error);
+          
+          // Se falhou (ex: coluna discount_duration_months não existe na tabela SQL atual), tenta sem essa coluna
+          const payloadWithoutDuration = { ...payloadWithDuration };
+          delete payloadWithoutDuration.discount_duration_months;
+
+          const { data: retryData, error: retryErr } = await client
             .from('coupons')
-            .upsert({
-              id: newCoupon.id,
-              code: newCoupon.code,
-              type: newCoupon.type,
-              value: newCoupon.value,
-              discount_duration_months: newCoupon.discount_duration_months,
-              max_uses: newCoupon.max_uses,
-              used_count: 0,
-              used_by: [],
-              active: true,
-              created_at: newCoupon.created_at,
-            }, { onConflict: 'code' })
+            .insert(payloadWithoutDuration)
             .select()
             .single();
 
-          if (!upsertErr && upsertData) {
-            return upsertData as Coupon;
+          if (!retryErr && retryData) {
+            const merged = { ...newCoupon, ...retryData };
+            const currentLocal = ensureLocalFile();
+            const idx = currentLocal.findIndex(c => c.code === code || c.id === newCoupon.id);
+            if (idx !== -1) currentLocal[idx] = merged;
+            else currentLocal.unshift(merged);
+            saveLocalCoupons(currentLocal);
+            return merged;
+          } else {
+            console.warn('Tentativa secundária de inserção no Supabase também falhou:', retryErr);
           }
         }
       } catch (err) {
@@ -257,17 +226,25 @@ export const couponService = {
 
   async deleteCoupon(idOrCode: string): Promise<boolean> {
     const norm = idOrCode.trim().toUpperCase();
+
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
-        await client.from('coupons').delete().or(`id.eq.${idOrCode},code.eq.${norm},code.eq.${idOrCode}`);
+        const { error } = await client
+          .from('coupons')
+          .delete()
+          .or(`id.eq.${idOrCode},code.ilike.${norm},code.eq.${idOrCode}`);
+
+        if (error) {
+          console.warn('Erro ao excluir cupom no Supabase:', error);
+        }
       } catch (e) {
-        console.warn('Erro ao excluir cupom do Supabase:', e);
+        console.warn('Exceção ao excluir cupom no Supabase:', e);
       }
     }
 
     const local = ensureLocalFile();
-    const filtered = local.filter(c => c.id !== idOrCode && c.code !== idOrCode && c.code.toUpperCase() !== norm);
+    const filtered = local.filter(c => c.id !== idOrCode && c.code.toUpperCase() !== norm && c.code !== idOrCode);
     saveLocalCoupons(filtered);
     return true;
   },
@@ -281,7 +258,7 @@ export const couponService = {
         const { data, error } = await client
           .from('coupons')
           .select('*')
-          .eq('code', normalized)
+          .ilike('code', normalized)
           .maybeSingle();
 
         if (!error && data) {
@@ -293,7 +270,7 @@ export const couponService = {
     }
 
     const local = ensureLocalFile();
-    return local.find(c => c.code === normalized) || null;
+    return local.find(c => c.code.trim().toUpperCase() === normalized) || null;
   },
 
   async redeemCoupon(params: {
@@ -358,7 +335,6 @@ export const couponService = {
       created_at: new Date().toISOString()
     };
 
-    // Sempre salva no fallback resiliente
     saveSubscriptionLocal(createdSubscription);
 
     if (isSupabaseConfigured()) {
@@ -385,7 +361,6 @@ export const couponService = {
       }
     }
 
-    // Atualiza uso do cupom e marca inativo se limite for atingido
     const updatedUsedBy = [
       ...(coupon.used_by || []),
       { user_id: params.userId, email: params.email, used_at: new Date().toISOString() }
@@ -403,7 +378,7 @@ export const couponService = {
             used_by: updatedUsedBy,
             active: isNowActive,
           })
-          .or(`id.eq.${coupon.id},code.eq.${coupon.code}`);
+          .or(`id.eq.${coupon.id},code.ilike.${coupon.code}`);
 
         if (updateErr) {
           await client
@@ -427,7 +402,7 @@ export const couponService = {
     }
 
     const local = ensureLocalFile();
-    const idx = local.findIndex(c => c.id === coupon.id || c.code === coupon.code);
+    const idx = local.findIndex(c => c.id === coupon.id || c.code.toUpperCase() === coupon.code.toUpperCase());
     if (idx !== -1) {
       local[idx].used_count = newUsedCount;
       local[idx].used_by = updatedUsedBy;
@@ -442,8 +417,7 @@ export const couponService = {
       subscription: createdSubscription,
       message: coupon.type === 'TRIAL_DAYS'
         ? `Cupom ativado com sucesso! Você ganhou ${coupon.value} dias de degustação.`
-        : `Cupom de desconto applied com sucesso!`
+        : `Cupom de desconto aplicado com sucesso!`
     };
   }
 };
-

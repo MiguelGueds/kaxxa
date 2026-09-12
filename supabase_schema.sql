@@ -255,8 +255,9 @@ CREATE POLICY "Isolamento total de assinaturas por usuario" ON subscriptions
 CREATE TABLE IF NOT EXISTS coupons (
   id TEXT PRIMARY KEY,
   code TEXT UNIQUE NOT NULL,
-  type TEXT NOT NULL DEFAULT 'TRIAL_DAYS', -- 'TRIAL_DAYS', 'PERCENT'
+  type TEXT NOT NULL DEFAULT 'TRIAL_DAYS', -- 'TRIAL_DAYS', 'PERCENT', 'FIXED'
   value DECIMAL(10,2) NOT NULL DEFAULT 2.00,
+  discount_duration_months INTEGER DEFAULT 1,
   max_uses INTEGER NOT NULL DEFAULT 1,
   used_count INTEGER NOT NULL DEFAULT 0,
   used_by JSONB DEFAULT '[]'::jsonb,
