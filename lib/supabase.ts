@@ -45,7 +45,7 @@ export async function performGlobalSignOut() {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith('kaxxa_') || k.startsWith('sb-') || k.includes('auth') || k.includes('mindfinance_'))) {
+      if (k && !k.includes('_backup') && (k.startsWith('kaxxa_') || k.startsWith('sb-') || k.includes('auth') || k.includes('mindfinance_'))) {
         keysToRemove.push(k);
       }
     }
