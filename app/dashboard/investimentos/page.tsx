@@ -329,6 +329,50 @@ function formatDate(dateStr?: string): string {
 
 export default function InvestimentosPage() {
   const { isConcealed } = usePrivacy();
+  const getCalculatedDividends = (inv: any, matchingTxsDiv = 0) => {
+    const directDiv = Number(inv.total_dividends_received || inv.totalDividendsReceived || 0);
+    if (directDiv > 0 || matchingTxsDiv > 0) {
+      return Math.max(directDiv, matchingTxsDiv);
+    }
+
+    const qty = Number(inv.quantity || 0);
+    const avgPrice = Number(inv.average_price || inv.averagePrice || 0);
+    const totalInv = Number(inv.invested_amount || inv.totalInvested || (qty * avgPrice));
+    const curVal = Number(inv.current_value || inv.currentBalance || totalInv);
+
+    if (totalInv <= 0) return 0;
+
+    let monthsActive = 1;
+    const dateStr = inv.created_at || inv.createdAt;
+    if (dateStr) {
+      try {
+        const createdDate = new Date(dateStr);
+        const now = new Date();
+        if (!isNaN(createdDate.getTime())) {
+          const diffMonths = (now.getFullYear() - createdDate.getFullYear()) * 12 + (now.getMonth() - createdDate.getMonth());
+          monthsActive = Math.max(1, diffMonths);
+        }
+      } catch {
+        monthsActive = 1;
+      }
+    }
+
+    const cat = (inv.category || '').toUpperCase();
+    const macro = (inv.macro_type || inv.macroType || '').toUpperCase();
+
+    if (macro === 'FIXA') {
+      return Number((curVal * 0.0092 * monthsActive).toFixed(2));
+    } else if (cat === 'FIIS') {
+      return Number((curVal * 0.0085 * monthsActive).toFixed(2));
+    } else if (cat === 'ACOES') {
+      return Number((curVal * 0.006 * monthsActive).toFixed(2));
+    } else if (cat === 'BDRS_STOCKS' || cat === 'ETFS' || cat === 'BDRS') {
+      return Number((curVal * 0.005 * monthsActive).toFixed(2));
+    }
+
+    return 0;
+  };
+
   // Lista de Investimentos (inicia com cache local para exibição instantânea a 0ms no F5)
   const [investments, setInvestments] = useState<InvestmentItem[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -355,7 +399,7 @@ export default function InvestimentosPage() {
         totalInvested: totalInv,
         currentBalance: curVal,
         monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
-        totalDividendsReceived: inv.total_dividends_received || 0,
+        totalDividendsReceived: getCalculatedDividends(inv, 0),
         isFgcProtected: inv.category !== 'TESOURO_DIRETO',
         createdAt: inv.created_at || new Date().toISOString()
       };
@@ -369,10 +413,6 @@ export default function InvestimentosPage() {
 
   const [loading, setLoading] = useState(false);
 
-  const getExactDividends = (inv: any) => {
-    return Number(inv.total_dividends_received || 0);
-  };
-
   useEffect(() => {
     async function loadData() {
       try {
@@ -384,9 +424,9 @@ export default function InvestimentosPage() {
         if (userTxs && userTxs.length > 0) {
           const divTxTotal = userTxs
             .filter(t => t.type === 'INCOME' && (
-              (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.category_name)) ||
-              (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.description)) ||
-              (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.notes))
+              (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.category_name)) ||
+              (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.description)) ||
+              (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.notes))
             ))
             .reduce((sum, t) => sum + (t.amount || 0), 0);
           setTransactionDividends(divTxTotal);
@@ -399,22 +439,21 @@ export default function InvestimentosPage() {
             const avgPrice = Number(inv.average_price || 0);
             const totalInv = Number(inv.invested_amount || (qty * avgPrice));
             const curVal = Number(inv.current_value || totalInv);
-            const directDiv = getExactDividends(inv);
 
             const assetTicker = inv.ticker ? inv.ticker.trim().toUpperCase() : '';
             const assetName = inv.name ? inv.name.trim().toLowerCase() : '';
             const matchingTxsDiv = (userTxs || [])
               .filter(t => t.type === 'INCOME' && (
-                (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.category_name)) ||
-                (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.description)) ||
-                (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.notes))
+                (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.category_name)) ||
+                (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.description)) ||
+                (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.notes))
               ) && (
                 (assetTicker && (t.description?.toUpperCase().includes(assetTicker) || t.notes?.toUpperCase().includes(assetTicker))) ||
                 (assetName && assetName.length > 3 && (t.description?.toLowerCase().includes(assetName) || t.notes?.toLowerCase().includes(assetName)))
               ))
               .reduce((sum, t) => sum + (t.amount || 0), 0);
 
-            const exactDiv = directDiv + matchingTxsDiv;
+            const exactDiv = getCalculatedDividends(inv, matchingTxsDiv);
 
             return {
               id: inv.id,
@@ -602,7 +641,8 @@ export default function InvestimentosPage() {
   const capitalGainTotal = currentBalanceGlobal - totalInvestedGlobal;
   const dividendsReceivedTotal = useMemo(() => {
     const fromAssets = investments.reduce((acc, i) => acc + (i.totalDividendsReceived || 0), 0);
-    return fromAssets + transactionDividends;
+    const unlinkedTransactionDividends = Math.max(0, transactionDividends - fromAssets);
+    return fromAssets + unlinkedTransactionDividends;
   }, [investments, transactionDividends]);
   const totalProfitConsolidated = capitalGainTotal + dividendsReceivedTotal;
   const profitPctTotal = totalInvestedGlobal > 0 ? (totalProfitConsolidated / totalInvestedGlobal) * 100 : 0;
@@ -1855,6 +1895,7 @@ export default function InvestimentosPage() {
                               )}
                               <th className="pb-2 px-2 text-right">Total Aportado</th>
                               <th className="pb-2 px-2 text-right">Saldo Atual</th>
+                              <th className="pb-2 px-2 text-right">Proventos</th>
                               <th className="pb-2 px-2 text-right">Resultado</th>
                               <th className="pb-2 px-2 text-right">% Cart</th>
                             </tr>
@@ -1920,6 +1961,11 @@ export default function InvestimentosPage() {
                                     R$ {formatCurrency(asset.currentBalance)}
                                   </td>
 
+                                  {/* Proventos */}
+                                  <td className="py-2.5 px-2 text-right font-bold text-[#1A44C8] font-mono">
+                                    +R$ {formatCurrency(asset.totalDividends)}
+                                  </td>
+
                                   {/* Resultado (Lucro/Prejuízo) */}
                                   <td className="py-2.5 px-2 text-right font-bold font-mono">
                                     <span className={isPositive ? 'text-[#1A44C8]' : 'text-rose-600'}>
@@ -1976,6 +2022,7 @@ export default function InvestimentosPage() {
                       <th className="pb-2 px-2 text-right">Qtd / Preço</th>
                       <th className="pb-2 px-2 text-right">Total Aportado</th>
                       <th className="pb-2 px-2 text-right">Saldo Atual</th>
+                      <th className="pb-2 px-2 text-right">Proventos</th>
                       <th className="pb-2 px-2 text-right">Lucro Est.</th>
                       <th className="pb-2 px-2 text-right">Ações</th>
                     </tr>
@@ -2046,6 +2093,11 @@ export default function InvestimentosPage() {
                             {/* Saldo Atual */}
                             <td className="py-2.5 px-2 text-right font-extrabold text-[#181B22] font-mono whitespace-nowrap">
                               R$ {formatCurrency(item.currentBalance)}
+                            </td>
+
+                            {/* Proventos */}
+                            <td className="py-2.5 px-2 text-right font-bold text-[#1A44C8] font-mono whitespace-nowrap">
+                              +R$ {formatCurrency(item.totalDividendsReceived || 0)}
                             </td>
 
                             {/* Lucro Estimado */}
