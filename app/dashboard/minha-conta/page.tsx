@@ -21,10 +21,14 @@ import {
   Sparkles,
   Share2,
   KeyRound,
-  CreditCard
+  CreditCard,
+  ZoomIn,
+  ZoomOut,
+  Move,
+  Crop
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase, performGlobalSignOut } from '@/lib/supabase';
 import { subscriptionService, DbSubscription } from '@/lib/services/subscription';
 import { isAdminEmail } from '@/lib/admin';
 
@@ -58,6 +62,15 @@ function MinhaContaContent() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletingData, setIsDeletingData] = useState(false);
+
+  // --- CROP IMAGE MODAL STATE ---
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [cropScale, setCropScale] = useState(1);
+  const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
+  const [isDraggingCrop, setIsDraggingCrop] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const cropImageRef = useRef<HTMLImageElement>(null);
 
   const isAdmin = isAdminEmail(userEmail);
 
@@ -124,16 +137,52 @@ function MinhaContaContent() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setErrorMsg('A imagem selecionada deve ter no máximo 2MB.');
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('A imagem selecionada deve ter no máximo 5MB.');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
-      setUserAvatar(reader.result as string);
+      setCropImageSrc(reader.result as string);
+      setCropScale(1);
+      setCropOffset({ x: 0, y: 0 });
+      setIsCropModalOpen(true);
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleConfirmCrop = () => {
+    if (!cropImageSrc || !cropImageRef.current) return;
+
+    const img = cropImageRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return;
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, 256, 256);
+
+    const viewportSize = 240;
+    const outputSize = 256;
+    const ratio = outputSize / viewportSize;
+
+    const baseDim = Math.max(img.naturalWidth, img.naturalHeight);
+    const drawWidth = (img.naturalWidth / baseDim) * viewportSize * cropScale;
+    const drawHeight = (img.naturalHeight / baseDim) * viewportSize * cropScale;
+    const drawX = ((viewportSize - drawWidth) / 2 + cropOffset.x) * ratio;
+    const drawY = ((viewportSize - drawHeight) / 2 + cropOffset.y) * ratio;
+
+    ctx.drawImage(img, drawX, drawY, drawWidth * ratio, drawHeight * ratio);
+
+    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.88);
+    setUserAvatar(compressedBase64);
+    setIsCropModalOpen(false);
+    setCropImageSrc(null);
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -183,19 +232,7 @@ function MinhaContaContent() {
         supabase.from('categories').delete().eq('user_id', uid),
       ]);
 
-      // 2. Limpa o cache local no navegador
-      if (typeof window !== 'undefined') {
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && (k.includes(uid) || k.startsWith('kaxxa_') || k.startsWith('mindfinance_'))) {
-            keysToRemove.push(k);
-          }
-        }
-        keysToRemove.forEach(k => localStorage.removeItem(k));
-      }
-
-      await supabase.auth.signOut();
+      await performGlobalSignOut();
       router.replace('/login');
     } catch (err: any) {
       console.error('Erro ao excluir dados do usuário:', err);
@@ -813,6 +850,117 @@ function MinhaContaContent() {
                 ) : (
                   <span>Excluir Definitivamente</span>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL AJUSTAR / CORTAR FOTO DE PERFIL --- */}
+      {isCropModalOpen && cropImageSrc && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Crop size={18} className="text-[#1A44C8]" />
+                <h3 className="text-sm font-bold text-slate-900">Ajustar Foto de Perfil</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsCropModalOpen(false); setCropImageSrc(null); }}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 font-medium">
+              Arraste a imagem para enquadrar ou use o zoom abaixo para ajustar o corte quadrado.
+            </p>
+
+            {/* Viewport Quadrado de Corte 240x240 com Overlay Circular/Quadrado */}
+            <div 
+              className="relative w-[240px] h-[240px] mx-auto rounded-2xl overflow-hidden bg-slate-900 shadow-inner border-2 border-[#1A44C8] cursor-grab active:cursor-grabbing select-none"
+              onMouseDown={(e) => {
+                setIsDraggingCrop(true);
+                setDragStartPos({ x: e.clientX - cropOffset.x, y: e.clientY - cropOffset.y });
+              }}
+              onMouseMove={(e) => {
+                if (!isDraggingCrop) return;
+                setCropOffset({
+                  x: e.clientX - dragStartPos.x,
+                  y: e.clientY - dragStartPos.y
+                });
+              }}
+              onMouseUp={() => setIsDraggingCrop(false)}
+              onMouseLeave={() => setIsDraggingCrop(false)}
+              onTouchStart={(e) => {
+                if (e.touches.length === 1) {
+                  setIsDraggingCrop(true);
+                  setDragStartPos({ x: e.touches[0].clientX - cropOffset.x, y: e.touches[0].clientY - cropOffset.y });
+                }
+              }}
+              onTouchMove={(e) => {
+                if (!isDraggingCrop || e.touches.length !== 1) return;
+                setCropOffset({
+                  x: e.touches[0].clientX - dragStartPos.x,
+                  y: e.touches[0].clientY - dragStartPos.y
+                });
+              }}
+              onTouchEnd={() => setIsDraggingCrop(false)}
+            >
+              <div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                style={{
+                  transform: `translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropScale})`,
+                  transition: isDraggingCrop ? 'none' : 'transform 0.1s ease-out'
+                }}
+              >
+                <img
+                  ref={cropImageRef}
+                  src={cropImageSrc}
+                  alt="Crop Preview"
+                  className="max-w-full max-h-full object-contain pointer-events-none"
+                />
+              </div>
+
+              {/* Guia Visual Quadrada Transparente */}
+              <div className="absolute inset-0 border-2 border-white/80 rounded-2xl pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+            </div>
+
+            {/* Controle de Zoom Slider */}
+            <div className="space-y-1.5 px-2">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                <span className="flex items-center gap-1"><ZoomOut size={13} /> Zoom</span>
+                <span>{cropScale.toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                min="0.8"
+                max="3"
+                step="0.05"
+                value={cropScale}
+                onChange={(e) => setCropScale(parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#1A44C8]"
+              />
+            </div>
+
+            {/* Ações do Modal */}
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => { setIsCropModalOpen(false); setCropImageSrc(null); }}
+                className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCrop}
+                className="flex-1 py-2.5 px-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                <Check size={14} />
+                <span>Aplicar Foto</span>
               </button>
             </div>
           </div>

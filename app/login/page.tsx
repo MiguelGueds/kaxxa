@@ -129,10 +129,30 @@ export default function LoginPage() {
         }}
       />
 
-      {/* Orbes de Luz Vivas */}
+      {/* Orbes de Luz Vivas, Esferas 3D de Cristal e Partículas Flutuantes */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-[#1A44C8]/20 via-[#00A3FF]/15 to-transparent rounded-full blur-[100px] animate-[pulse_6s_ease-in-out_infinite]" />
-        <div className="absolute bottom-1/4 right-1/4 translate-x-1/3 translate-y-1/3 w-[600px] h-[600px] bg-gradient-to-bl from-[#6366F1]/18 via-[#38BDF8]/18 to-transparent rounded-full blur-[110px] animate-[pulse_8s_ease-in-out_infinite_2s]" />
+        {/* Glowing Orbs */}
+        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-[#1A44C8]/25 via-[#00A3FF]/20 to-transparent rounded-full blur-[100px] animate-aurora-glow" />
+        <div className="absolute bottom-1/4 right-1/4 translate-x-1/3 translate-y-1/3 w-[600px] h-[600px] bg-gradient-to-bl from-[#6366F1]/20 via-[#38BDF8]/20 to-transparent rounded-full blur-[110px] animate-[pulse_8s_ease-in-out_infinite_2s]" />
+
+        {/* Esferas de Cristal 3D */}
+        <div 
+          className="absolute top-[10%] left-[8%] w-[180px] h-[180px] rounded-full pointer-events-none animate-crystal-orb-1 border border-white/60 backdrop-blur-xs shadow-[0_20px_50px_rgba(5,150,105,0.14)]"
+          style={{
+            background: 'radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.9) 0%, rgba(59, 108, 240, 0.3) 35%, rgba(26, 68, 200, 0.12) 70%, transparent 95%)',
+          }}
+        />
+        <div 
+          className="absolute bottom-[12%] right-[8%] w-[200px] h-[200px] rounded-full pointer-events-none animate-crystal-orb-2 border border-white/50 backdrop-blur-xs shadow-[0_20px_45px_rgba(52,211,153,0.18)]"
+          style={{
+            background: 'radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.85) 0%, rgba(59, 108, 240, 0.35) 40%, rgba(26, 68, 200, 0.1) 75%, transparent 95%)',
+          }}
+        />
+
+        {/* Partículas Spark Flutuantes */}
+        <div className="absolute top-[20%] right-[25%] w-2 h-2 rounded-full bg-[#1A44C8] shadow-[0_0_10px_#1A44C8] animate-float-spark-1" />
+        <div className="absolute bottom-[30%] left-[20%] w-2.5 h-2.5 rounded-full bg-[#60A5FA] shadow-[0_0_12px_#60A5FA] animate-float-spark-2" />
+        <div className="absolute top-[65%] right-[18%] w-1.5 h-1.5 rounded-full bg-[#059669] shadow-[0_0_8px_#059669] animate-float-spark-3" />
       </div>
 
       {/* Botão Voltar para Início */}

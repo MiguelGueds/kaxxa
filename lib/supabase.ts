@@ -37,3 +37,26 @@ export async function getAuthenticatedUser() {
   }
 }
 
+export async function performGlobalSignOut() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('kaxxa_access_granted');
+    localStorage.removeItem('kaxxa_trial_active');
+    localStorage.removeItem('kaxxa_pending_coupon');
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('kaxxa_') || k.startsWith('sb-') || k.includes('auth') || k.includes('mindfinance_'))) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  }
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('SignOut error:', e);
+    }
+  }
+}
+

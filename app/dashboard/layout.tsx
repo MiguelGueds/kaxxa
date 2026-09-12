@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { PrivacyProvider, usePrivacy } from '@/app/contexts/PrivacyContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, performGlobalSignOut } from '@/lib/supabase';
 import { 
   Search, 
   ChevronRight, 
@@ -326,7 +326,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           {/* Rodapé da Sidebar - Sair da Conta */}
           <div className="pt-2 border-t border-[#F1F3F7]">
             <button 
-              onClick={async (e) => { e.preventDefault(); await supabase.auth.signOut(); router.push('/login'); }} 
+              onClick={async (e) => { e.preventDefault(); await performGlobalSignOut(); router.push('/login'); }} 
               className={`flex items-center rounded-xl bg-transparent hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all text-[#64748B] hover:text-rose-600 group text-xs font-semibold ${
                 isSidebarCollapsed ? 'justify-center p-2 w-full' : 'justify-start gap-2.5 px-3 py-2 w-full'
               }`}

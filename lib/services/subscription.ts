@@ -108,6 +108,7 @@ export const subscriptionService = {
    */
   async getSubscription(): Promise<DbSubscription | null> {
     const user = await getAuthenticatedUser();
+    if (!user) return null;
 
     // 1. Verificação no localStorage (no navegador) para resposta instantânea
     if (typeof window !== 'undefined') {
@@ -117,12 +118,12 @@ export const subscriptionService = {
           const parsed = JSON.parse(localTrial);
           const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
           const localUserId = parsed.userId || parsed.subscription?.user_id;
-          if (endsAt && (!user || !localUserId || localUserId === user.id)) {
+          if (endsAt && localUserId === user.id) {
             const isExpired = new Date(endsAt).getTime() < Date.now();
             if (!isExpired) {
               return {
                 id: parsed.id || parsed.subscription?.id || 'trial-local',
-                user_id: localUserId || user?.id || 'trial-user',
+                user_id: user.id,
                 status: 'TRIAL',
                 plan_type: 'MENSAL',
                 payment_method: 'PIX',
@@ -138,8 +139,6 @@ export const subscriptionService = {
         }
       } catch {}
     }
-
-    if (!user) return null;
 
     // Se for administrador (somoskaxxa@gmail.com), acesso vitalício de desenvolvedor
     if (isAdminEmail(user.email)) {
@@ -242,6 +241,9 @@ export const subscriptionService = {
     expiredReason?: 'TRIAL_EXPIRED' | 'SUBSCRIPTION_EXPIRED' | null 
   }> {
     const user = await getAuthenticatedUser();
+    if (!user) {
+      return { granted: false, subscription: null, expiredReason: null };
+    }
 
     // 1. Verificação PRIORITÁRIA no navegador para trials recém-ativados (se bater com user)
     if (typeof window !== 'undefined') {
@@ -251,12 +253,12 @@ export const subscriptionService = {
           const parsed = JSON.parse(localTrial);
           const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
           const localUserId = parsed.userId || parsed.subscription?.user_id;
-          if (endsAt && (!user || !localUserId || localUserId === user.id)) {
+          if (endsAt && localUserId === user.id) {
             const isExpired = new Date(endsAt).getTime() < Date.now();
             if (!isExpired) {
               const trialSub: DbSubscription = {
                 id: parsed.id || parsed.subscription?.id || 'trial-local',
-                user_id: localUserId || user?.id || 'trial-user',
+                user_id: user.id,
                 status: 'TRIAL',
                 plan_type: 'MENSAL',
                 payment_method: 'PIX',
@@ -273,10 +275,6 @@ export const subscriptionService = {
       } catch (e) {
         console.warn('Erro ao ler kaxxa_trial_active do localStorage:', e);
       }
-    }
-
-    if (!user) {
-      return { granted: false, subscription: null, expiredReason: null };
     }
 
     // Administradores Master têm acesso irrestrito garantido

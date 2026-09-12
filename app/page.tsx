@@ -228,15 +228,9 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <Link 
               href="/login" 
-              className="text-xs font-bold text-[#64748B] hover:text-[#181B22] px-3 py-1.5 transition-colors hidden sm:block"
-            >
-              Entrar
-            </Link>
-            <Link 
-              href="/planos" 
               className="relative group overflow-hidden px-5 py-2.5 rounded-full text-xs font-bold text-white bg-[#1A44C8] hover:bg-[#1538A5] transition-all duration-300 shadow-md shadow-[#1A44C8]/20 flex items-center gap-1.5 active:scale-95"
             >
-              <span>Assinar Agora</span>
+              <span>Entrar</span>
               <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
