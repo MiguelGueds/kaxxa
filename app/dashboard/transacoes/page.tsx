@@ -160,8 +160,17 @@ export default function SaldoExtratoPage() {
   const [payAmount, setPayAmount] = useState('2450.00');
   const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Lista de Bancos (inicia vazio para novos usuários)
-  const [banks, setBanks] = useState<BankAccount[]>([]);
+  // Lista de Bancos (inicia com cache local para exibição instantânea a 0ms no F5)
+  const [banks, setBanks] = useState<BankAccount[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const cached = accountsService.getCachedAccounts();
+    if (!cached || cached.length === 0) return [];
+    return cached.map(a => ({
+      id: a.id,
+      name: a.name,
+      balance: a.balance
+    }));
+  });
 
   // Carrossel de Bancos
   const [bankCarouselIndex, setBankCarouselIndex] = useState(0);
@@ -176,8 +185,24 @@ export default function SaldoExtratoPage() {
     setBankCarouselIndex(prev => Math.max(0, prev - visibleBanksCount));
   };
 
-  // Lista de Transações (inicia vazio para novos usuários)
-  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  // Lista de Transações (inicia com cache local para exibição instantânea a 0ms no F5)
+  const [transactions, setTransactions] = useState<TransactionItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const cached = transactionsService.getCachedTransactions();
+    if (!cached || cached.length === 0) return [];
+    return cached.map(t => ({
+      id: t.id,
+      name: t.description,
+      date: t.date ? new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR') : 'Hoje',
+      rawDate: t.date,
+      amount: t.type === 'EXPENSE' ? -Math.abs(t.amount) : Math.abs(t.amount),
+      bank: t.category_name || 'Conta Corrente',
+      category: t.category_name || 'Geral',
+      type: t.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
+      isThirdParty: !!t.third_party_name,
+      thirdPartyName: t.third_party_name
+    }));
+  });
 
   const [expenseCategories, setExpenseCategories] = useState<string[]>(EXPENSE_CATEGORIES);
   const [incomeCategories, setIncomeCategories] = useState<string[]>(INCOME_CATEGORIES);

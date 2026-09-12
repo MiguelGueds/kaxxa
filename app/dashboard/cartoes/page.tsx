@@ -170,8 +170,24 @@ export default function MinhasFaturasPage() {
   const [isLimitPopupOpen, setIsLimitPopupOpen] = useState(false);
 
   // Cartões Cadastrados
-  // Lista de Cartões (inicia vazio para novos usuários)
-  const [cards, setCards] = useState<CardItem[]>([]);
+  // Lista de Cartões (inicia com cache local para exibição instantânea a 0ms no F5)
+  const [cards, setCards] = useState<CardItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const cached = cardsService.getCachedCards();
+    if (!cached || cached.length === 0) return [];
+    return cached.map(c => ({
+      id: c.id,
+      name: c.name,
+      brand: c.brand,
+      bank: c.bank,
+      lastDigits: c.last_digits,
+      limitTotal: c.credit_limit,
+      limitUsed: c.limit_used,
+      closingDay: c.closing_day,
+      dueDay: c.due_day,
+      color: c.color || 'from-purple-600 to-indigo-700'
+    }));
+  });
 
   // Registro de Pagamentos
   const [payments, setPayments] = useState<CardPaymentRecord[]>([]);

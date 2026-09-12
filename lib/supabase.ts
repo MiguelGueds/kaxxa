@@ -25,15 +25,33 @@ export const supabaseAdmin = createClient(
   supabaseServiceKey || 'placeholder-key'
 );
 
-export async function getAuthenticatedUser() {
-  if (!isSupabaseConfigured()) return null;
+export function getCachedUser(): { id: string; email?: string } | null {
+  if (typeof window === 'undefined') return null;
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) return session.user;
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    const raw = localStorage.getItem('kaxxa_user_cache');
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
+  }
+}
+
+export async function getAuthenticatedUser() {
+  if (!isSupabaseConfigured()) return getCachedUser() as any;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kaxxa_user_cache', JSON.stringify({ id: session.user.id, email: session.user.email }));
+      }
+      return session.user;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && typeof window !== 'undefined') {
+      localStorage.setItem('kaxxa_user_cache', JSON.stringify({ id: user.id, email: user.email }));
+    }
+    return user;
+  } catch {
+    return getCachedUser() as any;
   }
 }
 

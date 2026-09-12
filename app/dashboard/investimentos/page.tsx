@@ -329,8 +329,38 @@ function formatDate(dateStr?: string): string {
 
 export default function InvestimentosPage() {
   const { isConcealed } = usePrivacy();
-  // Lista de Investimentos (inicia vazio para novos usuários)
-  const [investments, setInvestments] = useState<InvestmentItem[]>([]);
+  // Lista de Investimentos (inicia com cache local para exibição instantânea a 0ms no F5)
+  const [investments, setInvestments] = useState<InvestmentItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const cached = investmentsService.getCachedInvestments();
+    if (!cached || cached.length === 0) return [];
+    return cached.map(inv => {
+      const qty = Number(inv.quantity || 0);
+      const avgPrice = Number(inv.average_price || 0);
+      const totalInv = Number(inv.invested_amount || (qty * avgPrice));
+      const curVal = Number(inv.current_value || totalInv);
+      return {
+        id: inv.id,
+        macroType: inv.macro_type,
+        category: inv.category as AssetCategory,
+        name: inv.name,
+        ticker: inv.ticker,
+        institution: inv.institution,
+        rateOrYield: inv.rate_or_yield,
+        liquidity: (inv.liquidity as 'DIARIA' | 'D+1' | 'VENCIMENTO') || 'DIARIA',
+        dueDate: inv.due_date,
+        quantity: qty,
+        averagePrice: avgPrice,
+        currentPrice: qty > 0 && curVal > 0 ? Number((curVal / qty).toFixed(2)) : avgPrice,
+        totalInvested: totalInv,
+        currentBalance: curVal,
+        monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
+        totalDividendsReceived: inv.total_dividends_received || 0,
+        isFgcProtected: inv.category !== 'TESOURO_DIRETO',
+        createdAt: inv.created_at || new Date().toISOString()
+      };
+    });
+  });
   const [viewMode, setViewMode] = useState<'CONSOLIDADO' | 'LANCAMENTOS'>('CONSOLIDADO');
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
   const [consolidatedFilter, setConsolidatedFilter] = useState<'ALL' | 'FIIS' | 'ACOES' | 'FIXA' | 'BDRS' | 'CRIPTO'>('ALL');

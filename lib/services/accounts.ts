@@ -11,27 +11,66 @@ export interface DbAccount {
   created_at?: string;
 }
 
+const STORAGE_KEY = 'kaxxa_accounts_backup';
+
+function getLocalAccounts(userId: string): DbAccount[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalAccounts(userId: string, items: DbAccount[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
+  } catch (e) {
+    console.error('Erro ao salvar contas no localStorage:', e);
+  }
+}
+
 export const accountsService = {
+  getCachedAccounts(): DbAccount[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const rawUser = localStorage.getItem('kaxxa_user_cache');
+      if (!rawUser) return [];
+      const user = JSON.parse(rawUser);
+      if (!user || !user.id) return [];
+      return getLocalAccounts(user.id);
+    } catch {
+      return [];
+    }
+  },
+
   async fetchAccounts(): Promise<DbAccount[] | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('accounts')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('name', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
 
-    if (error) {
-      console.error('Erro ao buscar contas:', error);
-      return null;
+      if (!error && data !== null) {
+        const formatted = (data || []).map(acc => ({
+          ...acc,
+          balance: Number(acc.balance ?? acc.initial_balance ?? 0),
+          initial_balance: Number(acc.initial_balance ?? 0),
+        })) as DbAccount[];
+        saveLocalAccounts(user.id, formatted);
+        return formatted;
+      }
+    } catch (err) {
+      console.warn('Erro ao buscar contas do Supabase, usando backup local:', err);
     }
 
-    return (data || []).map(acc => ({
-      ...acc,
-      balance: Number(acc.balance ?? acc.initial_balance ?? 0),
-      initial_balance: Number(acc.initial_balance ?? 0),
-    })) as DbAccount[];
+    return getLocalAccounts(user.id);
   },
 
   async createAccount(acc: { name: string; type: string; balance: number; color?: string }): Promise<DbAccount | null> {

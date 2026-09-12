@@ -87,7 +87,26 @@ const DEFAULT_THEME = {
 
 export default function TerceirosPage() {
   const { isConcealed } = usePrivacy();
-  const [debts, setDebts] = useState<ThirdPartyDebt[]>([]);
+  const [debts, setDebts] = useState<ThirdPartyDebt[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const cached = thirdPartiesService.getCachedDebts();
+    if (!cached || cached.length === 0) return [];
+    return cached.map(d => ({
+      id: d.id,
+      personName: d.person_name,
+      personAvatarColor: 'from-blue-500 to-indigo-600',
+      description: d.description,
+      originType: d.origin_type as 'CARD' | 'ACCOUNT' | 'ASSET_SALE',
+      originBankOrCard: d.origin_bank_or_card || (d.origin_type === 'ASSET_SALE' ? 'Venda de Bem' : 'Conta/Cartão'),
+      totalAmount: d.total_amount,
+      paidAmount: d.paid_amount,
+      installmentsTotal: d.installments_total,
+      currentInstallment: d.current_installment,
+      dueDate: d.due_date || 'A combinar',
+      status: d.status,
+      notes: d.notes,
+    }));
+  });
   
   // Filtros de Lançamentos
   const [activeFilterTab, setActiveFilterTab] = useState<'ALL' | 'CARD' | 'ACCOUNT' | 'ASSET_SALE' | 'PENDING' | 'PAID'>('ALL');

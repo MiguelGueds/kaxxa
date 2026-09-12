@@ -28,27 +28,66 @@ export interface DbCardExpense {
   third_party_name?: string;
 }
 
+const STORAGE_KEY = 'kaxxa_cards_backup';
+
+function getLocalCards(userId: string): DbCard[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalCards(userId: string, items: DbCard[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
+  } catch (e) {
+    console.error('Erro ao salvar cartões no localStorage:', e);
+  }
+}
+
 export const cardsService = {
+  getCachedCards(): DbCard[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const rawUser = localStorage.getItem('kaxxa_user_cache');
+      if (!rawUser) return [];
+      const user = JSON.parse(rawUser);
+      if (!user || !user.id) return [];
+      return getLocalCards(user.id);
+    } catch {
+      return [];
+    }
+  },
+
   async fetchCards(): Promise<DbCard[] | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('credit_cards')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('name', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('credit_cards')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
 
-    if (error) {
-      console.error('Erro ao buscar cartões:', error);
-      return null;
+      if (!error && data !== null) {
+        const formatted = (data || []).map(c => ({
+          ...c,
+          credit_limit: Number(c.credit_limit || 0),
+          limit_used: Number(c.limit_used || 0),
+        })) as DbCard[];
+        saveLocalCards(user.id, formatted);
+        return formatted;
+      }
+    } catch (err) {
+      console.warn('Erro ao buscar cartões do Supabase, usando backup local:', err);
     }
 
-    return (data || []).map(c => ({
-      ...c,
-      credit_limit: Number(c.credit_limit || 0),
-      limit_used: Number(c.limit_used || 0),
-    })) as DbCard[];
+    return getLocalCards(user.id);
   },
 
   async createCard(card: {

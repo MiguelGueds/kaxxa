@@ -43,6 +43,20 @@ function saveLocalInvestments(userId: string, items: DbInvestment[]) {
 }
 
 export const investmentsService = {
+  getCachedInvestments(): DbInvestment[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const rawUser = localStorage.getItem('kaxxa_user_cache');
+      if (!rawUser) return [];
+      const user = JSON.parse(rawUser);
+      if (!user || !user.id) return [];
+      const staticMockIds = new Set(['rf-1', 'rf-2', 'rf-3', 'rf-4', 'rf-5', 'rv-1', 'rv-2', 'rv-3', 'rv-4', 'rv-5']);
+      return getLocalInvestments(user.id).filter(i => !staticMockIds.has(i.id));
+    } catch {
+      return [];
+    }
+  },
+
   async fetchInvestments(): Promise<DbInvestment[] | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;

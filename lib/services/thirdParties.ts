@@ -39,6 +39,19 @@ function saveLocalDebts(userId: string, items: DbThirdPartyDebt[]) {
 }
 
 export const thirdPartiesService = {
+  getCachedDebts(): DbThirdPartyDebt[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const rawUser = localStorage.getItem('kaxxa_user_cache');
+      if (!rawUser) return [];
+      const user = JSON.parse(rawUser);
+      if (!user || !user.id) return [];
+      return getLocalDebts(user.id);
+    } catch {
+      return [];
+    }
+  },
+
   async fetchDebts(): Promise<DbThirdPartyDebt[] | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;

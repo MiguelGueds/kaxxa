@@ -21,27 +21,66 @@ export interface DbTransaction {
   created_at?: string;
 }
 
+const STORAGE_KEY = 'kaxxa_transactions_backup';
+
+function getLocalTransactions(userId: string): DbTransaction[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalTransactions(userId: string, items: DbTransaction[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
+  } catch (e) {
+    console.error('Erro ao salvar transações no localStorage:', e);
+  }
+}
+
 export const transactionsService = {
+  getCachedTransactions(): DbTransaction[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const rawUser = localStorage.getItem('kaxxa_user_cache');
+      if (!rawUser) return [];
+      const user = JSON.parse(rawUser);
+      if (!user || !user.id) return [];
+      return getLocalTransactions(user.id);
+    } catch {
+      return [];
+    }
+  },
+
   async fetchTransactions(limit = 100): Promise<DbTransaction[] | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
-      .limit(limit);
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .limit(limit);
 
-    if (error) {
-      console.error('Erro ao buscar transações:', error);
-      return null;
+      if (!error && data !== null) {
+        const formatted = (data || []).map(t => ({
+          ...t,
+          amount: Number(t.amount || 0),
+        })) as DbTransaction[];
+        saveLocalTransactions(user.id, formatted);
+        return formatted;
+      }
+    } catch (err) {
+      console.warn('Erro ao buscar transações do Supabase, usando backup local:', err);
     }
 
-    return (data || []).map(t => ({
-      ...t,
-      amount: Number(t.amount || 0),
-    })) as DbTransaction[];
+    return getLocalTransactions(user.id);
   },
 
   async createTransaction(tx: Omit<DbTransaction, 'id' | 'user_id' | 'created_at'>): Promise<DbTransaction | null> {
