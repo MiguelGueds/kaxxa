@@ -19,7 +19,13 @@ import {
   ArrowRight,
   PieChart,
   BarChart3,
-  ChevronDown
+  ChevronDown,
+  Bike,
+  Tag,
+  Handshake,
+  Receipt,
+  Coins,
+  Check
 } from 'lucide-react';
 import { usePrivacy } from '@/app/contexts/PrivacyContext';
 import { BankLogo } from '@/app/components/BankLogo';
@@ -29,7 +35,7 @@ export interface ThirdPartyDebt {
   personName: string;
   personAvatarColor?: string;
   description: string;
-  originType: 'CARD' | 'ACCOUNT';
+  originType: 'CARD' | 'ACCOUNT' | 'ASSET_SALE';
   originBankOrCard: string;
   totalAmount: number;
   paidAmount: number;
@@ -84,7 +90,7 @@ export default function TerceirosPage() {
   const [debts, setDebts] = useState<ThirdPartyDebt[]>([]);
   
   // Filtros de Lançamentos
-  const [activeFilterTab, setActiveFilterTab] = useState<'ALL' | 'CARD' | 'ACCOUNT' | 'PENDING' | 'PAID'>('ALL');
+  const [activeFilterTab, setActiveFilterTab] = useState<'ALL' | 'CARD' | 'ACCOUNT' | 'ASSET_SALE' | 'PENDING' | 'PAID'>('ALL');
   const [selectedPersonFilter, setSelectedPersonFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -95,13 +101,19 @@ export default function TerceirosPage() {
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [formPersonName, setFormPersonName] = useState('');
   const [formDesc, setFormDesc] = useState('');
-  const [formOriginType, setFormOriginType] = useState<'CARD' | 'ACCOUNT'>('CARD');
+  const [formOriginType, setFormOriginType] = useState<'CARD' | 'ACCOUNT' | 'ASSET_SALE'>('CARD');
   const [formBankOrCard, setFormBankOrCard] = useState('Nubank');
   const [formTotalAmount, setFormTotalAmount] = useState('');
   const [formInstallments, setFormInstallments] = useState('1');
   const [formDueDate, setFormDueDate] = useState('');
   const [formNotes, setFormNotes] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Modal Baixa / Pagamento Parcial / Recebimento de Bem
+  const [selectedDebtForSettle, setSelectedDebtForSettle] = useState<ThirdPartyDebt | null>(null);
+  const [settleAmount, setSettleAmount] = useState('');
+  const [settleMethod, setSettleMethod] = useState<'PIX' | 'CASH' | 'BARTER_ASSET' | 'CARD'>('PIX');
+  const [settleAssetNote, setSettleAssetNote] = useState('');
 
   // Contas e Cartões reais do usuário
   const [userAccounts, setUserAccounts] = useState<{ id: string; name: string }[]>([]);
@@ -130,8 +142,8 @@ export default function TerceirosPage() {
             personName: d.person_name,
             personAvatarColor: 'from-blue-500 to-indigo-600',
             description: d.description,
-            originType: d.origin_type,
-            originBankOrCard: d.origin_bank_or_card || 'Conta/Cartão',
+            originType: d.origin_type as 'CARD' | 'ACCOUNT' | 'ASSET_SALE',
+            originBankOrCard: d.origin_bank_or_card || (d.origin_type === 'ASSET_SALE' ? 'Venda de Bem' : 'Conta/Cartão'),
             totalAmount: d.total_amount,
             paidAmount: d.paid_amount,
             installmentsTotal: d.installments_total,
@@ -179,12 +191,16 @@ export default function TerceirosPage() {
     if (!formPersonName.trim() || !formDesc.trim() || parsedAmount <= 0) return;
 
     let createdId = 'tp-' + Date.now();
+    const finalOriginBank = formOriginType === 'ASSET_SALE' 
+      ? (formBankOrCard.trim() || 'Venda de Bem')
+      : (formBankOrCard.trim() || 'Conta/Cartão');
+
     try {
       const created = await thirdPartiesService.createDebt({
         person_name: formPersonName.trim(),
         description: formDesc.trim(),
         origin_type: formOriginType,
-        origin_bank_or_card: formBankOrCard.trim() || 'Conta/Cartão',
+        origin_bank_or_card: finalOriginBank,
         total_amount: parsedAmount,
         paid_amount: 0,
         installments_total: installments,
@@ -204,7 +220,7 @@ export default function TerceirosPage() {
       personAvatarColor: 'from-blue-500 to-indigo-600',
       description: formDesc.trim(),
       originType: formOriginType,
-      originBankOrCard: formBankOrCard.trim() || 'Conta/Cartão',
+      originBankOrCard: finalOriginBank,
       totalAmount: parsedAmount,
       paidAmount: 0,
       installmentsTotal: installments,
@@ -224,31 +240,59 @@ export default function TerceirosPage() {
     setFormNotes('');
   };
 
-  const handleSettleDebt = async (debtId: string) => {
-    const target = debts.find(d => d.id === debtId);
-    if (!target) return;
+  const handleOpenSettleModal = (debt: ThirdPartyDebt) => {
+    setSelectedDebtForSettle(debt);
+    const remaining = Math.max(0, debt.totalAmount - debt.paidAmount);
+    setSettleAmount(remaining.toString());
+    setSettleMethod('PIX');
+    setSettleAssetNote('');
+  };
+
+  const handleConfirmSettle = async () => {
+    if (!selectedDebtForSettle) return;
+    const amountVal = parseFloat(settleAmount.replace(',', '.')) || 0;
+    if (amountVal <= 0) return;
+
+    const debt = selectedDebtForSettle;
+    const newPaidAmount = Math.min(debt.totalAmount, debt.paidAmount + amountVal);
+    const isFullPaid = newPaidAmount >= debt.totalAmount;
+    const newStatus: 'PAID' | 'PARTIAL' = isFullPaid ? 'PAID' : 'PARTIAL';
+
+    const methodLabels: Record<string, string> = {
+      PIX: 'PIX/Transferência',
+      CASH: 'Dinheiro Espécie',
+      BARTER_ASSET: `Abatimento por Bem (${settleAssetNote.trim() || 'Objeto em troca'})`,
+      CARD: 'Cartão/Outros'
+    };
+
+    const methodText = methodLabels[settleMethod] || 'PIX';
+    const nowStr = new Date().toLocaleDateString('pt-BR');
+    const paymentLog = `[Baixa R$ ${amountVal.toFixed(2)} via ${methodText} em ${nowStr}]`;
+    const updatedNotes = debt.notes ? `${debt.notes}\n${paymentLog}` : paymentLog;
 
     try {
-      await thirdPartiesService.updateDebt(debtId, {
-        paid_amount: target.totalAmount,
-        status: 'PAID',
-        current_installment: target.installmentsTotal,
+      await thirdPartiesService.updateDebt(debt.id, {
+        paid_amount: newPaidAmount,
+        status: newStatus,
+        notes: updatedNotes,
       });
     } catch (e) {
       console.error('Erro ao dar baixa no Supabase:', e);
     }
 
     setDebts(prev => prev.map(d => {
-      if (d.id === debtId) {
+      if (d.id === debt.id) {
         return {
           ...d,
-          paidAmount: d.totalAmount,
-          status: 'PAID',
-          currentInstallment: d.installmentsTotal,
+          paidAmount: newPaidAmount,
+          status: newStatus,
+          notes: updatedNotes,
         };
       }
       return d;
     }));
+
+    setSelectedDebtForSettle(null);
   };
 
   const handleDeleteDebt = async (debtId: string) => {
@@ -713,7 +757,7 @@ export default function TerceirosPage() {
                             <span className="text-[#94A3B8] flex items-center justify-end gap-1 font-bold text-[9px]"><CheckCircle2 size={10} className="text-[#1A44C8]"/> Ok</span>
                           ) : (
                             <button 
-                              onClick={() => handleSettleDebt(item.id)}
+                              onClick={() => handleOpenSettleModal(item)}
                               className="px-3 py-1 rounded-full bg-[#1A44C8] hover:bg-[#1538A5] text-white transition-all font-semibold text-[9px] shadow-sm"
                             >
                               Dar Baixa
@@ -899,25 +943,37 @@ export default function TerceirosPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Origem do Dinheiro</label>
+                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Tipo / Origem da Negociação</label>
                   <select
                     value={formOriginType}
                     onChange={e => {
-                      const val = e.target.value as 'CARD' | 'ACCOUNT';
+                      const val = e.target.value as 'CARD' | 'ACCOUNT' | 'ASSET_SALE';
                       setFormOriginType(val);
                       if (val === 'CARD' && userCards.length > 0) setFormBankOrCard(userCards[0].name);
-                      if (val === 'ACCOUNT' && userAccounts.length > 0) setFormBankOrCard(userAccounts[0].name);
+                      else if (val === 'ACCOUNT' && userAccounts.length > 0) setFormBankOrCard(userAccounts[0].name);
+                      else if (val === 'ASSET_SALE') setFormBankOrCard('Moto Honda Fan 160');
                     }}
-                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
                   >
-                    <option value="CARD">Cartão de Crédito</option>
-                    <option value="ACCOUNT">Conta Bancária / PIX</option>
+                    <option value="CARD">💳 Cartão de Crédito</option>
+                    <option value="ACCOUNT">🏦 Conta Bancária / PIX</option>
+                    <option value="ASSET_SALE">🏍️ Venda de Bem / Veículo / Objeto</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Conta ou Cartão Usado</label>
-                  {formOriginType === 'CARD' ? (
+                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">
+                    {formOriginType === 'ASSET_SALE' ? 'Bem Vendido / Negociado' : 'Conta ou Cartão Usado'}
+                  </label>
+                  {formOriginType === 'ASSET_SALE' ? (
+                    <input
+                      type="text"
+                      placeholder="Ex: Moto Honda Fan 160, Carro Gol, iPhone"
+                      value={formBankOrCard}
+                      onChange={e => setFormBankOrCard(e.target.value)}
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
+                    />
+                  ) : formOriginType === 'CARD' ? (
                     userCards.length > 0 ? (
                       <select
                         value={formBankOrCard}
@@ -1023,6 +1079,98 @@ export default function TerceirosPage() {
                 className="flex-1 py-2 px-3 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs shadow-md"
               >
                 Salvar Lançamento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DAR BAIXA / REGISTRAR RECEBIMENTO DE BEM OU DINHEIRO */}
+      {selectedDebtForSettle && (
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh] my-auto animate-scale-in-center">
+            <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
+              <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
+                <Coins size={16} className="text-[#1A44C8]" />
+                Dar Baixa / Registrar Recebimento
+              </h3>
+              <button onClick={() => setSelectedDebtForSettle(null)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={16}/></button>
+            </div>
+
+            <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+              <div className="bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB] space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#64748B] font-bold">Responsável:</span>
+                  <span className="font-bold text-[#181B22]">{selectedDebtForSettle.personName}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#64748B] font-bold">Lançamento / Bem:</span>
+                  <span className="font-extrabold text-[#1A44C8]">{selectedDebtForSettle.description} ({selectedDebtForSettle.originBankOrCard})</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-1 border-t border-[#E5E7EB]">
+                  <span className="text-[#64748B] font-bold">Saldo Restante Atual:</span>
+                  <span className="font-extrabold text-rose-600">R$ {formatCurrency(selectedDebtForSettle.totalAmount - selectedDebtForSettle.paidAmount)}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#64748B] mb-1">Valor Recebido / Abatido nesta Baixa (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0,00"
+                  value={settleAmount}
+                  onChange={e => setSettleAmount(e.target.value)}
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2.5 text-sm text-[#181B22] font-extrabold focus:outline-none focus:border-[#1A44C8]"
+                />
+                <span className="text-[10px] text-[#94A3B8] mt-1 block font-medium">
+                  Você pode fazer a baixa parcial (ex: R$ 1.500) ou a quitação total do valor.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#64748B] mb-1">Como o Pagamento/Abatimento foi Efetuado?</label>
+                <select
+                  value={settleMethod}
+                  onChange={e => setSettleMethod(e.target.value as any)}
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
+                >
+                  <option value="PIX">⚡ PIX / Transferência Bancária</option>
+                  <option value="CASH">💵 Dinheiro Vivo (Espécie)</option>
+                  <option value="BARTER_ASSET">🏍️ Entrega de outro Bem / Troca (Ex: Me deu uma TV/notebook)</option>
+                  <option value="CARD">💳 Cartão / Boleto / Outros</option>
+                </select>
+              </div>
+
+              {settleMethod === 'BARTER_ASSET' && (
+                <div className="animate-in fade-in duration-200">
+                  <label className="block text-[11px] font-bold text-amber-700 mb-1">Descrição do Bem Entregue no Abatimento</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Notebook Dell i7, TV Samsung 55, Moto 125, etc."
+                    value={settleAssetNote}
+                    onChange={e => setSettleAssetNote(e.target.value)}
+                    className="w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-900 font-bold outline-none focus:border-amber-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedDebtForSettle(null)}
+                className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSettle}
+                className="flex-1 py-2 px-3 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs shadow-md flex items-center justify-center gap-1.5"
+              >
+                <Check size={14} />
+                <span>Confirmar Baixa</span>
               </button>
             </div>
           </div>

@@ -5,7 +5,7 @@ export interface DbThirdPartyDebt {
   user_id: string;
   person_name: string;
   description: string;
-  origin_type: 'CARD' | 'ACCOUNT';
+  origin_type: 'CARD' | 'ACCOUNT' | 'ASSET_SALE';
   origin_bank_or_card?: string;
   total_amount: number;
   paid_amount: number;
