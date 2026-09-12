@@ -14,9 +14,19 @@ export interface DbSubscription {
   updated_at?: string;
 }
 
+export function parseExpirationTime(dateStr?: string): number {
+  if (!dateStr) return 0;
+  const str = dateStr.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return new Date(`${str}T23:59:59.999Z`).getTime();
+  }
+  const timestamp = new Date(str).getTime();
+  return isNaN(timestamp) ? 0 : timestamp;
+}
+
 export function getTrialRemainingText(endDateStr?: string): { text: string; hoursRemaining: number; isExpiringSoon: boolean } {
   if (!endDateStr) return { text: '0h restantes', hoursRemaining: 0, isExpiringSoon: true };
-  const end = new Date(endDateStr).getTime();
+  const end = parseExpirationTime(endDateStr);
   const now = Date.now();
   const diffMs = end - now;
 
@@ -25,7 +35,7 @@ export function getTrialRemainingText(endDateStr?: string): { text: string; hour
   const hours = Math.ceil(diffMs / (1000 * 60 * 60));
   const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  if (hours <= 24) {
+  if (hours <= 48) {
     return {
       text: `${hours}h restante${hours === 1 ? '' : 's'}`,
       hoursRemaining: hours,
@@ -103,12 +113,19 @@ export function saveSubscriptionLocal(sub: DbSubscription) {
   // No navegador, persiste também no localStorage
   if (typeof window !== 'undefined') {
     try {
-      localStorage.setItem('kaxxa_trial_active', JSON.stringify({
-        id: sub.id,
-        userId: sub.user_id,
-        endsAt: sub.current_period_end,
-        createdAt: sub.created_at
-      }));
+      if (sub.status === 'TRIAL' || sub.status === 'ACTIVE') {
+        const isExpired = parseExpirationTime(sub.current_period_end) < Date.now();
+        if (!isExpired) {
+          localStorage.setItem('kaxxa_trial_active', JSON.stringify({
+            id: sub.id,
+            userId: sub.user_id,
+            endsAt: sub.current_period_end,
+            createdAt: sub.created_at
+          }));
+        } else {
+          localStorage.removeItem('kaxxa_trial_active');
+        }
+      }
     } catch {}
   }
 
@@ -145,7 +162,7 @@ export const subscriptionService = {
           const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
           const localUserId = parsed.userId || parsed.subscription?.user_id;
           if (endsAt && localUserId === user.id) {
-            const isExpired = new Date(endsAt).getTime() < Date.now();
+            const isExpired = parseExpirationTime(endsAt) < Date.now();
             if (!isExpired) {
               return {
                 id: parsed.id || parsed.subscription?.id || 'trial-local',
@@ -188,6 +205,7 @@ export const subscriptionService = {
           .from('subscriptions')
           .select('*')
           .eq('user_id', user.id)
+          .order('updated_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -216,10 +234,10 @@ export const subscriptionService = {
             );
 
             if (usage) {
-              const usedAt = usage.used_at ? new Date(usage.used_at).getTime() : Date.now();
+              const usedAt = usage.used_at ? parseExpirationTime(usage.used_at) : Date.now();
               const days = c.type === 'TRIAL_DAYS' ? (c.value || 2) : 30;
-              const periodEnd = new Date(usedAt + days * 24 * 60 * 60 * 1000).toISOString();
-              const isExpired = new Date(periodEnd).getTime() <= Date.now();
+              const periodEnd = new Date((usedAt > 0 ? usedAt : Date.now()) + days * 24 * 60 * 60 * 1000).toISOString();
+              const isExpired = parseExpirationTime(periodEnd) <= Date.now();
 
               if (!isExpired) {
                 const healedSub = await this.activateSubscription({
@@ -280,7 +298,7 @@ export const subscriptionService = {
           const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
           const localUserId = parsed.userId || parsed.subscription?.user_id;
           if (endsAt && localUserId === user.id) {
-            const isExpired = new Date(endsAt).getTime() < Date.now();
+            const isExpired = parseExpirationTime(endsAt) < Date.now();
             if (!isExpired) {
               const trialSub: DbSubscription = {
                 id: parsed.id || parsed.subscription?.id || 'trial-local',
@@ -325,7 +343,7 @@ export const subscriptionService = {
 
     if (sub.status === 'ACTIVE' || sub.status === 'TRIAL') {
       if (sub.current_period_end) {
-        const isExpired = new Date(sub.current_period_end).getTime() < Date.now();
+        const isExpired = parseExpirationTime(sub.current_period_end) < Date.now();
         if (isExpired) {
           const reason = sub.status === 'TRIAL' || (sub.amount === 0) ? 'TRIAL_EXPIRED' : 'SUBSCRIPTION_EXPIRED';
           return { granted: false, subscription: sub, expiredReason: reason };
