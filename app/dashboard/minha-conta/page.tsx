@@ -159,17 +159,17 @@ function MinhaContaContent() {
 
     const img = cropImageRef.current;
     const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
+    canvas.width = 160;
+    canvas.height = 160;
     const ctx = canvas.getContext('2d');
 
     if (!ctx) return;
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, 256, 256);
+    ctx.fillRect(0, 0, 160, 160);
 
     const viewportSize = 240;
-    const outputSize = 256;
+    const outputSize = 160;
     const ratio = outputSize / viewportSize;
 
     const baseDim = Math.max(img.naturalWidth, img.naturalHeight);
@@ -180,7 +180,7 @@ function MinhaContaContent() {
 
     ctx.drawImage(img, drawX, drawY, drawWidth * ratio, drawHeight * ratio);
 
-    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
     setUserAvatar(compressedBase64);
     setIsCropModalOpen(false);
     setCropImageSrc(null);
@@ -198,16 +198,14 @@ function MinhaContaContent() {
         } else {
           localStorage.removeItem(`kaxxa_user_avatar_${userId}`);
         }
+        window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: userAvatar || null }));
       }
 
       const updatePayload: any = {
         full_name: userName,
         phone: userPhone,
+        avatar_url: userAvatar || null
       };
-
-      if (userAvatar && userAvatar.length < 50000) {
-        updatePayload.avatar_url = userAvatar;
-      }
 
       const { error } = await supabase.auth.updateUser({
         data: updatePayload

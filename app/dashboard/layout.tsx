@@ -54,13 +54,23 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
+    const handleAvatarUpdate = (e: any) => {
+      if (e.detail !== undefined) {
+        setUserInfo(prev => ({ ...prev, avatar: e.detail }));
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('kaxxa_avatar_updated', handleAvatarUpdate);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const localAvatar = typeof window !== 'undefined' ? localStorage.getItem(`kaxxa_user_avatar_${session.user.id}`) : null;
         setUserInfo({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
           email: session.user.email || '',
-          avatar: localAvatar || session.user.user_metadata?.avatar_url || null
+          avatar: session.user.user_metadata?.avatar_url || localAvatar || null
         });
       }
     });
@@ -71,12 +81,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         setUserInfo({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
           email: session.user.email || '',
-          avatar: localAvatar || session.user.user_metadata?.avatar_url || null
+          avatar: session.user.user_metadata?.avatar_url || localAvatar || null
         });
       }
     });
 
     return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('kaxxa_avatar_updated', handleAvatarUpdate);
+      }
       subscription?.unsubscribe();
     };
   }, []);

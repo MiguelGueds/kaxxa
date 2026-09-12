@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     // 2. RESGATAR / ATIVAR
     if (action === 'REDEEM') {
       if (!userId) {
-        return NextResponse.json({ error: 'Faça login com o Google para ativar seu cupom.' }, { status: 401 });
+        return NextResponse.json({ error: 'Faça login na sua conta para ativar seu cupom.' }, { status: 401 });
       }
 
       const result = await couponService.redeemCoupon({

@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const { code, userId, email } = await req.json();
 
     if (!userId) {
-      return NextResponse.json({ error: 'Faça login com o Google para ativar o acesso de teste.' }, { status: 401 });
+      return NextResponse.json({ error: 'Faça login na sua conta para ativar o acesso de teste.' }, { status: 401 });
     }
 
     const normalizedCode = String(code || '').trim().toUpperCase();

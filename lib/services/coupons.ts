@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { supabase, supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase';
-import { saveSubscriptionLocal, DbSubscription } from '@/lib/services/subscription';
+import { saveSubscriptionLocal, subscriptionService, DbSubscription } from '@/lib/services/subscription';
 
 export interface Coupon {
   id: string;
@@ -279,6 +279,18 @@ export const couponService = {
     );
 
     if (alreadyUsed) {
+      try {
+        const currentSub = await subscriptionService.getSubscription();
+        if (currentSub && (currentSub.status === 'TRIAL' || currentSub.status === 'ACTIVE')) {
+          return {
+            success: true,
+            days: coupon.type === 'TRIAL_DAYS' ? coupon.value : 30,
+            endsAt: currentSub.current_period_end,
+            subscription: currentSub,
+            message: 'Seu plano de degustação para esta conta já está ativo!'
+          };
+        }
+      } catch {}
       throw new Error('Você já utilizou este cupom nesta conta.');
     }
 
