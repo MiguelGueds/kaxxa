@@ -73,6 +73,7 @@ export const investmentsService = {
           !formatted.some(remote => remote.id === local.id || (remote.name.toLowerCase() === local.name.toLowerCase() && remote.category === local.category))
         );
 
+        const uninsertedPending: DbInvestment[] = [];
         if (realPendingLocal.length > 0) {
           for (const item of realPendingLocal) {
             try {
@@ -92,16 +93,20 @@ export const investmentsService = {
                   current_value: Number(inserted.current_value || 0),
                   profitability_pct: Number(inserted.profitability_pct || 0),
                 } as DbInvestment);
+              } else {
+                uninsertedPending.push(item);
               }
             } catch (e) {
               console.warn('Erro ao sincronizar investimento pendente para o Supabase:', e);
+              uninsertedPending.push(item);
             }
           }
         }
 
-        // Atualiza o backup local estritamente com os dados reais do Supabase
-        saveLocalInvestments(user.id, formatted);
-        return formatted;
+        // Atualiza o backup local mesclando dados remotos e pendentes locais sem jamais apagar dados
+        const mergedAll = [...formatted, ...uninsertedPending];
+        saveLocalInvestments(user.id, mergedAll);
+        return mergedAll;
       }
     } catch (err) {
       console.warn('Supabase indisponível para busca de investimentos, usando backup local:', err);
@@ -123,15 +128,30 @@ export const investmentsService = {
       created_at: inv.created_at || new Date().toISOString(),
     };
 
+    const cleanPayload = {
+      macro_type: inv.macro_type,
+      category: inv.category,
+      name: inv.name,
+      ticker: inv.ticker || null,
+      institution: inv.institution || '',
+      rate_or_yield: inv.rate_or_yield || null,
+      liquidity: inv.liquidity || null,
+      due_date: inv.due_date || null,
+      quantity: Number(inv.quantity || 0),
+      average_price: Number(inv.average_price || 0),
+      invested_amount: Number(inv.invested_amount || 0),
+      current_value: Number(inv.current_value || 0),
+      profitability_pct: Number(inv.profitability_pct || 0),
+      total_dividends_received: Number(inv.total_dividends_received || 0),
+      user_id: user.id,
+      created_at: inv.created_at || new Date().toISOString(),
+    };
+
     try {
       const client = supabase;
       const { data, error } = await client
         .from('investments')
-        .insert({
-          ...inv,
-          user_id: user.id,
-          created_at: inv.created_at || new Date().toISOString(),
-        })
+        .insert(cleanPayload)
         .select()
         .single();
 
@@ -140,11 +160,7 @@ export const investmentsService = {
         if (supabaseAdmin) {
           const { data: adminData, error: adminErr } = await supabaseAdmin
             .from('investments')
-            .insert({
-              ...inv,
-              user_id: user.id,
-              created_at: inv.created_at || new Date().toISOString(),
-            })
+            .insert(cleanPayload)
             .select()
             .single();
 

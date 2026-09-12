@@ -64,6 +64,7 @@ export const thirdPartiesService = {
           !formatted.some(remote => remote.id === local.id || (remote.person_name === local.person_name && remote.description === local.description))
         );
 
+        const uninsertedPending: DbThirdPartyDebt[] = [];
         if (pendingLocal.length > 0) {
           for (const item of pendingLocal) {
             try {
@@ -79,15 +80,19 @@ export const thirdPartiesService = {
                   total_amount: Number(inserted.total_amount || 0),
                   paid_amount: Number(inserted.paid_amount || 0),
                 } as DbThirdPartyDebt);
+              } else {
+                uninsertedPending.push(item);
               }
             } catch (e) {
               console.warn('Erro ao sincronizar débito de terceiro para o Supabase:', e);
+              uninsertedPending.push(item);
             }
           }
         }
 
-        saveLocalDebts(user.id, formatted);
-        return formatted;
+        const mergedAll = [...formatted, ...uninsertedPending];
+        saveLocalDebts(user.id, mergedAll);
+        return mergedAll;
       }
     } catch (err) {
       console.warn('Supabase indisponível para busca de débitos, usando backup local:', err);

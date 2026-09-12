@@ -54,20 +54,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        const localAvatar = typeof window !== 'undefined' ? localStorage.getItem(`kaxxa_user_avatar_${session.user.id}`) : null;
         setUserInfo({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
           email: session.user.email || '',
-          avatar: session.user.user_metadata?.avatar_url || null
+          avatar: localAvatar || session.user.user_metadata?.avatar_url || null
         });
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
+        const localAvatar = typeof window !== 'undefined' ? localStorage.getItem(`kaxxa_user_avatar_${session.user.id}`) : null;
         setUserInfo({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
           email: session.user.email || '',
-          avatar: session.user.user_metadata?.avatar_url || null
+          avatar: localAvatar || session.user.user_metadata?.avatar_url || null
         });
       }
     });

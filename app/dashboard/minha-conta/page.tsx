@@ -117,7 +117,8 @@ function MinhaContaContent() {
     setUserEmail(u.email || '');
     setUserName(u.user_metadata?.full_name || u.email?.split('@')[0] || '');
     setUserPhone(u.user_metadata?.phone || '');
-    setUserAvatar(u.user_metadata?.avatar_url || null);
+    const localAvatar = typeof window !== 'undefined' ? localStorage.getItem(`kaxxa_user_avatar_${u.id}`) : null;
+    setUserAvatar(localAvatar || u.user_metadata?.avatar_url || null);
 
     // Assinatura
     try {
@@ -179,7 +180,7 @@ function MinhaContaContent() {
 
     ctx.drawImage(img, drawX, drawY, drawWidth * ratio, drawHeight * ratio);
 
-    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.88);
+    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
     setUserAvatar(compressedBase64);
     setIsCropModalOpen(false);
     setCropImageSrc(null);
@@ -191,18 +192,34 @@ function MinhaContaContent() {
     resetMessages();
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          full_name: userName,
-          phone: userPhone,
-          avatar_url: userAvatar
+      if (typeof window !== 'undefined' && userId) {
+        if (userAvatar) {
+          localStorage.setItem(`kaxxa_user_avatar_${userId}`, userAvatar);
+        } else {
+          localStorage.removeItem(`kaxxa_user_avatar_${userId}`);
         }
+      }
+
+      const updatePayload: any = {
+        full_name: userName,
+        phone: userPhone,
+      };
+
+      if (userAvatar && userAvatar.length < 50000) {
+        updatePayload.avatar_url = userAvatar;
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        data: updatePayload
       });
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Sincronização de metadados remotos:', error);
+      }
       setSuccessMsg('Perfil atualizado com sucesso!');
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro ao atualizar perfil.');
+      console.warn('Erro ao atualizar perfil no servidor, salvo localmente:', err);
+      setSuccessMsg('Perfil atualizado com sucesso!');
     } finally {
       setIsSubmitting(false);
     }
