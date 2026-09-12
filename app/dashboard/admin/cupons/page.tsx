@@ -61,26 +61,13 @@ export default function AdminCouponsPage() {
     try {
       const res = await fetch('/api/coupons');
       const data = await res.json();
-      let apiCoupons: CouponItem[] = data.coupons || [];
-
-      // Mescla com localStorage para resiliência imediata
-      const localStored = localStorage.getItem('kaxxa_admin_coupons');
-      let localCoupons: CouponItem[] = [];
-      if (localStored) {
-        try { localCoupons = JSON.parse(localStored); } catch {}
+      if (res.ok && data.coupons) {
+        const apiCoupons: CouponItem[] = data.coupons;
+        setCoupons(apiCoupons);
+        localStorage.setItem('kaxxa_admin_coupons', JSON.stringify(apiCoupons));
+      } else {
+        throw new Error(data.error || 'Erro ao carregar cupons');
       }
-
-      const mergedMap = new Map<string, CouponItem>();
-      for (const c of localCoupons) {
-        mergedMap.set(c.code, c);
-      }
-      for (const c of apiCoupons) {
-        mergedMap.set(c.code, c);
-      }
-
-      const finalCoupons = Array.from(mergedMap.values());
-      setCoupons(finalCoupons);
-      localStorage.setItem('kaxxa_admin_coupons', JSON.stringify(finalCoupons));
     } catch (err) {
       console.error('Erro ao buscar cupons:', err);
       const localStored = localStorage.getItem('kaxxa_admin_coupons');
@@ -144,6 +131,7 @@ export default function AdminCouponsPage() {
       setNewCouponValue(newCouponType === 'TRIAL_DAYS' ? 2 : 20);
 
       setTimeout(() => setSuccessMsg(''), 4000);
+      loadCoupons();
     } catch (err: any) {
       setErrorMsg(err.message || 'Falha ao salvar cupom');
     } finally {
@@ -151,15 +139,25 @@ export default function AdminCouponsPage() {
     }
   };
 
-  const handleDeleteCoupon = async (id: string) => {
+  const handleDeleteCoupon = async (idOrCode: string) => {
     if (!window.confirm('Tem certeza que deseja excluir este cupom?')) return;
     try {
-      await fetch(`/api/coupons?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-      const updated = coupons.filter(c => c.id !== id);
+      setErrorMsg('');
+      setSuccessMsg('');
+      const res = await fetch(`/api/coupons?id=${encodeURIComponent(idOrCode)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Não foi possível excluir o cupom.');
+      }
+      const updated = coupons.filter(c => c.id !== idOrCode && c.code !== idOrCode);
       setCoupons(updated);
       localStorage.setItem('kaxxa_admin_coupons', JSON.stringify(updated));
-    } catch (err) {
+      setSuccessMsg('Cupom excluído com sucesso!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+      loadCoupons();
+    } catch (err: any) {
       console.error('Erro ao excluir cupom:', err);
+      setErrorMsg(err.message || 'Erro ao excluir cupom');
     }
   };
 
