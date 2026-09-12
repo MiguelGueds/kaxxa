@@ -428,9 +428,6 @@ export default function InvestimentosPage() {
         if (userTxs && userTxs.length > 0) {
           const divTxTotal = userTxs
             .filter(t => t.type === 'INCOME' && (
-              (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.category_name)) ||
-              (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.description)) ||
-              (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica/i.test(t.notes))
               (t.category_name && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.category_name)) ||
               (t.description && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.description)) ||
               (t.notes && /dividendo|dividend|rendimento|jcp|provento|lucro|bonifica|investimento|caixinha|cdb|tesouro|b3|fii|acao|ações|juros|ganho|retorno/i.test(t.notes))
