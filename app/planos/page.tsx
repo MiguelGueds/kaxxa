@@ -323,7 +323,7 @@ export default function PlanosCheckoutPage() {
 
       // Garante a gravação direta no Supabase pelo cliente autenticado do navegador (usando auth.uid())
       try {
-        const days = data.days || appliedCoupon.value || 2;
+        const days = data.days ?? appliedCoupon.value ?? 1;
         await subscriptionService.activateSubscription({
           userId: activeUser.id,
           status: appliedCoupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
@@ -338,7 +338,7 @@ export default function PlanosCheckoutPage() {
 
       // Salva localmente para acesso imediato no navegador sem depender do Supabase
       if (typeof window !== 'undefined') {
-        const days = data.days || appliedCoupon.value || 2;
+        const days = data.days ?? appliedCoupon.value ?? 1;
         const endsAt = data.endsAt || (data.subscription ? data.subscription.current_period_end : new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString());
         localStorage.setItem('kaxxa_trial_active', JSON.stringify({
           id: data.subscription?.id || `trial-${Date.now()}`,

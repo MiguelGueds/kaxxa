@@ -235,7 +235,7 @@ export const subscriptionService = {
 
             if (usage) {
               const usedAt = usage.used_at ? parseExpirationTime(usage.used_at) : Date.now();
-              const days = c.type === 'TRIAL_DAYS' ? (c.value || 2) : 30;
+              const days = c.type === 'TRIAL_DAYS' ? (c.value ?? 1) : 30;
               const periodEnd = new Date((usedAt > 0 ? usedAt : Date.now()) + days * 24 * 60 * 60 * 1000).toISOString();
               const isExpired = parseExpirationTime(periodEnd) <= Date.now();
 
