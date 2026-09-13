@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { PortalModal } from '@/app/components/PortalModal';
 import { investmentsService } from '@/lib/services/investments';
 import { transactionsService } from '@/lib/services/transactions';
+import { generateUuid } from '@/lib/utils/uuid';
 import { 
   TrendingUp, 
   Plus, 
@@ -1073,7 +1074,7 @@ export default function InvestimentosPage() {
           };
         }));
       } else {
-        let createdId = 'inv-rf-' + Date.now();
+        let createdId = generateUuid();
         let createdAtIso = selectedIsoDate;
         try {
           const created = await investmentsService.createInvestment({
@@ -1179,7 +1180,7 @@ export default function InvestimentosPage() {
           };
         }));
       } else {
-        let createdId = 'inv-rv-' + Date.now();
+        let createdId = generateUuid();
         let createdAtIso = selectedIsoDate;
         try {
           const created = await investmentsService.createInvestment({

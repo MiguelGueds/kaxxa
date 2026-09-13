@@ -129,7 +129,10 @@ export const debtsService = {
               const payloadToSync = {
                 ...cleanItem,
                 id: newUuid,
-                user_id: user.id
+                user_id: user.id,
+                monthly_payment: Number(cleanItem.monthly_payment || 0),
+                original_amount: Number(cleanItem.original_amount || 0),
+                current_balance: Number(cleanItem.current_balance || 0),
               };
               const { data: inserted, error: insertErr } = await client
                 .from('debts')
@@ -175,6 +178,9 @@ export const debtsService = {
       ...debtData,
       id: generatedId,
       user_id: user.id,
+      monthly_payment: Number(debtData.monthly_payment || 0),
+      original_amount: Number(debtData.original_amount || 0),
+      current_balance: Number(debtData.current_balance || 0),
     };
 
     let insertedData = null;

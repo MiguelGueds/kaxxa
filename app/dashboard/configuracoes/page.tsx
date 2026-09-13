@@ -335,17 +335,11 @@ function SettingsContent() {
       const user = await getAuthenticatedUser();
       if (!user?.id) throw new Error('Usuário não autenticado');
       const tpId = generateUuid();
-      let { error } = await supabase.from('third_parties').insert({ 
+      const { error } = await supabase.from('third_parties').insert({ 
         id: tpId,
         user_id: user.id, 
-        name: thirdPartyName.trim(), 
-        phone: thirdPartyPhone.trim() || null, 
-        avatar_url: thirdPartyAvatar || null 
+        name: thirdPartyName.trim()
       });
-      if (error && (error.message.includes('phone') || error.message.includes('avatar_url') || error.code === 'PGRST204')) {
-        const retry = await supabase.from('third_parties').insert({ id: tpId, user_id: user.id, name: thirdPartyName.trim() });
-        error = retry.error;
-      }
       if (error) {
         setErrorMsg(error.message);
       } else {

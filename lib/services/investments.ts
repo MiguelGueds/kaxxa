@@ -18,6 +18,7 @@ export interface DbInvestment {
   current_value: number;
   profitability_pct: number;
   total_dividends_received?: number;
+  account_id?: string;
   notes?: string;
   created_at?: string;
 }
@@ -121,12 +122,26 @@ export const investmentsService = {
         if (realPendingLocal.length > 0) {
           for (const item of realPendingLocal) {
             try {
-              const { user_id, ...cleanItem } = item;
               const newUuid = isValidUuid(item.id) ? item.id : generateUuid();
               const payloadToSync = {
-                ...cleanItem,
                 id: newUuid,
-                user_id: user.id
+                user_id: user.id,
+                macro_type: item.macro_type || 'VARIAVEL',
+                category: item.category,
+                name: item.name,
+                ticker: item.ticker || null,
+                institution: item.institution || '',
+                rate_or_yield: item.rate_or_yield || null,
+                liquidity: item.liquidity || null,
+                due_date: item.due_date || null,
+                quantity: Number(item.quantity || 0),
+                average_price: Number(item.average_price || 0),
+                invested_amount: Number(item.invested_amount || 0),
+                current_value: Number(item.current_value || 0),
+                profitability_pct: Number(item.profitability_pct || 0),
+                account_id: item.account_id || null,
+                notes: item.notes || null,
+                created_at: item.created_at || new Date().toISOString(),
               };
               const { data: inserted, error: insertErr } = await client
                 .from('investments')
@@ -141,6 +156,7 @@ export const investmentsService = {
                   invested_amount: Number(inserted.invested_amount || 0),
                   current_value: Number(inserted.current_value || 0),
                   profitability_pct: Number(inserted.profitability_pct || 0),
+                  total_dividends_received: Number(item.total_dividends_received || 0),
                 } as DbInvestment);
               } else {
                 uninsertedPending.push(item);
@@ -179,7 +195,8 @@ export const investmentsService = {
 
     const cleanPayload = {
       id: generatedId,
-      macro_type: inv.macro_type,
+      user_id: user.id,
+      macro_type: inv.macro_type || 'VARIAVEL',
       category: inv.category,
       name: inv.name,
       ticker: inv.ticker || null,
@@ -192,8 +209,8 @@ export const investmentsService = {
       invested_amount: Number(inv.invested_amount || 0),
       current_value: Number(inv.current_value || 0),
       profitability_pct: Number(inv.profitability_pct || 0),
-      total_dividends_received: Number(inv.total_dividends_received || 0),
-      user_id: user.id,
+      account_id: (inv as any).account_id || null,
+      notes: inv.notes || null,
       created_at: newItem.created_at,
     };
 
@@ -229,6 +246,7 @@ export const investmentsService = {
         invested_amount: Number(insertedData.invested_amount || 0),
         current_value: Number(insertedData.current_value || 0),
         profitability_pct: Number(insertedData.profitability_pct || 0),
+        total_dividends_received: Number(inv.total_dividends_received || 0),
       } as DbInvestment;
 
       const currentLocal = getLocalInvestments(user.id);
@@ -252,9 +270,10 @@ export const investmentsService = {
 
     try {
       const client = supabaseAdmin || supabase;
+      const { total_dividends_received, ...cleanUpdates } = updates as any;
       const { error } = await client
         .from('investments')
-        .update(updates)
+        .update(cleanUpdates)
         .eq('id', id)
         .eq('user_id', user.id);
 

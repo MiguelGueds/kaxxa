@@ -150,9 +150,11 @@ export const cardsService = {
               const { user_id, ...cleanItem } = item;
               const newUuid = isValidUuid(item.id) ? item.id : generateUuid();
               const payloadToSync = {
-                ...cleanItem,
                 id: newUuid,
-                user_id: user.id
+                user_id: user.id,
+                name: cleanItem.name,
+                closing_day: Number(cleanItem.closing_day || 1),
+                due_day: Number(cleanItem.due_day || 10),
               };
               const { data: inserted, error: insertErr } = await client
                 .from('credit_cards')
@@ -161,9 +163,10 @@ export const cardsService = {
                 .single();
               if (inserted && !insertErr) {
                 formatted.unshift({
+                  ...cleanItem,
                   ...inserted,
-                  credit_limit: Number(inserted.credit_limit || 0),
-                  limit_used: Number(inserted.limit_used || 0),
+                  credit_limit: Number(cleanItem.credit_limit || 0),
+                  limit_used: Number(cleanItem.limit_used || 0),
                 } as DbCard);
               } else {
                 uninsertedPending.push(item);
@@ -209,10 +212,11 @@ export const cardsService = {
     };
 
     const payload = {
-      ...card,
       id: generatedId,
       user_id: user.id,
-      limit_used: 0,
+      name: card.name,
+      closing_day: Number(card.closing_day || 1),
+      due_day: Number(card.due_day || 10),
     };
 
     let insertedData = null;

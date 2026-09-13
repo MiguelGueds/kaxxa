@@ -116,9 +116,17 @@ export const transactionsService = {
               const { user_id, ...cleanItem } = item;
               const newUuid = isValidUuid(item.id) ? item.id : generateUuid();
               const payloadToSync = {
-                ...cleanItem,
                 id: newUuid,
-                user_id: user.id
+                user_id: user.id,
+                description: item.description || 'Sem descrição',
+                amount: Number(item.amount || 0),
+                type: item.type || 'EXPENSE',
+                category_id: isValidUuid(item.category_id) ? item.category_id : null,
+                account_id: isValidUuid(item.account_id) ? item.account_id : null,
+                credit_card_id: isValidUuid(item.credit_card_id) ? item.credit_card_id : null,
+                date: item.date || new Date().toISOString().split('T')[0],
+                is_paid: item.is_paid !== undefined ? Boolean(item.is_paid) : true,
+                notes: item.notes || null,
               };
               const { data: inserted, error: insertErr } = await client
                 .from('transactions')
@@ -127,6 +135,7 @@ export const transactionsService = {
                 .single();
               if (inserted && !insertErr) {
                 formatted.unshift({
+                  ...item,
                   ...inserted,
                   amount: Number(inserted.amount || 0),
                 } as DbTransaction);
@@ -164,9 +173,17 @@ export const transactionsService = {
     };
 
     const payload = {
-      ...tx,
       id: generatedId,
       user_id: user.id,
+      description: tx.description || 'Sem descrição',
+      amount: Number(tx.amount || 0),
+      type: tx.type || 'EXPENSE',
+      category_id: isValidUuid(tx.category_id) ? tx.category_id : null,
+      account_id: isValidUuid(tx.account_id) ? tx.account_id : null,
+      credit_card_id: isValidUuid(tx.credit_card_id) ? tx.credit_card_id : null,
+      date: tx.date || new Date().toISOString().split('T')[0],
+      is_paid: tx.is_paid !== undefined ? Boolean(tx.is_paid) : true,
+      notes: tx.notes || null,
     };
 
     let insertedData = null;

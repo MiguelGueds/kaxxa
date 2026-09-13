@@ -111,7 +111,6 @@ export const accountsService = {
                 name: cleanItem.name,
                 type: cleanItem.type,
                 initial_balance: Number(cleanItem.initial_balance ?? cleanItem.balance ?? 0),
-                color: cleanItem.color || '#1A44C8'
               };
               const { data: inserted, error: insertErr } = await client
                 .from('accounts')
@@ -121,8 +120,9 @@ export const accountsService = {
               if (inserted && !insertErr) {
                 formatted.unshift({
                   ...inserted,
-                  balance: Number(inserted.balance ?? inserted.initial_balance ?? 0),
+                  balance: Number(inserted.initial_balance ?? 0),
                   initial_balance: Number(inserted.initial_balance ?? 0),
+                  color: cleanItem.color || '#1A44C8',
                 } as DbAccount);
               } else {
                 uninsertedPending.push(item);
@@ -167,7 +167,6 @@ export const accountsService = {
       name: acc.name,
       type: acc.type,
       initial_balance: acc.balance,
-      color: acc.color,
     };
 
     try {

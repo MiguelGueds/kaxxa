@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin, getAuthenticatedUser, isSupabaseConfigured } from '@/lib/supabase';
+import { generateUuid, isValidUuid } from '@/lib/utils/uuid';
 import { isAdminEmail } from '@/lib/admin';
 
 export interface DbSubscription {
@@ -376,7 +377,7 @@ export const subscriptionService = {
     const status = params.status || 'ACTIVE';
 
     const subData: DbSubscription = {
-      id: `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUuid(),
       user_id: params.userId,
       status: status,
       plan_type: planType,
