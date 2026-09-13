@@ -71,8 +71,10 @@ export default function LoginPage() {
 
         if (error) throw error;
 
-        if (data.session) {
-          // Usuário cadastrado e logado automaticamente
+        if (data.session?.user) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('kaxxa_user_cache', JSON.stringify({ id: data.session.user.id, email: data.session.user.email }));
+          }
           const pendingCoupon = typeof window !== 'undefined' ? localStorage.getItem('kaxxa_pending_coupon') : null;
           if (pendingCoupon) {
             router.push(`/planos?cupom=${encodeURIComponent(pendingCoupon)}`);
@@ -93,6 +95,9 @@ export default function LoginPage() {
         if (error) throw error;
 
         if (data.session?.user) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('kaxxa_user_cache', JSON.stringify({ id: data.session.user.id, email: data.session.user.email }));
+          }
           const pendingCoupon = typeof window !== 'undefined' ? localStorage.getItem('kaxxa_pending_coupon') : null;
           if (pendingCoupon) {
             router.push(`/planos?cupom=${encodeURIComponent(pendingCoupon)}`);

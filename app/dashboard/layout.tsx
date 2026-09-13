@@ -104,10 +104,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   // Verificação de Paywall / Assinatura
   useEffect(() => {
     let isMounted = true;
+
+    // Fast path: se for admin ou tiver usuário em cache / acesso concedido, exibe a interface imediatamente (0ms)
+    if (isAdminEmail(userInfo.email) || (typeof window !== 'undefined' && (localStorage.getItem('kaxxa_user_cache') || localStorage.getItem('kaxxa_access_granted')))) {
+      setAccessGranted(true);
+    }
+
     async function checkSubscription() {
       try {
         const { granted, subscription, expiredReason } = await subscriptionService.isAccessGranted();
-        if (!granted) {
+        if (!granted && !isAdminEmail(userInfo.email)) {
           if (isMounted) setAccessGranted(false);
           if (expiredReason === 'TRIAL_EXPIRED') {
             router.replace('/planos?expired=trial');
@@ -135,8 +141,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         if (isMounted) setAccessGranted(true);
       } catch (err) {
         console.error('Erro ao verificar permissão:', err);
-        if (isMounted) setAccessGranted(false);
-        router.replace('/planos');
+        if (!isAdminEmail(userInfo.email)) {
+          if (isMounted) setAccessGranted(false);
+          router.replace('/planos');
+        } else {
+          if (isMounted) setAccessGranted(true);
+        }
       }
     }
     checkSubscription();

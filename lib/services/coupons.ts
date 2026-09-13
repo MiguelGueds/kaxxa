@@ -341,24 +341,43 @@ export const couponService = {
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
-        const { error: subError } = await client
+        const { data: existingSub } = await client
           .from('subscriptions')
-          .upsert({
-            user_id: params.userId,
-            status: coupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
-            plan_type: 'MENSAL',
-            payment_method: 'PIX',
-            payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
-            amount: coupon.type === 'TRIAL_DAYS' ? 0.00 : (coupon.value === 100 ? 0.00 : 39.90),
-            current_period_end: currentPeriodEnd,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
+          .select('id')
+          .eq('user_id', params.userId)
+          .maybeSingle();
 
-        if (subError) {
-          console.warn('Supabase subscriptions indisponível para upsert, usando fallback local:', subError);
+        if (existingSub?.id) {
+          await client
+            .from('subscriptions')
+            .update({
+              status: coupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
+              plan_type: 'MENSAL',
+              payment_method: 'PIX',
+              payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
+              amount: coupon.type === 'TRIAL_DAYS' ? 0.00 : (coupon.value === 100 ? 0.00 : 39.90),
+              current_period_end: currentPeriodEnd,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingSub.id);
+        } else {
+          await client
+            .from('subscriptions')
+            .insert({
+              id: createdSubscription.id,
+              user_id: params.userId,
+              status: coupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
+              plan_type: 'MENSAL',
+              payment_method: 'PIX',
+              payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
+              amount: coupon.type === 'TRIAL_DAYS' ? 0.00 : (coupon.value === 100 ? 0.00 : 39.90),
+              current_period_end: currentPeriodEnd,
+              updated_at: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+            });
         }
       } catch (err) {
-        console.warn('Supabase subscriptions upsert falhou, acesso local garantido:', err);
+        console.warn('Supabase subscriptions escrita falhou, acesso local garantido:', err);
       }
     }
 
