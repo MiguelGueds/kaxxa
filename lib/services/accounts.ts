@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
+import { generateUuid, isValidUuid } from '@/lib/utils/uuid';
 
 export interface DbAccount {
   id: string;
@@ -94,8 +95,8 @@ export const accountsService = {
         // Sincroniza contas criadas localmente pendentes que ainda não subiram para o Supabase
         const localItems = getLocalAccounts(user.id);
         const pendingLocal = localItems.filter(local =>
-          local.id.startsWith('acc-') &&
-          !formatted.some(remote => remote.id === local.id || remote.name.toLowerCase() === local.name.toLowerCase())
+          (!isValidUuid(local.id) || local.id.startsWith('acc-')) &&
+          !formatted.some(remote => remote.name.toLowerCase() === local.name.toLowerCase())
         );
 
         const uninsertedPending: DbAccount[] = [];
@@ -103,17 +104,21 @@ export const accountsService = {
           for (const item of pendingLocal) {
             try {
               const { user_id, ...cleanItem } = item;
+              const newUuid = isValidUuid(item.id) ? item.id : generateUuid();
               const payloadToSync = {
-                ...cleanItem,
-                id: item.id || ('acc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
-                user_id: user.id
+                id: newUuid,
+                user_id: user.id,
+                name: cleanItem.name,
+                type: cleanItem.type,
+                initial_balance: Number(cleanItem.initial_balance ?? cleanItem.balance ?? 0),
+                color: cleanItem.color || '#1A44C8'
               };
-              const { data: inserted } = await client
+              const { data: inserted, error: insertErr } = await client
                 .from('accounts')
                 .insert(payloadToSync)
                 .select()
                 .single();
-              if (inserted) {
+              if (inserted && !insertErr) {
                 formatted.unshift({
                   ...inserted,
                   balance: Number(inserted.balance ?? inserted.initial_balance ?? 0),
@@ -144,8 +149,9 @@ export const accountsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
+    const generatedId = generateUuid();
     const newItem: DbAccount = {
-      id: 'acc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      id: generatedId,
       user_id: user.id,
       name: acc.name,
       type: acc.type,
@@ -156,7 +162,7 @@ export const accountsService = {
     };
 
     const payload = {
-      id: newItem.id,
+      id: generatedId,
       user_id: user.id,
       name: acc.name,
       type: acc.type,

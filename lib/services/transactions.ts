@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
+import { generateUuid, isValidUuid } from '@/lib/utils/uuid';
 import { accountsService } from './accounts';
 
 export interface DbTransaction {
@@ -104,8 +105,8 @@ export const transactionsService = {
         // Sincroniza transações criadas localmente pendentes que ainda não subiram para o Supabase
         const localItems = getLocalTransactions(user.id);
         const pendingLocal = localItems.filter(local =>
-          local.id.startsWith('tx-') &&
-          !formatted.some(remote => remote.id === local.id || (remote.description === local.description && remote.date === local.date && Number(remote.amount) === Number(local.amount)))
+          (!isValidUuid(local.id) || local.id.startsWith('tx-')) &&
+          !formatted.some(remote => (remote.description === local.description && remote.date === local.date && Number(remote.amount) === Number(local.amount)))
         );
 
         const uninsertedPending: DbTransaction[] = [];
@@ -113,17 +114,18 @@ export const transactionsService = {
           for (const item of pendingLocal) {
             try {
               const { user_id, ...cleanItem } = item;
+              const newUuid = isValidUuid(item.id) ? item.id : generateUuid();
               const payloadToSync = {
                 ...cleanItem,
-                id: item.id || ('tx-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+                id: newUuid,
                 user_id: user.id
               };
-              const { data: inserted } = await client
+              const { data: inserted, error: insertErr } = await client
                 .from('transactions')
                 .insert(payloadToSync)
                 .select()
                 .single();
-              if (inserted) {
+              if (inserted && !insertErr) {
                 formatted.unshift({
                   ...inserted,
                   amount: Number(inserted.amount || 0),
@@ -153,16 +155,17 @@ export const transactionsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
+    const generatedId = generateUuid();
     const newItem: DbTransaction = {
       ...tx,
-      id: 'tx-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      id: generatedId,
       user_id: user.id,
       created_at: new Date().toISOString(),
     };
 
     const payload = {
       ...tx,
-      id: newItem.id,
+      id: generatedId,
       user_id: user.id,
     };
 

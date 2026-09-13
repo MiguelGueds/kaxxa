@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, getAuthenticatedUser } from '@/lib/supabase';
+import { generateUuid } from '@/lib/utils/uuid';
 import { subscriptionService, DbSubscription } from '@/lib/services/subscription';
 import { accountsService } from '@/lib/services/accounts';
 import { cardsService } from '@/lib/services/cards';
@@ -116,9 +117,33 @@ function SettingsContent() {
   };
 
   const fetchData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
     const user = await getAuthenticatedUser();
     if (!user) return;
 
+    // Dados Financeiros
+    const [catRes, accRes, cardRes, thirdRes] = await Promise.all([
+      supabase.from('categories').select('*').eq('user_id', session.user.id).order('name'),
+      supabase.from('accounts').select('*').eq('user_id', session.user.id).order('name'),
+      supabase.from('credit_cards').select('*').eq('user_id', session.user.id).order('name'),
+      supabase.from('third_parties').select('*').eq('user_id', session.user.id).order('name')
+    ]);
+      
+    if (catRes.data) setCategories(catRes.data);
+    if (accRes.data) setAccounts(accRes.data.map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      type: a.type,
+      balance: Number(a.balance ?? a.initial_balance ?? 0)
+    })));
+    if (cardRes.data) setCards(cardRes.data.map(c => ({
+      id: c.id,
+      name: c.name,
+      limit: Number(c.credit_limit ?? c.limit ?? 0),
+      due_day: c.due_day
+    })));
+    if (thirdRes.data) setThirdParties(thirdRes.data);
     try {
       const [catRes, accList, cardList, thirdRes] = await Promise.all([
         supabase.from('categories').select('*').eq('user_id', user.id).order('name').then(r => r, () => ({ data: null })),
@@ -184,20 +209,29 @@ function SettingsContent() {
     try {
       const user = await getAuthenticatedUser();
       if (!user?.id) throw new Error('Usuário não autenticado');
+      const newId = generateUuid();
       const { error } = await supabase.from('categories').insert({ 
-        id: 'cat-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        id: newId,
         user_id: user.id, 
         name: categoryName.trim(), 
         type: categoryType, 
         parent_id: categoryParentId 
       });
-      if (error) setErrorMsg(error.message); else { setSuccessMsg('Salvo!'); setCategoryName(''); fetchData(); setTimeout(() => setIsCategoryModalOpen(false), 800); }
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
+        setSuccessMsg('Salvo!');
+        setCategoryName('');
+        setIsCategoryModalOpen(false);
+        fetchData();
+      }
     } catch (err: any) {
       setErrorMsg(err?.message || 'Erro ao salvar categoria');
     } finally {
       setIsSubmitting(false);
     }
   };
+
   // --- EXCLUSÃO PROPRIETÁRIA KAXXA ---
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
@@ -205,7 +239,6 @@ function SettingsContent() {
     resetMessages();
     try {
       if (deleteTarget.type === 'CATEGORY') {
-        // Se for categoria principal, remove também eventuais subcategorias vinculadas
         await supabase.from('categories').delete().eq('parent_id', deleteTarget.id);
         await supabase.from('categories').delete().eq('id', deleteTarget.id);
       } else if (deleteTarget.type === 'ACCOUNT') {
@@ -216,8 +249,8 @@ function SettingsContent() {
         await supabase.from('third_parties').delete().eq('id', deleteTarget.id);
       }
       setSuccessMsg('Item excluído com sucesso!');
-      fetchData();
       setDeleteTarget(null);
+      fetchData();
     } catch (err: any) {
       setErrorMsg(err?.message || 'Erro ao excluir item.');
     } finally {
@@ -241,8 +274,8 @@ function SettingsContent() {
       });
       if (created) {
         setSuccessMsg('Conta salva!');
-        await fetchData();
-        setTimeout(() => setIsAccountModalOpen(false), 800);
+        setIsAccountModalOpen(false);
+        fetchData();
       } else {
         setErrorMsg('Não foi possível salvar a conta.');
       }
@@ -275,8 +308,8 @@ function SettingsContent() {
       });
       if (created) {
         setSuccessMsg('Cartão salvo!');
+        setIsCardModalOpen(false);
         fetchData();
-        setTimeout(() => setIsCardModalOpen(false), 800);
       } else {
         setErrorMsg('Não foi possível salvar o cartão.');
       }
@@ -301,7 +334,7 @@ function SettingsContent() {
     try {
       const user = await getAuthenticatedUser();
       if (!user?.id) throw new Error('Usuário não autenticado');
-      const tpId = 'tp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+      const tpId = generateUuid();
       let { error } = await supabase.from('third_parties').insert({ 
         id: tpId,
         user_id: user.id, 
@@ -313,7 +346,13 @@ function SettingsContent() {
         const retry = await supabase.from('third_parties').insert({ id: tpId, user_id: user.id, name: thirdPartyName.trim() });
         error = retry.error;
       }
-      if (error) setErrorMsg(error.message); else { setSuccessMsg('Pessoa salva!'); fetchData(); setTimeout(() => setIsThirdPartyModalOpen(false), 800); }
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
+        setSuccessMsg('Pessoa salva!');
+        setIsThirdPartyModalOpen(false);
+        fetchData();
+      }
     } catch (err: any) {
       setErrorMsg(err?.message || "Erro ao salvar terceiro");
     } finally {

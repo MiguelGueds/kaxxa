@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
+import { generateUuid, isValidUuid } from '@/lib/utils/uuid';
 import { transactionsService } from './transactions';
 
 export interface DbCard {
@@ -138,8 +139,8 @@ export const cardsService = {
 
         const localItems = getLocalCards(user.id);
         const pendingLocal = localItems.filter(local =>
-          local.id.startsWith('crd-') &&
-          !formatted.some(remote => remote.id === local.id || (remote.name.toLowerCase() === local.name.toLowerCase() && remote.last_digits === local.last_digits))
+          (!isValidUuid(local.id) || local.id.startsWith('crd-')) &&
+          !formatted.some(remote => (remote.name.toLowerCase() === local.name.toLowerCase() && remote.last_digits === local.last_digits))
         );
 
         const uninsertedPending: DbCard[] = [];
@@ -147,17 +148,18 @@ export const cardsService = {
           for (const item of pendingLocal) {
             try {
               const { user_id, ...cleanItem } = item;
+              const newUuid = isValidUuid(item.id) ? item.id : generateUuid();
               const payloadToSync = {
                 ...cleanItem,
-                id: item.id || ('crd-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+                id: newUuid,
                 user_id: user.id
               };
-              const { data: inserted } = await client
+              const { data: inserted, error: insertErr } = await client
                 .from('credit_cards')
                 .insert(payloadToSync)
                 .select()
                 .single();
-              if (inserted) {
+              if (inserted && !insertErr) {
                 formatted.unshift({
                   ...inserted,
                   credit_limit: Number(inserted.credit_limit || 0),
@@ -197,9 +199,10 @@ export const cardsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
+    const generatedId = generateUuid();
     const newItem: DbCard = {
       ...card,
-      id: 'crd-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      id: generatedId,
       user_id: user.id,
       limit_used: 0,
       created_at: new Date().toISOString(),
@@ -207,7 +210,7 @@ export const cardsService = {
 
     const payload = {
       ...card,
-      id: newItem.id,
+      id: generatedId,
       user_id: user.id,
       limit_used: 0,
     };

@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
+import { generateUuid, isValidUuid } from '@/lib/utils/uuid';
 
 export interface DbAmortization {
   id: string;
@@ -115,7 +116,7 @@ export const debtsService = {
 
         const localItems = getLocalDebts(user.id);
         const pendingLocal = localItems.filter(local =>
-          local.id.startsWith('dbt-') &&
+          (!isValidUuid(local.id) || local.id.startsWith('dbt-')) &&
           !formatted.some(remote => remote.id === local.id || remote.name.toLowerCase() === local.name.toLowerCase())
         );
 
@@ -124,18 +125,19 @@ export const debtsService = {
           for (const item of pendingLocal) {
             try {
               const { user_id, amortizations, ...cleanItem } = item;
+              const newUuid = isValidUuid(item.id) ? item.id : generateUuid();
               const payloadToSync = {
                 ...cleanItem,
-                id: item.id || ('dbt-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+                id: newUuid,
                 user_id: user.id
               };
-              const { data: inserted } = await client
+              const { data: inserted, error: insertErr } = await client
                 .from('debts')
                 .insert(payloadToSync)
                 .select('*, amortizations(*)')
                 .single();
 
-              if (inserted) {
+              if (inserted && !insertErr) {
                 formatted.unshift(inserted as DbDebt);
               } else {
                 uninsertedPending.push(item);
@@ -162,15 +164,16 @@ export const debtsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
+    const generatedId = generateUuid();
     const newItem: DbDebt = {
       ...debtData,
-      id: 'dbt-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      id: generatedId,
       user_id: user.id,
     };
 
     const payload = {
       ...debtData,
-      id: newItem.id,
+      id: generatedId,
       user_id: user.id,
     };
 

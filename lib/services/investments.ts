@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
+import { generateUuid, isValidUuid } from '@/lib/utils/uuid';
 
 export interface DbInvestment {
   id: string;
@@ -121,17 +122,18 @@ export const investmentsService = {
           for (const item of realPendingLocal) {
             try {
               const { user_id, ...cleanItem } = item;
+              const newUuid = isValidUuid(item.id) ? item.id : generateUuid();
               const payloadToSync = {
                 ...cleanItem,
-                id: item.id || ('inv-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+                id: newUuid,
                 user_id: user.id
               };
-              const { data: inserted } = await client
+              const { data: inserted, error: insertErr } = await client
                 .from('investments')
                 .insert(payloadToSync)
                 .select()
                 .single();
-              if (inserted) {
+              if (inserted && !insertErr) {
                 formatted.unshift({
                   ...inserted,
                   quantity: Number(inserted.quantity || 0),
@@ -167,15 +169,16 @@ export const investmentsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
+    const generatedId = generateUuid();
     const newItem: DbInvestment = {
       ...inv,
-      id: 'inv-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      id: generatedId,
       user_id: user.id,
       created_at: inv.created_at || new Date().toISOString(),
     };
 
     const cleanPayload = {
-      id: newItem.id,
+      id: generatedId,
       macro_type: inv.macro_type,
       category: inv.category,
       name: inv.name,
