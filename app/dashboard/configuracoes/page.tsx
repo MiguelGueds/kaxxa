@@ -36,6 +36,7 @@ import { generateUuid } from '@/lib/utils/uuid';
 import { subscriptionService, DbSubscription } from '@/lib/services/subscription';
 import { accountsService } from '@/lib/services/accounts';
 import { cardsService } from '@/lib/services/cards';
+import { thirdPartiesService } from '@/lib/services/thirdParties';
 import { isAdminEmail } from '@/lib/admin';
 import { BankLogo } from '@/app/components/BankLogo';
 import { PortalModal } from '@/app/components/PortalModal';
@@ -106,7 +107,18 @@ function SettingsContent() {
   const [cardDueDay, setCardDueDay] = useState('10');
 
   // Terceiros / Contatos
-  const [thirdParties, setThirdParties] = useState<ThirdParty[]>([]);
+  const [thirdParties, setThirdParties] = useState<ThirdParty[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const cached = thirdPartiesService.getCachedPeople();
+      return (cached || []).map(p => ({
+        id: p.id,
+        name: p.name
+      }));
+    } catch {
+      return [];
+    }
+  });
   const [isThirdPartyModalOpen, setIsThirdPartyModalOpen] = useState(false);
   const [thirdPartyName, setThirdPartyName] = useState('');
   const [thirdPartyPhone, setThirdPartyPhone] = useState('');
@@ -147,11 +159,11 @@ function SettingsContent() {
       const user = await getAuthenticatedUser();
       const targetUserIds = Array.from(new Set([user?.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
 
-      const [catRes, accList, cardList, thirdRes] = await Promise.all([
+      const [catRes, accList, cardList, thirdList] = await Promise.all([
         supabase.from('categories').select('*').in('user_id', targetUserIds).order('name').then(r => r, () => ({ data: null })),
         accountsService.fetchAccounts(),
         cardsService.fetchCards(),
-        supabase.from('third_parties').select('*').in('user_id', targetUserIds).order('name').then(r => r, () => ({ data: null }))
+        thirdPartiesService.fetchPeople()
       ]);
         
       if (catRes && (catRes as any).data) setCategories((catRes as any).data);
@@ -171,7 +183,12 @@ function SettingsContent() {
           due_day: c.due_day
         })));
       }
-      if (thirdRes && (thirdRes as any).data) setThirdParties((thirdRes as any).data);
+      if (thirdList && thirdList.length > 0) {
+        setThirdParties(thirdList.map((p: any) => ({
+          id: p.id,
+          name: p.name
+        })));
+      }
     } catch (e) {
       console.warn('Erro ao carregar dados:', e);
       const localAccs = accountsService.getCachedAccounts();
@@ -190,6 +207,13 @@ function SettingsContent() {
           name: c.name,
           limit: Number(c.credit_limit ?? 0),
           due_day: c.due_day
+        })));
+      }
+      const localPeople = thirdPartiesService.getCachedPeople();
+      if (localPeople && localPeople.length > 0) {
+        setThirdParties(localPeople.map((p: any) => ({
+          id: p.id,
+          name: p.name
         })));
       }
     }
@@ -263,7 +287,8 @@ function SettingsContent() {
       } else if (deleteTarget.type === 'CARD') {
         await cardsService.deleteCard(deleteTarget.id);
       } else if (deleteTarget.type === 'THIRD_PARTY') {
-        await supabase.from('third_parties').delete().eq('id', deleteTarget.id);
+        await thirdPartiesService.deletePerson(deleteTarget.id);
+        setThirdParties(prev => prev.filter(t => t.id !== deleteTarget.id));
       }
       setSuccessMsg('Item excluído com sucesso!');
       setDeleteTarget(null);
@@ -349,34 +374,11 @@ function SettingsContent() {
     }
     setIsSubmitting(true); resetMessages();
     try {
-      const user = await getAuthenticatedUser();
-      if (!user?.id) throw new Error('Usuário não autenticado');
-      const tpId = generateUuid();
-      const payload = { 
-        id: tpId,
-        user_id: user.id, 
-        name: thirdPartyName.trim()
-      };
-
-      let saved = false;
-      try {
-        const { error } = await supabase.from('third_parties').insert(payload);
-        if (!error) saved = true;
-      } catch {}
-
-      if (!saved) {
-        const res = await fetch('/api/db', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'insert', table: 'third_parties', payload }),
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || 'Erro ao salvar terceiro');
-        }
+      const person = await thirdPartiesService.createPerson(thirdPartyName.trim());
+      if (person) {
+        setThirdParties(prev => [...prev.filter(p => p.id !== person.id), person]);
       }
-
-      setSuccessMsg('Pessoa salva!');
+      setSuccessMsg('Pessoa salva com sucesso!');
       setIsThirdPartyModalOpen(false);
       fetchData();
     } catch (err: any) {

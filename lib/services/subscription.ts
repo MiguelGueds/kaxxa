@@ -174,10 +174,11 @@ export const subscriptionService = {
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
+        const targetUserIds = Array.from(new Set([user.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
         const { data, error } = await client
           .from('subscriptions')
           .select('*')
-          .eq('user_id', user.id)
+          .in('user_id', targetUserIds)
           .order('updated_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
           .limit(1)
@@ -188,7 +189,28 @@ export const subscriptionService = {
           return data as DbSubscription;
         }
       } catch (err) {
-        console.warn('Supabase subscriptions indisponível, tentando auto-heal por cupom:', err);
+        console.warn('Supabase subscriptions indisponível, tentando proxy /api/db:', err);
+      }
+
+      // Fallback via /api/db do mesmo domínio (à prova de adblock / restrições cliente)
+      if (typeof window !== 'undefined') {
+        try {
+          const res = await fetch('/api/db', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'select', table: 'subscriptions', filters: { user_id: user.id } }),
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+              const sub = json.data[0] as DbSubscription;
+              saveSubscriptionLocal(sub);
+              return sub;
+            }
+          }
+        } catch (proxyErr) {
+          console.warn('Fallback /api/db para subscriptions falhou:', proxyErr);
+        }
       }
 
       // 2. AUTO-HEAL: Se não encontrou linha em subscriptions, verifica se o e-mail ou user_id usou um cupom no Supabase

@@ -28,7 +28,8 @@ import {
   UserCircle2,
   Tag,
   Sun,
-  Moon
+  Moon,
+  X
 } from 'lucide-react';
 
 import { useTheme } from '@/app/contexts/ThemeContext';
@@ -265,10 +266,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Sidebar Flutuante em Formato de Card Sofisticado (#FFFFFF) */}
-      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-[#E5E7EB] flex flex-col bg-[#FFFFFF] h-[calc(100vh-16px)] sm:h-[calc(100vh-24px)] shadow-[0_8px_28px_rgba(0,0,0,0.03)] transition-all duration-300 overflow-hidden ${
+      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-[#E5E7EB] flex flex-col bg-[#FFFFFF] shadow-[0_8px_28px_rgba(0,0,0,0.03)] transition-all duration-300 overflow-hidden ${
         isSidebarCollapsed ? 'w-[68px]' : 'w-[220px]'
       } ${
-        mobileMenuOpen ? 'fixed inset-y-2 sm:inset-y-3 left-2 sm:left-3 !w-[230px] z-50' : 'hidden lg:flex z-0'
+        mobileMenuOpen 
+          ? 'fixed inset-y-2 left-2 !w-[250px] max-h-[calc(100dvh-16px)] h-[calc(100dvh-16px)] z-50 flex flex-col shadow-2xl' 
+          : 'hidden lg:flex z-0 h-[calc(100vh-16px)] sm:h-[calc(100vh-24px)]'
       }`}>
         
         {/* Brand Header do Card */}
@@ -283,6 +286,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             )}
           </Link>
 
+          {/* Botão Fechar no Mobile */}
+          {mobileMenuOpen && (
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+              className="lg:hidden p-1.5 rounded-xl text-[#64748B] hover:text-[#181B22] hover:bg-[#F1F3F7] transition-colors shrink-0"
+              title="Fechar menu"
+              aria-label="Fechar menu"
+            >
+              <X size={18} />
+            </button>
+          )}
+
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="p-1 rounded-lg text-[#94A3B8] hover:text-[#181B22] hover:bg-[#F1F3F7] transition-colors hidden lg:flex items-center justify-center shrink-0"
@@ -293,7 +309,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Menus de Navegação em Formato Slim */}
-        <div className="flex-1 px-2 py-3.5 flex flex-col justify-between overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 px-2 py-3.5 flex flex-col justify-between overflow-y-auto custom-scrollbar">
           <div className="flex flex-col gap-3.5">
             {sidebarMenus.map((menu, idx) => (
               <div key={idx}>
@@ -355,16 +371,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Rodapé da Sidebar - Sair da Conta (Fixo no fundo, nunca some com scroll) */}
-        <div className="p-2.5 border-t border-[#F1F3F7] shrink-0 bg-white">
+        {/* Rodapé da Sidebar - Sair da Conta (Fixo no fundo visível no celular e desktop) */}
+        <div className="p-3 border-t border-[#F1F3F7] shrink-0 bg-white">
           <button 
+            type="button"
             onClick={async (e) => { e.preventDefault(); await performGlobalSignOut(); router.push('/login'); }} 
-            className={`flex items-center rounded-xl bg-transparent hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all text-[#64748B] hover:text-rose-600 group text-xs font-semibold ${
-              isSidebarCollapsed ? 'justify-center p-2 w-full' : 'justify-start gap-2.5 px-3 py-2 w-full'
+            className={`flex items-center rounded-xl transition-all text-rose-600 bg-rose-50/70 hover:bg-rose-100/80 border border-rose-100 group text-xs font-semibold shadow-xs ${
+              isSidebarCollapsed ? 'justify-center p-2.5 w-full' : 'justify-start gap-2.5 px-3 py-2.5 w-full'
             }`}
             title="Sair da Conta"
           >
-            <LogOut size={15} className="group-hover:text-rose-600 transition-colors shrink-0" />
+            <LogOut size={15} className="text-rose-600 shrink-0" />
             {!isSidebarCollapsed && <span>Sair da Conta</span>}
           </button>
         </div>
@@ -470,17 +487,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
               <ChevronRight size={11} className="text-[#94A3B8] hidden sm:block shrink-0 ml-0.5" />
             </Link>
-
-            {/* Botão Sair da Conta Visível no Celular */}
-            <button
-              type="button"
-              onClick={async (e) => { e.preventDefault(); await performGlobalSignOut(); router.push('/login'); }}
-              className="lg:hidden h-8 w-8 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] hover:bg-rose-50 text-[#64748B] hover:text-rose-600 hover:border-rose-200 flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
-              title="Sair da Conta"
-              aria-label="Sair da Conta"
-            >
-              <LogOut size={14} />
-            </button>
           </div>
         </header>
 

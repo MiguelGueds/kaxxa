@@ -183,7 +183,36 @@ export const investmentsService = {
         return mergedAll;
       }
     } catch (err) {
-      console.warn('Supabase indisponível para busca de investimentos, usando backup local:', err);
+      console.warn('Supabase indisponível para busca de investimentos, tentando proxy /api/db:', err);
+    }
+
+    // Fallback via /api/db do mesmo domínio (à prova de adblock / falhas cliente)
+    if (typeof window !== 'undefined') {
+      try {
+        const res = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'select', table: 'investments', filters: { user_id: user.id } }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+            const formatted = json.data.map((inv: any) => ({
+              ...inv,
+              quantity: Number(inv.quantity || 0),
+              average_price: Number(inv.average_price || 0),
+              invested_amount: Number(inv.invested_amount || 0),
+              current_value: Number(inv.current_value || 0),
+              profitability_pct: Number(inv.profitability_pct || 0),
+              total_dividends_received: Number(inv.total_dividends_received || 0),
+            })) as DbInvestment[];
+            saveLocalInvestments(user.id, formatted);
+            return formatted;
+          }
+        }
+      } catch (proxyErr) {
+        console.warn('Fallback /api/db para investimentos falhou:', proxyErr);
+      }
     }
 
     const staticMockIds = new Set(['rf-1', 'rf-2', 'rf-3', 'rf-4', 'rf-5', 'rv-1', 'rv-2', 'rv-3', 'rv-4', 'rv-5']);

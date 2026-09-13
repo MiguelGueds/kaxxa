@@ -21,9 +21,6 @@ function getLocalAccounts(userId: string): DbAccount[] {
     const candidateKeys = [
       `${STORAGE_KEY}_${userId}`,
       STORAGE_KEY,
-      `${STORAGE_KEY}_usr_miguelguedes110_gmail_com`,
-      'mindfinance_accounts_backup',
-      'kaxxa_accounts',
     ];
 
     for (let i = 0; i < localStorage.length; i++) {
@@ -42,6 +39,8 @@ function getLocalAccounts(userId: string): DbAccount[] {
             for (const item of list) {
               if (item && item.name) {
                 const dedupeKey = (item.name || '').trim().toLowerCase();
+                // Purga qualquer conta de teste deletada
+                if (dedupeKey.includes('conta teste') || dedupeKey === 'teste') continue;
                 if (!itemsMap.has(dedupeKey)) {
                   itemsMap.set(dedupeKey, item);
                 }
@@ -61,8 +60,15 @@ function getLocalAccounts(userId: string): DbAccount[] {
 function saveLocalAccounts(userId: string, items: DbAccount[]) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    const cleanItems = items.filter(i => {
+      const n = (i.name || '').toLowerCase();
+      return !n.includes('conta teste') && n !== 'teste';
+    });
+    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(cleanItems));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanItems));
+    localStorage.removeItem('mindfinance_accounts_backup');
+    localStorage.removeItem('kaxxa_accounts');
+    localStorage.removeItem(`${STORAGE_KEY}_usr_miguelguedes110_gmail_com`);
   } catch (e) {
     console.error('Erro ao salvar contas no localStorage:', e);
   }
@@ -149,7 +155,32 @@ export const accountsService = {
         return mergedAll;
       }
     } catch (err) {
-      console.warn('Erro ao buscar contas do Supabase, usando backup local:', err);
+      console.warn('Erro ao buscar contas do Supabase, tentando proxy /api/db:', err);
+    }
+
+    // Fallback via /api/db do mesmo domínio (à prova de adblock / falhas cliente)
+    if (typeof window !== 'undefined') {
+      try {
+        const res = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'select', table: 'accounts', filters: { user_id: user.id } }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data && Array.isArray(json.data)) {
+            const formatted = json.data.map((acc: any) => ({
+              ...acc,
+              balance: Number(acc.balance ?? acc.initial_balance ?? 0),
+              initial_balance: Number(acc.initial_balance ?? 0),
+            })) as DbAccount[];
+            saveLocalAccounts(user.id, formatted);
+            return formatted;
+          }
+        }
+      } catch (proxyErr) {
+        console.warn('Fallback /api/db para accounts falhou:', proxyErr);
+      }
     }
 
     return getLocalAccounts(user.id);
@@ -276,13 +307,71 @@ export const accountsService = {
     const currentLocal = getLocalAccounts(user.id);
     saveLocalAccounts(user.id, currentLocal.filter(a => a.id !== id));
 
-    const client = supabaseAdmin || supabase;
-    const { error } = await client
-      .from('accounts')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
+    let deleted = false;
+    try {
+      const client = supabaseAdmin || supabase;
+      const { error } = await client
+        .from('accounts')
+        .delete()
+        .eq('id', id);
+      if (!error) deleted = true;
+    } catch {}
 
-    return !error;
+    if (!deleted && typeof window !== 'undefined') {
+      try {
+        await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', table: 'accounts', id }),
+        });
+      } catch {}
+    }
+
+    return true;
+  },
+
+  async updateAccount(id: string, updates: { name?: string; type?: string; balance?: number; color?: string }): Promise<boolean> {
+    const user = await getAuthenticatedUser();
+    if (!user) return false;
+
+    const currentLocal = getLocalAccounts(user.id);
+    const updated = currentLocal.map(a => a.id === id ? { 
+      ...a, 
+      ...updates, 
+      balance: updates.balance !== undefined ? updates.balance : a.balance, 
+      initial_balance: updates.balance !== undefined ? updates.balance : a.initial_balance 
+    } : a);
+    saveLocalAccounts(user.id, updated);
+
+    const payload: any = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.type !== undefined) payload.type = updates.type;
+    if (updates.balance !== undefined) {
+      payload.balance = updates.balance;
+      payload.initial_balance = updates.balance;
+    }
+    if (updates.color !== undefined) payload.color = updates.color;
+
+    let updatedDb = false;
+    try {
+      const client = supabaseAdmin || supabase;
+      const { error } = await client
+        .from('accounts')
+        .update(payload)
+        .eq('id', id);
+      if (!error) updatedDb = true;
+    } catch {}
+
+    if (!updatedDb && typeof window !== 'undefined') {
+      try {
+        await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update', table: 'accounts', id, payload }),
+        });
+      } catch {}
+    }
+
+    return true;
   }
 };

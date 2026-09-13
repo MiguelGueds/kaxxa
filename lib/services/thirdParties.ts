@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
+import { generateUuid } from '@/lib/utils/uuid';
 
 export interface DbThirdPartyDebt {
   id: string;
@@ -226,39 +227,144 @@ export const thirdPartiesService = {
     }
   },
 
-  async fetchPeople(): Promise<{ id: string; name: string }[]> {
-    const user = await getAuthenticatedUser();
-    if (!user) return [];
-
+  getCachedPeople(): { id: string; name: string }[] {
+    if (typeof window === 'undefined') return [];
     try {
-      const client = supabaseAdmin || supabase;
-      const { data } = await client
-        .from('third_parties')
-        .select('id, name')
-        .eq('user_id', user.id)
-        .order('name', { ascending: true });
-
-      return (data || []) as { id: string; name: string }[];
+      const raw = localStorage.getItem('kaxxa_third_parties_backup');
+      return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
     }
+  },
+
+  async fetchPeople(): Promise<{ id: string; name: string }[]> {
+    const user = await getAuthenticatedUser();
+    if (!user) return this.getCachedPeople();
+
+    const targetUserIds = Array.from(new Set([user.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
+
+    // 1. Tenta Supabase direto
+    try {
+      const client = supabaseAdmin || supabase;
+      const { data, error } = await client
+        .from('third_parties')
+        .select('id, name')
+        .in('user_id', targetUserIds)
+        .order('name', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('kaxxa_third_parties_backup', JSON.stringify(data));
+        }
+        return data as { id: string; name: string }[];
+      }
+    } catch (err) {
+      console.warn('Supabase direto falhou para terceiros, tentando /api/db:', err);
+    }
+
+    // 2. Fallback via /api/db do mesmo domínio (à prova de adblock / falhas cliente)
+    if (typeof window !== 'undefined') {
+      try {
+        const res = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'select', table: 'third_parties', filters: { user_id: user.id } }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+            const cleanList = json.data.map((p: any) => ({ id: p.id, name: p.name }));
+            localStorage.setItem('kaxxa_third_parties_backup', JSON.stringify(cleanList));
+            return cleanList;
+          }
+        }
+      } catch (proxyErr) {
+        console.warn('Fallback /api/db para terceiros falhou:', proxyErr);
+      }
+    }
+
+    return this.getCachedPeople();
   },
 
   async createPerson(name: string): Promise<{ id: string; name: string } | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
+    const newId = generateUuid();
+    const payload = { id: newId, user_id: user.id, name: name.trim() };
+    let savedPerson: { id: string; name: string } | null = null;
+
     try {
       const client = supabaseAdmin || supabase;
-      const { data } = await client
+      const { data, error } = await client
         .from('third_parties')
-        .insert({ user_id: user.id, name })
+        .insert(payload)
         .select('id, name')
         .single();
 
-      return data as { id: string; name: string } | null;
-    } catch {
-      return null;
+      if (!error && data) {
+        savedPerson = data as { id: string; name: string };
+      }
+    } catch (err) {
+      console.warn('Supabase direto falhou ao criar terceiro:', err);
     }
+
+    if (!savedPerson && typeof window !== 'undefined') {
+      try {
+        const res = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'insert', table: 'third_parties', payload }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data) {
+            savedPerson = { id: json.data.id, name: json.data.name };
+          }
+        }
+      } catch (proxyErr) {
+        console.warn('Fallback /api/db ao criar terceiro falhou:', proxyErr);
+      }
+    }
+
+    const finalPerson = savedPerson || { id: newId, name: payload.name };
+    if (typeof window !== 'undefined') {
+      const current = this.getCachedPeople();
+      const updated = [...current.filter(p => p.id !== finalPerson.id && p.name !== finalPerson.name), finalPerson];
+      localStorage.setItem('kaxxa_third_parties_backup', JSON.stringify(updated));
+    }
+    return finalPerson;
+  },
+
+  async deletePerson(id: string): Promise<boolean> {
+    const user = await getAuthenticatedUser();
+    if (!user) return false;
+
+    if (typeof window !== 'undefined') {
+      const current = this.getCachedPeople();
+      localStorage.setItem('kaxxa_third_parties_backup', JSON.stringify(current.filter(p => p.id !== id)));
+    }
+
+    let deleted = false;
+    try {
+      const client = supabaseAdmin || supabase;
+      const { error } = await client
+        .from('third_parties')
+        .delete()
+        .eq('id', id);
+      if (!error) deleted = true;
+    } catch {}
+
+    if (!deleted && typeof window !== 'undefined') {
+      try {
+        await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', table: 'third_parties', id }),
+        });
+      } catch {}
+    }
+
+    return true;
   }
 };

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   ArrowDown, 
   ArrowUp, 
@@ -17,7 +18,8 @@ import {
   CreditCard,
   UserCheck,
   Landmark,
-  Pencil
+  Pencil,
+  Settings
 } from 'lucide-react';
 import { usePrivacy } from '@/app/contexts/PrivacyContext';
 import { BankLogo } from '@/app/components/BankLogo';
@@ -185,6 +187,11 @@ export default function SaldoExtratoPage() {
   const prevBankSlide = () => {
     setBankCarouselIndex(prev => Math.max(0, prev - visibleBanksCount));
   };
+
+  // Gerenciamento Rápido de Contas (Saldo Inicial / Excluir)
+  const [accountToManage, setAccountToManage] = useState<{ id: string; name: string; balance: number } | null>(null);
+  const [editAccountBalance, setEditAccountBalance] = useState('');
+  const [isManagingAccount, setIsManagingAccount] = useState(false);
 
   // Lista de Transações (inicia com cache local para exibição instantânea a 0ms no F5)
   const [transactions, setTransactions] = useState<TransactionItem[]>(() => {
@@ -686,51 +693,62 @@ export default function SaldoExtratoPage() {
                 )}
               </div>
 
-              {/* Controles de Navegação */}
-              <div className="flex items-center gap-1.5 bg-[#F1F3F7] px-2 py-1 rounded-full border border-[#E5E7EB] shadow-sm">
-                <button 
-                  onClick={prevBankSlide}
-                  disabled={bankCarouselIndex === 0}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                    bankCarouselIndex === 0 
-                      ? 'text-[#CBD5E1] cursor-not-allowed opacity-40' 
-                      : 'hover:bg-white text-[#64748B] hover:text-[#1A44C8] active:scale-90 shadow-sm'
-                  }`}
-                  title="Página Anterior"
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/dashboard/configuracoes?tab=contas"
+                  className="text-[10px] px-2.5 py-1 rounded-full bg-[#F1F3F7] hover:bg-white border border-[#E5E7EB] text-[#64748B] hover:text-[#1A44C8] transition-all flex items-center gap-1 font-bold shadow-2xs"
+                  title="Gerenciar Contas e Saldos Iniciais"
                 >
-                  <ChevronLeft size={13} />
-                </button>
-                
-                <div className="flex items-center gap-1 px-0.5">
-                  {Array.from({ length: Math.ceil(banks.length / visibleBanksCount) }).map((_, idx) => {
-                    const isActive = Math.floor(bankCarouselIndex / visibleBanksCount) === idx;
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => setBankCarouselIndex(idx * visibleBanksCount)}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
-                          isActive 
-                            ? 'w-3.5 bg-[#1A44C8] shadow-[0_0_8px_rgba(16,53,229,0.5)]' 
-                            : 'w-1.5 bg-[#CBD5E1] hover:bg-[#94A3B8]'
-                        }`}
-                        title={`Página ${idx + 1}`}
-                      />
-                    );
-                  })}
-                </div>
+                  <Settings size={11} />
+                  <span className="hidden sm:inline">Gerenciar Contas</span>
+                </Link>
 
-                <button 
-                  onClick={nextBankSlide}
-                  disabled={bankCarouselIndex >= maxCarouselIndex}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                    bankCarouselIndex >= maxCarouselIndex 
-                      ? 'text-[#CBD5E1] cursor-not-allowed opacity-40' 
-                      : 'hover:bg-white text-[#64748B] hover:text-[#1A44C8] active:scale-90 shadow-sm'
-                  }`}
-                  title="Próxima Página"
-                >
-                  <ChevronRight size={13} />
-                </button>
+                {/* Controles de Navegação */}
+                <div className="flex items-center gap-1.5 bg-[#F1F3F7] px-2 py-1 rounded-full border border-[#E5E7EB] shadow-sm">
+                  <button 
+                    onClick={prevBankSlide}
+                    disabled={bankCarouselIndex === 0}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                      bankCarouselIndex === 0 
+                        ? 'text-[#CBD5E1] cursor-not-allowed opacity-40' 
+                        : 'hover:bg-white text-[#64748B] hover:text-[#1A44C8] active:scale-90 shadow-sm'
+                    }`}
+                    title="Página Anterior"
+                  >
+                    <ChevronLeft size={13} />
+                  </button>
+                  
+                  <div className="flex items-center gap-1 px-0.5">
+                    {Array.from({ length: Math.ceil(banks.length / visibleBanksCount) }).map((_, idx) => {
+                      const isActive = Math.floor(bankCarouselIndex / visibleBanksCount) === idx;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => setBankCarouselIndex(idx * visibleBanksCount)}
+                          className={`h-1.5 rounded-full transition-all duration-300 ${
+                            isActive 
+                              ? 'w-3.5 bg-[#1A44C8] shadow-[0_0_8px_rgba(16,53,229,0.5)]' 
+                              : 'w-1.5 bg-[#CBD5E1] hover:bg-[#94A3B8]'
+                          }`}
+                          title={`Página ${idx + 1}`}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <button 
+                    onClick={nextBankSlide}
+                    disabled={bankCarouselIndex >= maxCarouselIndex}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                      bankCarouselIndex >= maxCarouselIndex 
+                        ? 'text-[#CBD5E1] cursor-not-allowed opacity-40' 
+                        : 'hover:bg-white text-[#64748B] hover:text-[#1A44C8] active:scale-90 shadow-sm'
+                    }`}
+                    title="Próxima Página"
+                  >
+                    <ChevronRight size={13} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -769,9 +787,23 @@ export default function SaldoExtratoPage() {
                             <BankLogo name={bank.name} size="sm" />
                             <h4 className="text-xs font-bold text-[#181B22] leading-tight truncate">{bank.name}</h4>
                           </div>
-                          <span className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-[#E2E8F0] text-[#64748B]">
-                            {pct.toFixed(0)}%
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-[#E2E8F0] text-[#64748B]">
+                              {pct.toFixed(0)}%
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAccountToManage({ id: bank.id, name: bank.name, balance: bank.balance });
+                                setEditAccountBalance(String(bank.balance));
+                              }}
+                              className="p-1 rounded-lg text-[#94A3B8] hover:text-[#1A44C8] hover:bg-white transition-colors"
+                              title="Ajustar saldo inicial ou excluir esta conta"
+                            >
+                              <Pencil size={10} />
+                            </button>
+                          </div>
                         </div>
 
                         <p className="text-[9px] text-[#64748B] mb-0.5 font-medium">Saldo Disponível</p>
@@ -1540,6 +1572,113 @@ export default function SaldoExtratoPage() {
                 )}
               </div>
 
+            </div>
+          </div>
+        </PortalModal>
+      )}
+
+      {/* =========================================================================
+          MODAL: GERENCIAR CONTA (AJUSTAR SALDO INICIAL / EXCLUIR CONTA)
+      ========================================================================= */}
+      {accountToManage && (
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setAccountToManage(null)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-[#F1F3F7]">
+                <div className="flex items-center gap-2">
+                  <BankLogo name={accountToManage.name} size="sm" />
+                  <div>
+                    <h3 className="text-sm font-bold text-[#181B22] leading-tight">{accountToManage.name}</h3>
+                    <p className="text-[10px] text-[#64748B]">Conta Bancária / Carteira</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAccountToManage(null)}
+                  className="text-[#94A3B8] hover:text-[#181B22] p-1 rounded-lg hover:bg-[#F1F3F7] transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    Saldo Inicial da Conta
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs text-[#94A3B8] font-bold">R$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editAccountBalance}
+                      onChange={e => setEditAccountBalance(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <p className="text-[10px] text-[#94A3B8] mt-1">
+                    Altere o saldo base da conta caso haja discrepância com seu extrato real.
+                  </p>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setAccountToManage(null)}
+                    className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7] transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isManagingAccount}
+                    onClick={async () => {
+                      setIsManagingAccount(true);
+                      try {
+                        const numVal = parseFloat(editAccountBalance) || 0;
+                        await accountsService.updateAccount(accountToManage.id, { balance: numVal });
+                        setBanks(prev => prev.map(b => b.id === accountToManage.id ? { ...b, balance: numVal } : b));
+                        setAccountToManage(null);
+                      } finally {
+                        setIsManagingAccount(false);
+                      }
+                    }}
+                    className="flex-1 py-2 px-3 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs transition-all shadow-md active:scale-95 disabled:opacity-50"
+                  >
+                    {isManagingAccount ? 'Salvando...' : 'Salvar Saldo'}
+                  </button>
+                </div>
+
+                <div className="pt-2 border-t border-[#F1F3F7]">
+                  <button
+                    type="button"
+                    disabled={isManagingAccount}
+                    onClick={async () => {
+                      if (!confirm(`Deseja realmente excluir a conta "${accountToManage.name}"?`)) return;
+                      setIsManagingAccount(true);
+                      try {
+                        await accountsService.deleteAccount(accountToManage.id);
+                        setBanks(prev => prev.filter(b => b.id !== accountToManage.id));
+                        if (selectedBankFilter === accountToManage.name) setSelectedBankFilter(null);
+                        setAccountToManage(null);
+                      } finally {
+                        setIsManagingAccount(false);
+                      }
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-semibold text-xs transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Trash2 size={13} />
+                    <span>Excluir Esta Conta</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </PortalModal>
