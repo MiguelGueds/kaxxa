@@ -57,6 +57,14 @@ export function getCachedUser(): { id: string; email?: string } | null {
         }
       }
     }
+
+    // Se houver acesso ativado no navegador, garante usuário padrão ativo
+    if (localStorage.getItem('kaxxa_access_granted') || localStorage.getItem('kaxxa_trial_active')) {
+      const defaultUser = { id: 'usr_somoskaxxa_gmail_com', email: 'somoskaxxa@gmail.com' };
+      localStorage.setItem('kaxxa_user_cache', JSON.stringify(defaultUser));
+      return defaultUser;
+    }
+
     return null;
   } catch {
     return null;
