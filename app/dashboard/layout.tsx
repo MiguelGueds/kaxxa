@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { PrivacyProvider, usePrivacy } from '@/app/contexts/PrivacyContext';
 import { supabase, performGlobalSignOut } from '@/lib/supabase';
 import { 
@@ -39,6 +39,7 @@ import { CommandPalette } from '@/app/components/CommandPalette';
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { isConcealed, toggleConcealed, togglePrivacy } = usePrivacy();
@@ -210,17 +211,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   ];
 
   const isItemActive = (href: string) => {
-    if (href === pathname) return true;
-    if (href.startsWith('/dashboard/configuracoes')) {
-      if (pathname !== '/dashboard/configuracoes') return false;
-      const search = typeof window !== 'undefined' ? window.location.search : '';
-      const hrefTab = href.split('tab=')[1];
-      if (hrefTab) {
-        return search.includes(`tab=${hrefTab}`);
-      }
-      return false;
+    const [targetPath, targetQuery] = href.split('?');
+    if (targetPath !== pathname) return false;
+
+    if (pathname === '/dashboard/configuracoes') {
+      const activeTab = searchParams.get('tab')?.toLowerCase() || 'contas';
+      const targetTab = targetQuery ? new URLSearchParams(targetQuery).get('tab')?.toLowerCase() : 'contas';
+      return activeTab === targetTab;
     }
-    return false;
+
+    if (targetQuery) {
+      const currentQuery = searchParams.toString();
+      return currentQuery === targetQuery;
+    }
+
+    return true;
   };
 
   const getPageInfo = () => {
@@ -488,7 +493,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <PrivacyProvider>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      <Suspense fallback={
+        <div className="fixed inset-0 z-50 bg-[#F5F6F9] flex flex-col items-center justify-center gap-3">
+          <KaxxaLogo size={36} />
+          <div className="w-5 h-5 border-2 border-[#1A44C8]/30 border-t-[#1A44C8] rounded-full animate-spin" />
+        </div>
+      }>
+        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      </Suspense>
     </PrivacyProvider>
   );
 }
