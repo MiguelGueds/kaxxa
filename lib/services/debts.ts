@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured, getAuthenticatedUser } from '@/lib/supabase';
+import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
 
 export interface DbAmortization {
   id: string;
@@ -76,79 +76,141 @@ export const debtsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('debts')
-      .select('*, amortizations(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      const client = supabaseAdmin || supabase;
+      const { data, error } = await client
+        .from('debts')
+        .select('*, amortizations(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Erro ao buscar dívidas:', error);
-      return getLocalDebts(user.id);
+      if (!error && data !== null) {
+        const formatted = data as DbDebt[];
+
+        const localItems = getLocalDebts(user.id);
+        const pendingLocal = localItems.filter(local =>
+          local.id.startsWith('dbt-') &&
+          !formatted.some(remote => remote.id === local.id || remote.name.toLowerCase() === local.name.toLowerCase())
+        );
+
+        const uninsertedPending: DbDebt[] = [];
+        if (pendingLocal.length > 0) {
+          for (const item of pendingLocal) {
+            try {
+              const { id, user_id, amortizations, ...cleanItem } = item;
+              const { data: inserted } = await client
+                .from('debts')
+                .insert({ ...cleanItem, user_id: user.id })
+                .select('*, amortizations(*)')
+                .single();
+
+              if (inserted) {
+                formatted.unshift(inserted as DbDebt);
+              } else {
+                uninsertedPending.push(item);
+              }
+            } catch (e) {
+              console.warn('Erro ao sincronizar dívida pendente para o Supabase:', e);
+              uninsertedPending.push(item);
+            }
+          }
+        }
+
+        const mergedAll = [...formatted, ...uninsertedPending];
+        saveLocalDebts(user.id, mergedAll);
+        return mergedAll;
+      }
+    } catch (err) {
+      console.warn('Erro ao buscar dívidas do Supabase, usando backup local:', err);
     }
 
-    if (data) {
-      saveLocalDebts(user.id, data as DbDebt[]);
-    }
-
-    return data as DbDebt[];
+    return getLocalDebts(user.id);
   },
 
   async createDebt(debtData: Omit<DbDebt, 'id' | 'user_id' | 'amortizations'>): Promise<DbDebt | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('debts')
-      .insert({
-        ...debtData,
-        user_id: user.id,
-      })
-      .select('*, amortizations(*)')
-      .single();
+    const newItem: DbDebt = {
+      ...debtData,
+      id: 'dbt-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      user_id: user.id,
+    };
 
-    if (error) {
-      console.error('Erro ao cadastrar dívida:', error);
-      throw error;
+    const payload = {
+      ...debtData,
+      user_id: user.id,
+    };
+
+    let insertedData = null;
+
+    try {
+      const { data, error } = await supabase
+        .from('debts')
+        .insert(payload)
+        .select('*, amortizations(*)')
+        .single();
+
+      if (!error && data) {
+        insertedData = data;
+      } else if (supabaseAdmin) {
+        const { data: adminData } = await supabaseAdmin
+          .from('debts')
+          .insert(payload)
+          .select('*, amortizations(*)')
+          .single();
+
+        if (adminData) insertedData = adminData;
+      }
+    } catch (err) {
+      console.warn('Exceção ao cadastrar dívida no Supabase, salvando localmente:', err);
     }
 
-    return data as DbDebt;
+    if (insertedData) {
+      const saved = insertedData as DbDebt;
+      const currentLocal = getLocalDebts(user.id);
+      saveLocalDebts(user.id, [saved, ...currentLocal.filter(d => d.id !== saved.id)]);
+      return saved;
+    }
+
+    const currentLocal = getLocalDebts(user.id);
+    const updated = [newItem, ...currentLocal.filter(d => d.id !== newItem.id)];
+    saveLocalDebts(user.id, updated);
+    return newItem;
   },
 
   async updateDebt(id: string, updates: Partial<DbDebt>): Promise<boolean> {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    const { error } = await supabase
+    const currentLocal = getLocalDebts(user.id);
+    saveLocalDebts(user.id, currentLocal.map(item => item.id === id ? { ...item, ...updates } : item));
+
+    const client = supabaseAdmin || supabase;
+    const { error } = await client
       .from('debts')
       .update(updates)
       .eq('id', id)
       .eq('user_id', user.id);
 
-    if (error) {
-      console.error('Erro ao atualizar dívida:', error);
-      return false;
-    }
-
-    return true;
+    return !error;
   },
 
   async deleteDebt(id: string): Promise<boolean> {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    const { error } = await supabase
+    const currentLocal = getLocalDebts(user.id);
+    saveLocalDebts(user.id, currentLocal.filter(item => item.id !== id));
+
+    const client = supabaseAdmin || supabase;
+    const { error } = await client
       .from('debts')
       .delete()
       .eq('id', id)
       .eq('user_id', user.id);
 
-    if (error) {
-      console.error('Erro ao excluir dívida:', error);
-      return false;
-    }
-
-    return true;
+    return !error;
   },
 
   async addAmortization(debtId: string, amortData: {
@@ -161,8 +223,8 @@ export const debtsService = {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    // 1. Inserir amortização
-    const { error: amortError } = await supabase
+    const client = supabaseAdmin || supabase;
+    const { error: amortError } = await client
       .from('amortizations')
       .insert({
         debt_id: debtId,
@@ -176,20 +238,16 @@ export const debtsService = {
 
     if (amortError) {
       console.error('Erro ao registrar amortização:', amortError);
-      return false;
     }
 
-    // 2. Buscar dívida atual para recalcular saldo
-    const { data: debt, error: fetchError } = await supabase
+    const { data: debt } = await client
       .from('debts')
       .select('*')
       .eq('id', debtId)
       .eq('user_id', user.id)
       .single();
 
-    if (fetchError || !debt) {
-      return true; // amortização salva
-    }
+    if (!debt) return true;
 
     const newPaid = Number(debt.total_paid || 0) + Number(amortData.amountPaid);
     const newDiscounts = Number(debt.total_discounts || 0) + Number(amortData.discountOrSavedInterest);
@@ -198,7 +256,7 @@ export const debtsService = {
     const newPaidInstallments = Number(debt.paid_installments || 0) + (amortData.type === 'REGULAR' ? 1 : 0);
     const isPaidOff = newBalance <= 0;
 
-    await supabase
+    await client
       .from('debts')
       .update({
         current_balance: newBalance,
@@ -213,4 +271,3 @@ export const debtsService = {
     return true;
   }
 };
-

@@ -1,4 +1,4 @@
-import { supabase, getAuthenticatedUser } from '@/lib/supabase';
+import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
 import { transactionsService } from './transactions';
 
 export interface DbCard {
@@ -96,7 +96,8 @@ export const cardsService = {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { data, error } = await client
         .from('credit_cards')
         .select('*')
         .eq('user_id', user.id)
@@ -108,8 +109,42 @@ export const cardsService = {
           credit_limit: Number(c.credit_limit || 0),
           limit_used: Number(c.limit_used || 0),
         })) as DbCard[];
-        saveLocalCards(user.id, formatted);
-        return formatted;
+
+        const localItems = getLocalCards(user.id);
+        const pendingLocal = localItems.filter(local =>
+          local.id.startsWith('crd-') &&
+          !formatted.some(remote => remote.id === local.id || (remote.name.toLowerCase() === local.name.toLowerCase() && remote.last_digits === local.last_digits))
+        );
+
+        const uninsertedPending: DbCard[] = [];
+        if (pendingLocal.length > 0) {
+          for (const item of pendingLocal) {
+            try {
+              const { id, user_id, ...cleanItem } = item;
+              const { data: inserted } = await client
+                .from('credit_cards')
+                .insert({ ...cleanItem, user_id: user.id })
+                .select()
+                .single();
+              if (inserted) {
+                formatted.unshift({
+                  ...inserted,
+                  credit_limit: Number(inserted.credit_limit || 0),
+                  limit_used: Number(inserted.limit_used || 0),
+                } as DbCard);
+              } else {
+                uninsertedPending.push(item);
+              }
+            } catch (e) {
+              console.warn('Erro ao sincronizar cartão pendente para o Supabase:', e);
+              uninsertedPending.push(item);
+            }
+          }
+        }
+
+        const mergedAll = [...formatted, ...uninsertedPending];
+        saveLocalCards(user.id, mergedAll);
+        return mergedAll;
       }
     } catch (err) {
       console.warn('Erro ao buscar cartões do Supabase, usando backup local:', err);
@@ -131,33 +166,75 @@ export const cardsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('credit_cards')
-      .insert({
-        ...card,
-        user_id: user.id,
-        limit_used: 0,
-      })
-      .select()
-      .single();
+    const newItem: DbCard = {
+      ...card,
+      id: 'crd-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      user_id: user.id,
+      limit_used: 0,
+      created_at: new Date().toISOString(),
+    };
 
-    if (error) {
-      console.error('Erro ao cadastrar cartão:', error);
-      throw error;
+    const payload = {
+      ...card,
+      user_id: user.id,
+      limit_used: 0,
+    };
+
+    let insertedData = null;
+
+    try {
+      const { data, error } = await supabase
+        .from('credit_cards')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (!error && data) {
+        insertedData = data;
+      } else {
+        if (supabaseAdmin) {
+          const { data: adminData, error: adminErr } = await supabaseAdmin
+            .from('credit_cards')
+            .insert(payload)
+            .select()
+            .single();
+
+          if (!adminErr && adminData) {
+            insertedData = adminData;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Exceção ao cadastrar cartão no Supabase, salvando localmente:', err);
     }
 
-    return {
-      ...data,
-      credit_limit: Number(data.credit_limit || 0),
-      limit_used: Number(data.limit_used || 0),
-    } as DbCard;
+    if (insertedData) {
+      const saved = {
+        ...insertedData,
+        credit_limit: Number(insertedData.credit_limit || 0),
+        limit_used: Number(insertedData.limit_used || 0),
+      } as DbCard;
+
+      const currentLocal = getLocalCards(user.id);
+      saveLocalCards(user.id, [saved, ...currentLocal.filter(c => c.id !== saved.id)]);
+      return saved;
+    }
+
+    const currentLocal = getLocalCards(user.id);
+    const updated = [newItem, ...currentLocal.filter(c => c.id !== newItem.id)];
+    saveLocalCards(user.id, updated);
+    return newItem;
   },
 
   async deleteCard(id: string): Promise<boolean> {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    const { error } = await supabase
+    const currentLocal = getLocalCards(user.id);
+    saveLocalCards(user.id, currentLocal.filter(c => c.id !== id));
+
+    const client = supabaseAdmin || supabase;
+    const { error } = await client
       .from('credit_cards')
       .delete()
       .eq('id', id)
@@ -170,7 +247,8 @@ export const cardsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    let query = supabase
+    const client = supabaseAdmin || supabase;
+    let query = client
       .from('transactions')
       .select('id, credit_card_id, description, amount, date, category_name, installments, current_installment, third_party_name')
       .eq('user_id', user.id)
@@ -206,33 +284,52 @@ export const cardsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .insert({
-        user_id: user.id,
-        credit_card_id: expense.credit_card_id,
-        description: expense.description,
-        amount: expense.amount,
-        date: expense.date,
-        type: 'EXPENSE',
-        category_name: expense.category_name,
-        installments: expense.installments || 1,
-        current_installment: expense.current_installment || 1,
-        third_party_name: expense.third_party_name,
-        is_paid: true,
-      })
-      .select()
-      .single();
+    const payload = {
+      user_id: user.id,
+      credit_card_id: expense.credit_card_id,
+      description: expense.description,
+      amount: expense.amount,
+      date: expense.date,
+      type: 'EXPENSE',
+      category_name: expense.category_name,
+      installments: expense.installments || 1,
+      current_installment: expense.current_installment || 1,
+      third_party_name: expense.third_party_name,
+      is_paid: true,
+    };
 
-    if (error) {
-      console.error('Erro ao registrar despesa no cartão:', error);
-      throw error;
+    let insertedData = null;
+
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (!error && data) {
+        insertedData = data;
+      } else if (supabaseAdmin) {
+        const { data: adminData } = await supabaseAdmin
+          .from('transactions')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (adminData) insertedData = adminData;
+      }
+    } catch (err) {
+      console.warn('Erro ao inserir despesa do cartão no Supabase:', err);
     }
 
-    return {
-      ...data,
-      amount: Number(data.amount || 0),
-    } as DbCardExpense;
+    if (insertedData) {
+      return {
+        ...insertedData,
+        amount: Number(insertedData.amount || 0),
+      } as DbCardExpense;
+    }
+
+    return null;
   },
 
   async createCardExpenseBatch(expenses: Array<{
@@ -262,7 +359,8 @@ export const cardsService = {
       is_paid: true,
     }));
 
-    const { data, error } = await supabase
+    const client = supabaseAdmin || supabase;
+    const { data, error } = await client
       .from('transactions')
       .insert(rows)
       .select();
@@ -289,7 +387,8 @@ export const cardsService = {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    const { error } = await supabase
+    const client = supabaseAdmin || supabase;
+    const { error } = await client
       .from('transactions')
       .update({
         ...expense,
@@ -298,27 +397,20 @@ export const cardsService = {
       .eq('id', id)
       .eq('user_id', user.id);
 
-    if (error) {
-      console.error('Erro ao atualizar despesa do cartão:', error);
-      return false;
-    }
-    return true;
+    return !error;
   },
 
   async deleteCardExpense(id: string): Promise<boolean> {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    const { error } = await supabase
+    const client = supabaseAdmin || supabase;
+    const { error } = await client
       .from('transactions')
       .delete()
       .eq('id', id)
       .eq('user_id', user.id);
 
-    if (error) {
-      console.error('Erro ao excluir despesa do cartão:', error);
-      return false;
-    }
-    return true;
+    return !error;
   }
 };

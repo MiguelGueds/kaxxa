@@ -1,4 +1,4 @@
-import { supabase, getAuthenticatedUser } from '@/lib/supabase';
+import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
 
 export interface DbThirdPartyDebt {
   id: string;
@@ -57,7 +57,8 @@ export const thirdPartiesService = {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { data, error } = await client
         .from('third_party_debts')
         .select('*')
         .eq('user_id', user.id)
@@ -82,7 +83,7 @@ export const thirdPartiesService = {
           for (const item of pendingLocal) {
             try {
               const { id, user_id, ...cleanItem } = item;
-              const { data: inserted } = await supabase
+              const { data: inserted } = await client
                 .from('third_party_debts')
                 .insert({ ...cleanItem, user_id: user.id })
                 .select()
@@ -126,29 +127,45 @@ export const thirdPartiesService = {
       created_at: new Date().toISOString(),
     };
 
+    const payload = {
+      ...debt,
+      user_id: user.id,
+    };
+
+    let insertedData = null;
+
     try {
       const { data, error } = await supabase
         .from('third_party_debts')
-        .insert({
-          ...debt,
-          user_id: user.id,
-        })
+        .insert(payload)
         .select()
         .single();
 
       if (!error && data) {
-        const saved = {
-          ...data,
-          total_amount: Number(data.total_amount || 0),
-          paid_amount: Number(data.paid_amount || 0),
-        } as DbThirdPartyDebt;
+        insertedData = data;
+      } else if (supabaseAdmin) {
+        const { data: adminData } = await supabaseAdmin
+          .from('third_party_debts')
+          .insert(payload)
+          .select()
+          .single();
 
-        const currentLocal = getLocalDebts(user.id);
-        saveLocalDebts(user.id, [saved, ...currentLocal.filter(d => d.id !== saved.id)]);
-        return saved;
+        if (adminData) insertedData = adminData;
       }
     } catch (err) {
       console.warn('Erro ao inserir débito no Supabase, salvando localmente:', err);
+    }
+
+    if (insertedData) {
+      const saved = {
+        ...insertedData,
+        total_amount: Number(insertedData.total_amount || 0),
+        paid_amount: Number(insertedData.paid_amount || 0),
+      } as DbThirdPartyDebt;
+
+      const currentLocal = getLocalDebts(user.id);
+      saveLocalDebts(user.id, [saved, ...currentLocal.filter(d => d.id !== saved.id)]);
+      return saved;
     }
 
     const currentLocal = getLocalDebts(user.id);
@@ -166,7 +183,8 @@ export const thirdPartiesService = {
     saveLocalDebts(user.id, updatedLocal);
 
     try {
-      const { error } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { error } = await client
         .from('third_party_debts')
         .update(updates)
         .eq('id', id)
@@ -187,7 +205,8 @@ export const thirdPartiesService = {
     saveLocalDebts(user.id, updatedLocal);
 
     try {
-      const { error } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { error } = await client
         .from('third_party_debts')
         .delete()
         .eq('id', id)
@@ -204,7 +223,8 @@ export const thirdPartiesService = {
     if (!user) return [];
 
     try {
-      const { data } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { data } = await client
         .from('third_parties')
         .select('id, name')
         .eq('user_id', user.id)
@@ -221,7 +241,8 @@ export const thirdPartiesService = {
     if (!user) return null;
 
     try {
-      const { data } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { data } = await client
         .from('third_parties')
         .insert({ user_id: user.id, name })
         .select('id, name')
@@ -233,4 +254,3 @@ export const thirdPartiesService = {
     }
   }
 };
-

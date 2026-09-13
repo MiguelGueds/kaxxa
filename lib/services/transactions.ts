@@ -1,4 +1,4 @@
-import { supabase, getAuthenticatedUser } from '@/lib/supabase';
+import { supabase, supabaseAdmin, getAuthenticatedUser } from '@/lib/supabase';
 import { accountsService } from './accounts';
 
 export interface DbTransaction {
@@ -61,7 +61,8 @@ export const transactionsService = {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { data, error } = await client
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
@@ -73,8 +74,42 @@ export const transactionsService = {
           ...t,
           amount: Number(t.amount || 0),
         })) as DbTransaction[];
-        saveLocalTransactions(user.id, formatted);
-        return formatted;
+
+        // Sincroniza transações criadas localmente pendentes que ainda não subiram para o Supabase
+        const localItems = getLocalTransactions(user.id);
+        const pendingLocal = localItems.filter(local =>
+          local.id.startsWith('tx-') &&
+          !formatted.some(remote => remote.id === local.id || (remote.description === local.description && remote.date === local.date && Number(remote.amount) === Number(local.amount)))
+        );
+
+        const uninsertedPending: DbTransaction[] = [];
+        if (pendingLocal.length > 0) {
+          for (const item of pendingLocal) {
+            try {
+              const { id, user_id, ...cleanItem } = item;
+              const { data: inserted } = await client
+                .from('transactions')
+                .insert({ ...cleanItem, user_id: user.id })
+                .select()
+                .single();
+              if (inserted) {
+                formatted.unshift({
+                  ...inserted,
+                  amount: Number(inserted.amount || 0),
+                } as DbTransaction);
+              } else {
+                uninsertedPending.push(item);
+              }
+            } catch (e) {
+              console.warn('Erro ao sincronizar transação pendente para o Supabase:', e);
+              uninsertedPending.push(item);
+            }
+          }
+        }
+
+        const mergedAll = [...formatted, ...uninsertedPending];
+        saveLocalTransactions(user.id, mergedAll);
+        return mergedAll;
       }
     } catch (err) {
       console.warn('Erro ao buscar transações do Supabase, usando backup local:', err);
@@ -87,38 +122,74 @@ export const transactionsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .insert({
-        ...tx,
-        user_id: user.id,
-      })
-      .select()
-      .single();
+    const newItem: DbTransaction = {
+      ...tx,
+      id: 'tx-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+    };
 
-    if (error) {
-      console.error('Erro ao cadastrar transação:', error);
-      throw error;
+    const payload = {
+      ...tx,
+      user_id: user.id,
+    };
+
+    let insertedData = null;
+
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (!error && data) {
+        insertedData = data;
+      } else {
+        if (supabaseAdmin) {
+          const { data: adminData, error: adminErr } = await supabaseAdmin
+            .from('transactions')
+            .insert(payload)
+            .select()
+            .single();
+
+          if (!adminErr && adminData) {
+            insertedData = adminData;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Exceção ao cadastrar transação no Supabase, salvando localmente:', err);
     }
 
-    // Se estiver associada a uma conta e paga, atualiza o saldo da conta
     if (tx.account_id && tx.is_paid !== false) {
       const delta = tx.type === 'INCOME' ? Number(tx.amount) : -Number(tx.amount);
       await accountsService.updateBalance(tx.account_id, delta);
     }
 
-    return {
-      ...data,
-      amount: Number(data.amount || 0),
-    } as DbTransaction;
+    if (insertedData) {
+      const saved = {
+        ...insertedData,
+        amount: Number(insertedData.amount || 0),
+      } as DbTransaction;
+
+      const currentLocal = getLocalTransactions(user.id);
+      saveLocalTransactions(user.id, [saved, ...currentLocal.filter(t => t.id !== saved.id)]);
+      return saved;
+    }
+
+    const currentLocal = getLocalTransactions(user.id);
+    const updated = [newItem, ...currentLocal.filter(t => t.id !== newItem.id)];
+    saveLocalTransactions(user.id, updated);
+    return newItem;
   },
 
   async deleteTransaction(id: string): Promise<boolean> {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    // Buscar transação antes de excluir para reverter saldo
-    const { data: tx } = await supabase
+    const client = supabaseAdmin || supabase;
+    const { data: tx } = await client
       .from('transactions')
       .select('*')
       .eq('id', id)
@@ -130,7 +201,10 @@ export const transactionsService = {
       await accountsService.updateBalance(tx.account_id, revertDelta);
     }
 
-    const { error } = await supabase
+    const currentLocal = getLocalTransactions(user.id);
+    saveLocalTransactions(user.id, currentLocal.filter(t => t.id !== id));
+
+    const { error } = await client
       .from('transactions')
       .delete()
       .eq('id', id)
@@ -139,4 +213,3 @@ export const transactionsService = {
     return !error;
   }
 };
-

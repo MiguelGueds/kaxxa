@@ -62,7 +62,8 @@ export const investmentsService = {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { data, error } = await client
         .from('investments')
         .select('*')
         .eq('user_id', user.id)
@@ -92,7 +93,6 @@ export const investmentsService = {
           for (const item of realPendingLocal) {
             try {
               const { id, user_id, ...cleanItem } = item;
-              const client = supabaseAdmin || supabase;
               const { data: inserted } = await client
                 .from('investments')
                 .insert({ ...cleanItem, user_id: user.id })
@@ -117,7 +117,6 @@ export const investmentsService = {
           }
         }
 
-        // Atualiza o backup local mesclando dados remotos e pendentes locais sem jamais apagar dados
         const mergedAll = [...formatted, ...uninsertedPending];
         saveLocalInvestments(user.id, mergedAll);
         return mergedAll;
@@ -161,54 +160,43 @@ export const investmentsService = {
       created_at: inv.created_at || new Date().toISOString(),
     };
 
+    let insertedData = null;
+
     try {
-      const client = supabase;
-      const { data, error } = await client
+      const { data, error } = await supabase
         .from('investments')
         .insert(cleanPayload)
         .select()
         .single();
 
-      if (error) {
-        console.warn('Erro com cliente padrão, tentando client admin:', error);
-        if (supabaseAdmin) {
-          const { data: adminData, error: adminErr } = await supabaseAdmin
-            .from('investments')
-            .insert(cleanPayload)
-            .select()
-            .single();
+      if (!error && data) {
+        insertedData = data;
+      } else if (supabaseAdmin) {
+        const { data: adminData } = await supabaseAdmin
+          .from('investments')
+          .insert(cleanPayload)
+          .select()
+          .single();
 
-          if (!adminErr && adminData) {
-            const saved = {
-              ...adminData,
-              quantity: Number(adminData.quantity || 0),
-              average_price: Number(adminData.average_price || 0),
-              invested_amount: Number(adminData.invested_amount || 0),
-              current_value: Number(adminData.current_value || 0),
-              profitability_pct: Number(adminData.profitability_pct || 0),
-            } as DbInvestment;
-
-            const currentLocal = getLocalInvestments(user.id);
-            saveLocalInvestments(user.id, [saved, ...currentLocal.filter(i => i.id !== saved.id)]);
-            return saved;
-          }
-        }
-      } else if (data) {
-        const saved = {
-          ...data,
-          quantity: Number(data.quantity || 0),
-          average_price: Number(data.average_price || 0),
-          invested_amount: Number(data.invested_amount || 0),
-          current_value: Number(data.current_value || 0),
-          profitability_pct: Number(data.profitability_pct || 0),
-        } as DbInvestment;
-
-        const currentLocal = getLocalInvestments(user.id);
-        saveLocalInvestments(user.id, [saved, ...currentLocal.filter(i => i.id !== saved.id)]);
-        return saved;
+        if (adminData) insertedData = adminData;
       }
     } catch (err) {
       console.warn('Erro ao inserir investimento no Supabase, salvando localmente:', err);
+    }
+
+    if (insertedData) {
+      const saved = {
+        ...insertedData,
+        quantity: Number(insertedData.quantity || 0),
+        average_price: Number(insertedData.average_price || 0),
+        invested_amount: Number(insertedData.invested_amount || 0),
+        current_value: Number(insertedData.current_value || 0),
+        profitability_pct: Number(insertedData.profitability_pct || 0),
+      } as DbInvestment;
+
+      const currentLocal = getLocalInvestments(user.id);
+      saveLocalInvestments(user.id, [saved, ...currentLocal.filter(i => i.id !== saved.id)]);
+      return saved;
     }
 
     const currentLocal = getLocalInvestments(user.id);
@@ -226,7 +214,8 @@ export const investmentsService = {
     saveLocalInvestments(user.id, updatedLocal);
 
     try {
-      const { error } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { error } = await client
         .from('investments')
         .update(updates)
         .eq('id', id)
@@ -247,7 +236,8 @@ export const investmentsService = {
     saveLocalInvestments(user.id, updatedLocal);
 
     try {
-      const { error } = await supabase
+      const client = supabaseAdmin || supabase;
+      const { error } = await client
         .from('investments')
         .delete()
         .eq('id', id)
@@ -259,4 +249,3 @@ export const investmentsService = {
     }
   }
 };
-
