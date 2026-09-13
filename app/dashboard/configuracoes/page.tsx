@@ -63,14 +63,40 @@ function SettingsContent() {
   const [categoryParentId, setCategoryParentId] = useState<string | null>(null);
 
   // Contas
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const cached = accountsService.getCachedAccounts();
+      return (cached || []).map(a => ({
+        id: a.id,
+        name: a.name,
+        type: a.type,
+        balance: Number(a.balance ?? a.initial_balance ?? 0)
+      }));
+    } catch {
+      return [];
+    }
+  });
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [accountName, setAccountName] = useState('');
   const [accountType, setAccountType] = useState('CORRENTE');
   const [accountBalance, setAccountBalance] = useState('');
 
   // Cartões
-  const [cards, setCards] = useState<Card[]>([]);
+  const [cards, setCards] = useState<Card[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const cached = cardsService.getCachedCards();
+      return (cached || []).map(c => ({
+        id: c.id,
+        name: c.name,
+        limit: Number(c.credit_limit ?? 0),
+        due_day: c.due_day
+      }));
+    } catch {
+      return [];
+    }
+  });
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [cardName, setCardName] = useState('');
   const [cardBank, setCardBank] = useState('Nubank');
@@ -117,39 +143,15 @@ function SettingsContent() {
   };
 
   const fetchData = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const user = await getAuthenticatedUser();
-    if (!user) return;
-
-    // Dados Financeiros
-    const [catRes, accRes, cardRes, thirdRes] = await Promise.all([
-      supabase.from('categories').select('*').eq('user_id', session.user.id).order('name'),
-      supabase.from('accounts').select('*').eq('user_id', session.user.id).order('name'),
-      supabase.from('credit_cards').select('*').eq('user_id', session.user.id).order('name'),
-      supabase.from('third_parties').select('*').eq('user_id', session.user.id).order('name')
-    ]);
-      
-    if (catRes.data) setCategories(catRes.data);
-    if (accRes.data) setAccounts(accRes.data.map((a: any) => ({
-      id: a.id,
-      name: a.name,
-      type: a.type,
-      balance: Number(a.balance ?? a.initial_balance ?? 0)
-    })));
-    if (cardRes.data) setCards(cardRes.data.map(c => ({
-      id: c.id,
-      name: c.name,
-      limit: Number(c.credit_limit ?? c.limit ?? 0),
-      due_day: c.due_day
-    })));
-    if (thirdRes.data) setThirdParties(thirdRes.data);
     try {
+      const user = await getAuthenticatedUser();
+      const targetUserIds = Array.from(new Set([user?.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
+
       const [catRes, accList, cardList, thirdRes] = await Promise.all([
-        supabase.from('categories').select('*').eq('user_id', user.id).order('name').then(r => r, () => ({ data: null })),
+        supabase.from('categories').select('*').in('user_id', targetUserIds).order('name').then(r => r, () => ({ data: null })),
         accountsService.fetchAccounts(),
         cardsService.fetchCards(),
-        supabase.from('third_parties').select('*').eq('user_id', user.id).order('name').then(r => r, () => ({ data: null }))
+        supabase.from('third_parties').select('*').in('user_id', targetUserIds).order('name').then(r => r, () => ({ data: null }))
       ]);
         
       if (catRes && (catRes as any).data) setCategories((catRes as any).data);

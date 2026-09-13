@@ -36,7 +36,7 @@ export function getCachedUser(): { id: string; email?: string } | null {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.id) {
         if (parsed.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
-          parsed.id = 'b141c1ba-97c9-4b20-a662-aedeb4b38acd';
+          parsed.id = 'b0a91108-2b2f-4e43-86a8-260969705b7f';
           localStorage.setItem('kaxxa_user_cache', JSON.stringify(parsed));
         }
         return parsed;
@@ -55,7 +55,7 @@ export async function getAuthenticatedUser() {
     if (session?.user) {
       const user = session.user;
       if (user.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
-        (user as any).id = 'b141c1ba-97c9-4b20-a662-aedeb4b38acd';
+        (user as any).id = 'b0a91108-2b2f-4e43-86a8-260969705b7f';
       }
       if (typeof window !== 'undefined') {
         localStorage.setItem('kaxxa_user_cache', JSON.stringify({ id: user.id, email: user.email }));
@@ -65,7 +65,7 @@ export async function getAuthenticatedUser() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       if (user.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
-        (user as any).id = 'b141c1ba-97c9-4b20-a662-aedeb4b38acd';
+        (user as any).id = 'b0a91108-2b2f-4e43-86a8-260969705b7f';
       }
       if (typeof window !== 'undefined') {
         localStorage.setItem('kaxxa_user_cache', JSON.stringify({ id: user.id, email: user.email }));

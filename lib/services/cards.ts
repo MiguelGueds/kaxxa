@@ -131,10 +131,11 @@ export const cardsService = {
 
     try {
       const client = supabaseAdmin || supabase;
+      const targetUserIds = Array.from(new Set([user.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
       const { data, error } = await client
         .from('credit_cards')
         .select('*')
-        .eq('user_id', user.id)
+        .in('user_id', targetUserIds)
         .order('name', { ascending: true });
 
       if (!error && data !== null) {
