@@ -31,8 +31,9 @@ import {
   Tag
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase, getAuthenticatedUser } from '@/lib/supabase';
 import { subscriptionService, DbSubscription } from '@/lib/services/subscription';
+import { accountsService } from '@/lib/services/accounts';
 import { cardsService } from '@/lib/services/cards';
 import { isAdminEmail } from '@/lib/admin';
 import { BankLogo } from '@/app/components/BankLogo';
@@ -115,31 +116,56 @@ function SettingsContent() {
   };
 
   const fetchData = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    const user = await getAuthenticatedUser();
+    if (!user) return;
 
-    // Dados Financeiros
-    const [catRes, accRes, cardRes, thirdRes] = await Promise.all([
-      supabase.from('categories').select('*').eq('user_id', session.user.id).order('name'),
-      supabase.from('accounts').select('*').eq('user_id', session.user.id).order('name'),
-      supabase.from('credit_cards').select('*').eq('user_id', session.user.id).order('name'),
-      supabase.from('third_parties').select('*').eq('user_id', session.user.id).order('name')
-    ]);
-      
-    if (catRes.data) setCategories(catRes.data);
-    if (accRes.data) setAccounts(accRes.data.map((a: any) => ({
-      id: a.id,
-      name: a.name,
-      type: a.type,
-      balance: Number(a.balance ?? a.initial_balance ?? 0)
-    })));
-    if (cardRes.data) setCards(cardRes.data.map(c => ({
-      id: c.id,
-      name: c.name,
-      limit: Number(c.credit_limit ?? c.limit ?? 0),
-      due_day: c.due_day
-    })));
-    if (thirdRes.data) setThirdParties(thirdRes.data);
+    try {
+      const [catRes, accList, cardList, thirdRes] = await Promise.all([
+        supabase.from('categories').select('*').eq('user_id', user.id).order('name').then(r => r, () => ({ data: null })),
+        accountsService.fetchAccounts(),
+        cardsService.fetchCards(),
+        supabase.from('third_parties').select('*').eq('user_id', user.id).order('name').then(r => r, () => ({ data: null }))
+      ]);
+        
+      if (catRes && (catRes as any).data) setCategories((catRes as any).data);
+      if (accList) {
+        setAccounts(accList.map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          balance: Number(a.balance ?? a.initial_balance ?? 0)
+        })));
+      }
+      if (cardList) {
+        setCards(cardList.map(c => ({
+          id: c.id,
+          name: c.name,
+          limit: Number(c.credit_limit ?? 0),
+          due_day: c.due_day
+        })));
+      }
+      if (thirdRes && (thirdRes as any).data) setThirdParties((thirdRes as any).data);
+    } catch (e) {
+      console.warn('Erro ao carregar dados:', e);
+      const localAccs = accountsService.getCachedAccounts();
+      if (localAccs) {
+        setAccounts(localAccs.map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          balance: Number(a.balance ?? a.initial_balance ?? 0)
+        })));
+      }
+      const localCards = cardsService.getCachedCards();
+      if (localCards) {
+        setCards(localCards.map(c => ({
+          id: c.id,
+          name: c.name,
+          limit: Number(c.credit_limit ?? 0),
+          due_day: c.due_day
+        })));
+      }
+    }
   };
 
   const resetMessages = () => { setErrorMsg(''); setSuccessMsg(''); };
@@ -156,8 +182,15 @@ function SettingsContent() {
     if (!categoryName.trim()) return;
     setIsSubmitting(true); resetMessages();
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const { error } = await supabase.from('categories').insert({ user_id: session?.user?.id, name: categoryName.trim(), type: categoryType, parent_id: categoryParentId });
+      const user = await getAuthenticatedUser();
+      if (!user?.id) throw new Error('Usuário não autenticado');
+      const { error } = await supabase.from('categories').insert({ 
+        id: 'cat-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        user_id: user.id, 
+        name: categoryName.trim(), 
+        type: categoryType, 
+        parent_id: categoryParentId 
+      });
       if (error) setErrorMsg(error.message); else { setSuccessMsg('Salvo!'); setCategoryName(''); fetchData(); setTimeout(() => setIsCategoryModalOpen(false), 800); }
     } catch (err: any) {
       setErrorMsg(err?.message || 'Erro ao salvar categoria');
@@ -176,9 +209,9 @@ function SettingsContent() {
         await supabase.from('categories').delete().eq('parent_id', deleteTarget.id);
         await supabase.from('categories').delete().eq('id', deleteTarget.id);
       } else if (deleteTarget.type === 'ACCOUNT') {
-        await supabase.from('accounts').delete().eq('id', deleteTarget.id);
+        await accountsService.deleteAccount(deleteTarget.id);
       } else if (deleteTarget.type === 'CARD') {
-        await supabase.from('credit_cards').delete().eq('id', deleteTarget.id);
+        await cardsService.deleteCard(deleteTarget.id);
       } else if (deleteTarget.type === 'THIRD_PARTY') {
         await supabase.from('third_parties').delete().eq('id', deleteTarget.id);
       }
@@ -201,15 +234,20 @@ function SettingsContent() {
     if (!accountName.trim()) return;
     setIsSubmitting(true); resetMessages();
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const { error } = await supabase.from('accounts').insert({ 
-        user_id: session?.user?.id, 
-        name: accountName.trim(), 
-        type: accountType, 
-        initial_balance: parseFloat(accountBalance || '0') 
+      const created = await accountsService.createAccount({
+        name: accountName.trim(),
+        type: accountType,
+        balance: parseFloat(accountBalance || '0')
       });
-      if (error) setErrorMsg(error.message); else { setSuccessMsg('Conta salva!'); fetchData(); setTimeout(() => setIsAccountModalOpen(false), 800); }
+      if (created) {
+        setSuccessMsg('Conta salva!');
+        await fetchData();
+        setTimeout(() => setIsAccountModalOpen(false), 800);
+      } else {
+        setErrorMsg('Não foi possível salvar a conta.');
+      }
     } catch (err: any) {
+      console.error('Erro ao salvar conta:', err);
       setErrorMsg(err?.message || 'Erro ao salvar conta');
     } finally {
       setIsSubmitting(false);
@@ -261,15 +299,18 @@ function SettingsContent() {
     }
     setIsSubmitting(true); resetMessages();
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const user = await getAuthenticatedUser();
+      if (!user?.id) throw new Error('Usuário não autenticado');
+      const tpId = 'tp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
       let { error } = await supabase.from('third_parties').insert({ 
-        user_id: session?.user.id, 
+        id: tpId,
+        user_id: user.id, 
         name: thirdPartyName.trim(), 
         phone: thirdPartyPhone.trim() || null, 
         avatar_url: thirdPartyAvatar || null 
       });
       if (error && (error.message.includes('phone') || error.message.includes('avatar_url') || error.code === 'PGRST204')) {
-        const retry = await supabase.from('third_parties').insert({ user_id: session?.user.id, name: thirdPartyName.trim() });
+        const retry = await supabase.from('third_parties').insert({ id: tpId, user_id: user.id, name: thirdPartyName.trim() });
         error = retry.error;
       }
       if (error) setErrorMsg(error.message); else { setSuccessMsg('Pessoa salva!'); fetchData(); setTimeout(() => setIsThirdPartyModalOpen(false), 800); }
