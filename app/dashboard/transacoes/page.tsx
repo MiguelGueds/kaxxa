@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { usePrivacy } from '@/app/contexts/PrivacyContext';
 import { BankLogo } from '@/app/components/BankLogo';
+import { PortalModal } from '@/app/components/PortalModal';
 import { transactionsService } from '@/lib/services/transactions';
 import { accountsService } from '@/lib/services/accounts';
 import { categoriesService } from '@/lib/services/categories';
@@ -1008,8 +1009,15 @@ export default function SaldoExtratoPage() {
           MODAL 1: NOVO OU EDITAR LANÇAMENTO
       ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => { setIsModalOpen(false); setEditingTransaction(null); }}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
             
             <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
               <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
@@ -1217,210 +1225,38 @@ export default function SaldoExtratoPage() {
 
           </div>
         </div>
+        </PortalModal>
       )}
 
       {/* =========================================================================
           MODAL 2: TRANSFERIR ENTRE CONTAS
       ========================================================================= */}
       {isTransferModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            
-            <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
-              <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
-                <ArrowRightLeft size={15} className="text-[#1A44C8]" />
-                Transferir entre Minhas Contas
-              </h2>
-            </div>
-
-            <div className="p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsTransferModalOpen(false)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
               
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Conta Origem (Sai)</label>
-                  <select 
-                    value={transferOrigin}
-                    onChange={(e) => setTransferOrigin(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
-                  >
-                    {banks.map(b => (
-                      <option key={b.id} value={b.name}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Conta Destino (Entra)</label>
-                  <select 
-                    value={transferDest}
-                    onChange={(e) => setTransferDest(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
-                  >
-                    {banks.map(b => (
-                      <option key={b.id} value={b.name}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
+                <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
+                  <ArrowRightLeft size={15} className="text-[#1A44C8]" />
+                  Transferir entre Minhas Contas
+                </h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Valor (R$)</label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    value={transferAmount}
-                    onChange={(e) => setTransferAmount(e.target.value)}
-                    placeholder="0,00"
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] font-bold focus:outline-none focus:border-[#1A44C8]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Data</label>
-                  <input 
-                    type="date" 
-                    value={transferDate}
-                    onChange={(e) => setTransferDate(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                  />
-                </div>
-              </div>
-
-            </div>
-
-            <div className="px-5 py-3.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2.5 shrink-0">
-              <button 
-                type="button" 
-                onClick={() => setIsTransferModalOpen(false)}
-                className="flex-1 px-3 py-2 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button" 
-                onClick={handleConfirmTransfer}
-                className="flex-1 px-3 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs transition-all shadow-md active:scale-95"
-              >
-                Confirmar Transferência
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL 3: PAGAR FATURA COM SALDO
-      ========================================================================= */}
-      {isPayInvoiceModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            
-            <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
-              <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
-                <CreditCard size={15} className="text-[#00A3FF]" />
-                Pagar Fatura de Cartão com Saldo
-              </h2>
-            </div>
-
-            <div className="p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
-              
-              <div>
-                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Cartão / Fatura a Pagar</label>
-                <select 
-                  value={payCardName}
-                  onChange={(e) => setPayCardName(e.target.value)}
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none font-medium"
-                >
-                  <option value="Nubank Ultravioleta">Nubank Ultravioleta (Fatura R$ 4.428,00)</option>
-                  <option value="Inter Black">Inter Black (Fatura R$ 2.450,00)</option>
-                  <option value="Santander Unique">Santander Unique (Fatura R$ 1.890,00)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Conta Bancária de Débito (De onde sai o dinheiro)</label>
-                <select 
-                  value={payOriginBank}
-                  onChange={(e) => setPayOriginBank(e.target.value)}
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none font-medium"
-                >
-                  {banks.map(b => (
-                    <option key={b.id} value={b.name}>{b.name} (Saldo: R$ {formatCurrency(b.balance)})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Valor Pago (R$)</label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#00A3FF]/30 rounded-xl py-2 px-3 text-xs text-[#00A3FF] font-bold focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Data do Pagamento</label>
-                  <input 
-                    type="date" 
-                    value={payDate}
-                    onChange={(e) => setPayDate(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                  />
-                </div>
-              </div>
-
-            </div>
-
-            <div className="px-5 py-3.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2.5 shrink-0">
-              <button 
-                type="button" 
-                onClick={() => setIsPayInvoiceModalOpen(false)}
-                className="flex-1 px-3 py-2 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button" 
-                onClick={handleConfirmPayInvoice}
-                className="flex-1 px-3 py-2 rounded-xl bg-[#00A3FF] hover:bg-[#0284C7] text-white font-semibold text-xs transition-all shadow-md active:scale-95"
-              >
-                Confirmar Pagamento
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL 4: IMPORTAR EXTRATO
-      ========================================================================= */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            
-            <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
-              <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
-                <Upload size={15} className="text-[#1A44C8]" />
-                Importar Extrato Bancário
-              </h2>
-            </div>
-
-            <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-              
-              {importStep === 1 ? (
-                <div className="space-y-4">
+              <div className="p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
+                
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Banco do Extrato</label>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Conta Origem (Sai)</label>
                     <select 
-                      value={selectedImportBank}
-                      onChange={(e) => setSelectedImportBank(e.target.value)}
+                      value={transferOrigin}
+                      onChange={(e) => setTransferOrigin(e.target.value)}
                       className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
                     >
                       {banks.map(b => (
@@ -1429,118 +1265,323 @@ export default function SaldoExtratoPage() {
                     </select>
                   </div>
 
-                  <div 
-                    onClick={() => setImportStep(2)}
-                    className="border-2 border-dashed border-[#CBD5E1] hover:border-[#1A44C8] rounded-2xl p-8 text-center cursor-pointer transition-all bg-[#F8FAFC] hover:bg-[#1A44C8]/[0.03]"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center mx-auto mb-3 border border-[#1A44C8]/20">
-                      <FileSpreadsheet size={22} />
-                    </div>
-                    <h3 className="text-xs font-bold text-[#181B22] mb-1">Arraste seu arquivo de extrato aqui</h3>
-                    <p className="text-[10px] text-[#64748B] mb-3">Formatos aceitos: OFX, CSV, PDF ou XLS</p>
-                    <button className="px-3.5 py-1.5 rounded-xl bg-[#F1F3F7] hover:bg-[#EAEAEA] text-[#181B22] text-xs font-semibold border border-[#E5E7EB] transition-all">
-                      Selecionar Arquivo
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-[#181B22]">Lançamentos Identificados ({extractedExtrato.length})</span>
-                    <button 
-                      onClick={() => setImportStep(1)}
-                      className="text-[11px] text-[#1A44C8] font-bold hover:underline"
+                  <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Conta Destino (Entra)</label>
+                    <select 
+                      value={transferDest}
+                      onChange={(e) => setTransferDest(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
                     >
-                      Trocar arquivo
-                    </button>
-                  </div>
-
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {extractedExtrato.map((row) => (
-                      <div 
-                        key={row.id} 
-                        className={`p-2.5 rounded-xl border flex items-center justify-between text-xs transition-all ${
-                          row.checked ? 'bg-[#F8FAFC] border-[#1A44C8]/30' : 'bg-[#FFFFFF] border-[#E5E7EB] opacity-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <input 
-                            type="checkbox" 
-                            checked={row.checked}
-                            onChange={(e) => {
-                              const chk = e.target.checked;
-                              setExtractedExtrato(prev => prev.map(r => r.id === row.id ? { ...r, checked: chk } : r));
-                            }}
-                            className="rounded accent-[#1A44C8] w-4 h-4 cursor-pointer"
-                          />
-                          <div>
-                            <p className="font-bold text-[#181B22] truncate">{row.name}</p>
-                            <p className="text-[10px] text-[#64748B]">{row.date} • {row.category}</p>
-                          </div>
-                        </div>
-                        <span className={`font-bold ${row.type === 'INCOME' ? 'text-[#1A44C8]' : 'text-rose-500'}`}>
-                          {row.type === 'INCOME' ? '+' : '-'} R$ {formatCurrency(Math.abs(row.amount))}
-                        </span>
-                      </div>
-                    ))}
+                      {banks.map(b => (
+                        <option key={b.id} value={b.name}>{b.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              )}
 
-            </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Valor (R$)</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={transferAmount}
+                      onChange={(e) => setTransferAmount(e.target.value)}
+                      placeholder="0,00"
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] font-bold focus:outline-none focus:border-[#1A44C8]"
+                    />
+                  </div>
 
-            <div className="px-5 py-3.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2.5 shrink-0">
-              <button 
-                type="button" 
-                onClick={() => setIsImportModalOpen(false)}
-                className="flex-1 px-3 py-2 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
-              >
-                Cancelar
-              </button>
-              {importStep === 2 && (
+                  <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Data</label>
+                    <input 
+                      type="date" 
+                      value={transferDate}
+                      onChange={(e) => setTransferDate(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                    />
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="px-5 py-3.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2.5 shrink-0">
                 <button 
                   type="button" 
-                  onClick={handleConfirmImport}
+                  onClick={() => setIsTransferModalOpen(false)}
+                  className="flex-1 px-3 py-2 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleConfirmTransfer}
                   className="flex-1 px-3 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs transition-all shadow-md active:scale-95"
                 >
-                  Importar ({extractedExtrato.filter(r => r.checked).length}) Lançamentos
+                  Confirmar Transferência
                 </button>
-              )}
-            </div>
+              </div>
 
+            </div>
           </div>
-        </div>
+        </PortalModal>
+      )}
+
+      {/* =========================================================================
+          MODAL 3: PAGAR FATURA COM SALDO
+      ========================================================================= */}
+      {isPayInvoiceModalOpen && (
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsPayInvoiceModalOpen(false)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
+              
+              <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
+                <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
+                  <CreditCard size={15} className="text-[#00A3FF]" />
+                  Pagar Fatura de Cartão com Saldo
+                </h2>
+              </div>
+
+              <div className="p-5 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
+                
+                <div>
+                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Cartão / Fatura a Pagar</label>
+                  <select 
+                    value={payCardName}
+                    onChange={(e) => setPayCardName(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none font-medium"
+                  >
+                    <option value="Nubank Ultravioleta">Nubank Ultravioleta (Fatura R$ 4.428,00)</option>
+                    <option value="Inter Black">Inter Black (Fatura R$ 2.450,00)</option>
+                    <option value="Santander Unique">Santander Unique (Fatura R$ 1.890,00)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Conta Bancária de Débito (De onde sai o dinheiro)</label>
+                  <select 
+                    value={payOriginBank}
+                    onChange={(e) => setPayOriginBank(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none font-medium"
+                  >
+                    {banks.map(b => (
+                      <option key={b.id} value={b.name}>{b.name} (Saldo: R$ {formatCurrency(b.balance)})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Valor Pago (R$)</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={payAmount}
+                      onChange={(e) => setPayAmount(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#00A3FF]/30 rounded-xl py-2 px-3 text-xs text-[#00A3FF] font-bold focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Data do Pagamento</label>
+                    <input 
+                      type="date" 
+                      value={payDate}
+                      onChange={(e) => setPayDate(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                    />
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="px-5 py-3.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2.5 shrink-0">
+                <button 
+                  type="button" 
+                  onClick={() => setIsPayInvoiceModalOpen(false)}
+                  className="flex-1 px-3 py-2 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleConfirmPayInvoice}
+                  className="flex-1 px-3 py-2 rounded-xl bg-[#00A3FF] hover:bg-[#0284C7] text-white font-semibold text-xs transition-all shadow-md active:scale-95"
+                >
+                  Confirmar Pagamento
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </PortalModal>
+      )}
+
+      {/* =========================================================================
+          MODAL 4: IMPORTAR EXTRATO
+      ========================================================================= */}
+      {isImportModalOpen && (
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsImportModalOpen(false)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
+              
+              <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
+                <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
+                  <Upload size={15} className="text-[#1A44C8]" />
+                  Importar Extrato Bancário
+                </h2>
+              </div>
+
+              <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+                
+                {importStep === 1 ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Banco do Extrato</label>
+                      <select 
+                        value={selectedImportBank}
+                        onChange={(e) => setSelectedImportBank(e.target.value)}
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
+                      >
+                        {banks.map(b => (
+                          <option key={b.id} value={b.name}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div 
+                      onClick={() => setImportStep(2)}
+                      className="border-2 border-dashed border-[#CBD5E1] hover:border-[#1A44C8] rounded-2xl p-8 text-center cursor-pointer transition-all bg-[#F8FAFC] hover:bg-[#1A44C8]/[0.03]"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center mx-auto mb-3 border border-[#1A44C8]/20">
+                        <FileSpreadsheet size={22} />
+                      </div>
+                      <h3 className="text-xs font-bold text-[#181B22] mb-1">Arraste seu arquivo de extrato aqui</h3>
+                      <p className="text-[10px] text-[#64748B] mb-3">Formatos aceitos: OFX, CSV, PDF ou XLS</p>
+                      <button className="px-3.5 py-1.5 rounded-xl bg-[#F1F3F7] hover:bg-[#EAEAEA] text-[#181B22] text-xs font-semibold border border-[#E5E7EB] transition-all">
+                        Selecionar Arquivo
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-[#181B22]">Lançamentos Identificados ({extractedExtrato.length})</span>
+                      <button 
+                        onClick={() => setImportStep(1)}
+                        className="text-[11px] text-[#1A44C8] font-bold hover:underline"
+                      >
+                        Trocar arquivo
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {extractedExtrato.map((row) => (
+                        <div 
+                          key={row.id} 
+                          className={`p-2.5 rounded-xl border flex items-center justify-between text-xs transition-all ${
+                            row.checked ? 'bg-[#F8FAFC] border-[#1A44C8]/30' : 'bg-[#FFFFFF] border-[#E5E7EB] opacity-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <input 
+                              type="checkbox" 
+                              checked={row.checked}
+                              onChange={(e) => {
+                                const chk = e.target.checked;
+                                setExtractedExtrato(prev => prev.map(r => r.id === row.id ? { ...r, checked: chk } : r));
+                              }}
+                              className="rounded accent-[#1A44C8] w-4 h-4 cursor-pointer"
+                            />
+                            <div>
+                              <p className="font-bold text-[#181B22] truncate">{row.name}</p>
+                              <p className="text-[10px] text-[#64748B]">{row.date} • {row.category}</p>
+                            </div>
+                          </div>
+                          <span className={`font-bold ${row.type === 'INCOME' ? 'text-[#1A44C8]' : 'text-rose-500'}`}>
+                            {row.type === 'INCOME' ? '+' : '-'} R$ {formatCurrency(Math.abs(row.amount))}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              <div className="px-5 py-3.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2.5 shrink-0">
+                <button 
+                  type="button" 
+                  onClick={() => setIsImportModalOpen(false)}
+                  className="flex-1 px-3 py-2 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
+                >
+                  Cancelar
+                </button>
+                {importStep === 2 && (
+                  <button 
+                    type="button" 
+                    onClick={handleConfirmImport}
+                    className="flex-1 px-3 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs transition-all shadow-md active:scale-95"
+                  >
+                    Importar ({extractedExtrato.filter(r => r.checked).length}) Lançamentos
+                  </button>
+                )}
+              </div>
+
+            </div>
+          </div>
+        </PortalModal>
       )}
 
       {/* =========================================================================
           MODAL 5: CONFIRMAR EXCLUSÃO
       ========================================================================= */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            <div>
-              <h3 className="text-sm font-bold text-[#181B22] mb-1">Excluir Lançamento?</h3>
-              <p className="text-xs text-[#64748B]">
-                Tem certeza que deseja remover <strong>&quot;{deleteCandidate.name}&quot;</strong>?
-              </p>
-            </div>
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setDeleteCandidate(null)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
+              <div>
+                <h3 className="text-sm font-bold text-[#181B22] mb-1">Excluir Lançamento?</h3>
+                <p className="text-xs text-[#64748B]">
+                  Tem certeza que deseja remover <strong>&quot;{deleteCandidate.name}&quot;</strong>?
+                </p>
+              </div>
 
-            <div className="flex gap-2 pt-2 shrink-0">
-              <button 
-                onClick={() => setDeleteCandidate(null)}
-                className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7] transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={() => handleDeleteTransaction(deleteCandidate.id)}
-                className="flex-1 py-2 px-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs transition-all shadow-md active:scale-95"
-              >
-                Sim, Excluir
-              </button>
+              <div className="flex gap-2 pt-2 shrink-0">
+                <button 
+                  onClick={() => setDeleteCandidate(null)}
+                  className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7] transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => handleDeleteTransaction(deleteCandidate.id)}
+                  className="flex-1 py-2 px-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs transition-all shadow-md active:scale-95"
+                >
+                  Sim, Excluir
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </PortalModal>
       )}
 
     </>

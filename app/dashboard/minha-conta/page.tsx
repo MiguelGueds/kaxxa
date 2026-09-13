@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
+import { PortalModal } from '@/app/components/PortalModal';
 import { 
   UserCircle2, 
   X, 
@@ -709,275 +710,306 @@ function MinhaContaContent() {
 
       {/* --- MODAL CANCELAR RENOVAÇÃO --- */}
       {isCancelModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-fade-in-up flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0">
-            <div className="flex items-center gap-3 text-rose-600 shrink-0 pb-3 border-b border-[#E5E7EB]">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
-                <AlertTriangle size={20} />
-              </div>
-              <div>
-                <h3 className="text-base font-extrabold text-[#181B22]">Cancelar Renovação Automática?</h3>
-                <p className="text-xs text-[#64748B]">Sua assinatura não será renovada no próximo ciclo.</p>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 py-3">
-              <p className="text-xs text-[#64748B] leading-relaxed bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
-                Ao confirmar o cancelamento da renovação, você continuará com acesso total ao Kaxxa até o final do seu período pago atual. Nenhuma cobrança futura será realizada.
-              </p>
-            </div>
-
-            <div className="flex gap-2 pt-3 border-t border-[#E5E7EB] shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsCancelModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-xs font-bold text-[#181B22] hover:bg-[#F1F5F9] transition-all"
-              >
-                Manter Assinatura
-              </button>
-              <button
-                type="button"
-                onClick={handleCancelRecurring}
-                disabled={isSubmitting}
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-50"
-              >
-                {isSubmitting ? 'Cancelando...' : 'Confirmar Cancelamento'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL REEMBOLSO --- */}
-      {isRefundModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-fade-in-up flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0">
-            <div className="flex items-center gap-3 text-amber-600 shrink-0 pb-3 border-b border-[#E5E7EB]">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <h3 className="text-base font-extrabold text-[#181B22]">Solicitar Estorno / Reembolso</h3>
-                <p className="text-xs text-[#64748B]">Garantia incondicional de 7 dias.</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleRequestRefund} className="flex flex-col flex-1 min-h-0 pt-3">
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3 pb-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Motivo da solicitação</label>
-                  <textarea
-                    required
-                    value={refundReason}
-                    onChange={e => setRefundReason(e.target.value)}
-                    placeholder="Conte-nos brevemente o motivo..."
-                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] resize-none h-20 font-medium"
-                  />
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsCancelModalOpen(false)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-fade-in-up flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0"
+            >
+              <div className="flex items-center gap-3 text-rose-600 shrink-0 pb-3 border-b border-[#E5E7EB]">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
+                  <AlertTriangle size={20} />
                 </div>
-
                 <div>
-                  <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Chave Pix para estorno</label>
-                  <input
-                    type="text"
-                    required
-                    value={refundPixKey}
-                    onChange={e => setRefundPixKey(e.target.value)}
-                    placeholder="CPF, E-mail, Telefone ou Chave Aleatória"
-                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
-                  />
+                  <h3 className="text-base font-extrabold text-[#181B22]">Cancelar Renovação Automática?</h3>
+                  <p className="text-xs text-[#64748B]">Sua assinatura não será renovada no próximo ciclo.</p>
                 </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 py-3">
+                <p className="text-xs text-[#64748B] leading-relaxed bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
+                  Ao confirmar o cancelamento da renovação, você continuará com acesso total ao Kaxxa até o final do seu período pago atual. Nenhuma cobrança futura será realizada.
+                </p>
               </div>
 
               <div className="flex gap-2 pt-3 border-t border-[#E5E7EB] shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsRefundModalOpen(false)}
+                  onClick={() => setIsCancelModalOpen(false)}
                   className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-xs font-bold text-[#181B22] hover:bg-[#F1F5F9] transition-all"
                 >
-                  Cancelar
+                  Manter Assinatura
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleCancelRecurring}
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Enviando...' : 'Enviar Solicitação'}
+                  {isSubmitting ? 'Cancelando...' : 'Confirmar Cancelamento'}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
+        </PortalModal>
+      )}
+
+      {/* --- MODAL REEMBOLSO --- */}
+      {isRefundModalOpen && (
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsRefundModalOpen(false)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-fade-in-up flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0"
+            >
+              <div className="flex items-center gap-3 text-amber-600 shrink-0 pb-3 border-b border-[#E5E7EB]">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#181B22]">Solicitar Estorno / Reembolso</h3>
+                  <p className="text-xs text-[#64748B]">Garantia incondicional de 7 dias.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleRequestRefund} className="flex flex-col flex-1 min-h-0 pt-3">
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3 pb-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Motivo da solicitação</label>
+                    <textarea
+                      required
+                      value={refundReason}
+                      onChange={e => setRefundReason(e.target.value)}
+                      placeholder="Conte-nos brevemente o motivo..."
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] resize-none h-20 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Chave Pix para estorno</label>
+                    <input
+                      type="text"
+                      required
+                      value={refundPixKey}
+                      onChange={e => setRefundPixKey(e.target.value)}
+                      placeholder="CPF, E-mail, Telefone ou Chave Aleatória"
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-3 border-t border-[#E5E7EB] shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsRefundModalOpen(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] text-xs font-bold text-[#181B22] hover:bg-[#F1F5F9] transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Enviando...' : 'Enviar Solicitação'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </PortalModal>
       )}
 
       {/* Modal de Confirmação para Exclusão Definitiva de Dados */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-rose-200 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
-              <div className="flex items-center gap-2 text-rose-700 font-extrabold text-sm">
-                <AlertTriangle size={18} className="text-rose-600 shrink-0" />
-                <span>Confirmar Exclusão de Todos os Dados</span>
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsDeleteModalOpen(false)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-2xl max-w-md w-full p-6 border border-rose-200 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto overflow-hidden shrink-0"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+                <div className="flex items-center gap-2 text-rose-700 font-extrabold text-sm">
+                  <AlertTriangle size={18} className="text-rose-600 shrink-0" />
+                  <span>Confirmar Exclusão de Todos os Dados</span>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+                >
+                  <X size={16} />
+                </button>
               </div>
-              <button 
-                type="button"
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
-              >
-                <X size={16} />
-              </button>
-            </div>
 
-            <div className="space-y-3 text-xs text-slate-700 font-medium leading-relaxed flex-1 overflow-y-auto custom-scrollbar pr-1 py-3">
-              <p className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">
-                ⚠️ ATENÇÃO: Esta ação é irreversível! Todos os seus lançamentos, contas, cartões, dívidas e investimentos serão apagados do Kaxxa para sempre.
-              </p>
-              <p>
-                Para confirmar a exclusão definitiva, digite a palavra <strong className="text-rose-700 font-black">CONFIRMAR</strong> no campo abaixo:
-              </p>
+              <div className="space-y-3 text-xs text-slate-700 font-medium leading-relaxed flex-1 overflow-y-auto custom-scrollbar pr-1 py-3">
+                <p className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">
+                  ⚠️ ATENÇÃO: Esta ação é irreversível! Todos os seus lançamentos, contas, cartões, dívidas e investimentos serão apagados do Kaxxa para sempre.
+                </p>
+                <p>
+                  Para confirmar a exclusão definitiva, digite a palavra <strong className="text-rose-700 font-black">CONFIRMAR</strong> no campo abaixo:
+                </p>
 
-              <input
-                type="text"
-                value={deleteConfirmText}
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                placeholder="Digite CONFIRMAR em maiúsculas"
-                className="w-full bg-slate-50 border border-slate-300 focus:border-rose-600 rounded-xl px-4 py-2.5 text-xs text-slate-900 font-bold placeholder-slate-400 outline-none uppercase"
-              />
-            </div>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Digite CONFIRMAR em maiúsculas"
+                  className="w-full bg-slate-50 border border-slate-300 focus:border-rose-600 rounded-xl px-4 py-2.5 text-xs text-slate-900 font-bold placeholder-slate-400 outline-none uppercase"
+                />
+              </div>
 
-            <div className="flex items-center gap-2 pt-3 border-t border-slate-100 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={deleteConfirmText.trim() !== 'CONFIRMAR' || isDeletingData}
-                onClick={handleDeleteAllUserData}
-                className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
-              >
-                {isDeletingData ? (
-                  <span>Excluindo...</span>
-                ) : (
-                  <span>Excluir Definitivamente</span>
-                )}
-              </button>
+              <div className="flex items-center gap-2 pt-3 border-t border-slate-100 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={deleteConfirmText.trim() !== 'CONFIRMAR' || isDeletingData}
+                  onClick={handleDeleteAllUserData}
+                  className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  {isDeletingData ? (
+                    <span>Excluindo...</span>
+                  ) : (
+                    <span>Excluir Definitivamente</span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {/* --- MODAL AJUSTAR / CORTAR FOTO DE PERFIL --- */}
       {isCropModalOpen && cropImageSrc && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-5 flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto shrink-0 overflow-hidden">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Crop size={18} className="text-[#1A44C8]" />
-                <h3 className="text-sm font-bold text-slate-900">Ajustar Foto de Perfil</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setIsCropModalOpen(false); setCropImageSrc(null); }}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500 font-medium">
-              Arraste a imagem para enquadrar ou use o zoom abaixo para ajustar o corte quadrado.
-            </p>
-
-            {/* Viewport Quadrado de Corte 240x240 com Overlay Circular/Quadrado */}
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => { setIsCropModalOpen(false); setCropImageSrc(null); }}
+          >
             <div 
-              className="relative w-[240px] h-[240px] mx-auto rounded-2xl overflow-hidden bg-slate-900 shadow-inner border-2 border-[#1A44C8] cursor-grab active:cursor-grabbing select-none"
-              onMouseDown={(e) => {
-                setIsDraggingCrop(true);
-                setDragStartPos({ x: e.clientX - cropOffset.x, y: e.clientY - cropOffset.y });
-              }}
-              onMouseMove={(e) => {
-                if (!isDraggingCrop) return;
-                setCropOffset({
-                  x: e.clientX - dragStartPos.x,
-                  y: e.clientY - dragStartPos.y
-                });
-              }}
-              onMouseUp={() => setIsDraggingCrop(false)}
-              onMouseLeave={() => setIsDraggingCrop(false)}
-              onTouchStart={(e) => {
-                if (e.touches.length === 1) {
-                  setIsDraggingCrop(true);
-                  setDragStartPos({ x: e.touches[0].clientX - cropOffset.x, y: e.touches[0].clientY - cropOffset.y });
-                }
-              }}
-              onTouchMove={(e) => {
-                if (!isDraggingCrop || e.touches.length !== 1) return;
-                setCropOffset({
-                  x: e.touches[0].clientX - dragStartPos.x,
-                  y: e.touches[0].clientY - dragStartPos.y
-                });
-              }}
-              onTouchEnd={() => setIsDraggingCrop(false)}
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-5 flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto shrink-0 overflow-hidden"
             >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Crop size={18} className="text-[#1A44C8]" />
+                  <h3 className="text-sm font-bold text-slate-900">Ajustar Foto de Perfil</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setIsCropModalOpen(false); setCropImageSrc(null); }}
+                  className="text-slate-400 hover:text-slate-600 p-1"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-500 font-medium">
+                Arraste a imagem para enquadrar ou use o zoom abaixo para ajustar o corte quadrado.
+              </p>
+
+              {/* Viewport Quadrado de Corte 240x240 com Overlay Circular/Quadrado */}
               <div 
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropScale})`,
-                  transition: isDraggingCrop ? 'none' : 'transform 0.1s ease-out'
+                className="relative w-[240px] h-[240px] mx-auto rounded-2xl overflow-hidden bg-slate-900 shadow-inner border-2 border-[#1A44C8] cursor-grab active:cursor-grabbing select-none"
+                onMouseDown={(e) => {
+                  setIsDraggingCrop(true);
+                  setDragStartPos({ x: e.clientX - cropOffset.x, y: e.clientY - cropOffset.y });
                 }}
+                onMouseMove={(e) => {
+                  if (!isDraggingCrop) return;
+                  setCropOffset({
+                    x: e.clientX - dragStartPos.x,
+                    y: e.clientY - dragStartPos.y
+                  });
+                }}
+                onMouseUp={() => setIsDraggingCrop(false)}
+                onMouseLeave={() => setIsDraggingCrop(false)}
+                onTouchStart={(e) => {
+                  if (e.touches.length === 1) {
+                    setIsDraggingCrop(true);
+                    setDragStartPos({ x: e.touches[0].clientX - cropOffset.x, y: e.touches[0].clientY - cropOffset.y });
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (!isDraggingCrop || e.touches.length !== 1) return;
+                  setCropOffset({
+                    x: e.touches[0].clientX - dragStartPos.x,
+                    y: e.touches[0].clientY - dragStartPos.y
+                  });
+                }}
+                onTouchEnd={() => setIsDraggingCrop(false)}
               >
-                <img
-                  ref={cropImageRef}
-                  src={cropImageSrc}
-                  alt="Crop Preview"
-                  className="max-w-full max-h-full object-contain pointer-events-none"
+                <div 
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  style={{
+                    transform: `translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropScale})`,
+                    transition: isDraggingCrop ? 'none' : 'transform 0.1s ease-out'
+                  }}
+                >
+                  <img
+                    ref={cropImageRef}
+                    src={cropImageSrc}
+                    alt="Crop Preview"
+                    className="max-w-full max-h-full object-contain pointer-events-none"
+                  />
+                </div>
+
+                {/* Guia Visual Quadrada Transparente */}
+                <div className="absolute inset-0 border-2 border-white/80 rounded-2xl pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+              </div>
+
+              {/* Controle de Zoom Slider */}
+              <div className="space-y-1.5 px-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                  <span className="flex items-center gap-1"><ZoomOut size={13} /> Zoom</span>
+                  <span>{cropScale.toFixed(1)}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.8"
+                  max="3"
+                  step="0.05"
+                  value={cropScale}
+                  onChange={(e) => setCropScale(parseFloat(e.target.value))}
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#1A44C8]"
                 />
               </div>
 
-              {/* Guia Visual Quadrada Transparente */}
-              <div className="absolute inset-0 border-2 border-white/80 rounded-2xl pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
-            </div>
-
-            {/* Controle de Zoom Slider */}
-            <div className="space-y-1.5 px-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-                <span className="flex items-center gap-1"><ZoomOut size={13} /> Zoom</span>
-                <span>{cropScale.toFixed(1)}x</span>
+              {/* Ações do Modal */}
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setIsCropModalOpen(false); setCropImageSrc(null); }}
+                  className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCrop}
+                  className="flex-1 py-2.5 px-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <span>Salvar Foto</span>
+                </button>
               </div>
-              <input
-                type="range"
-                min="0.8"
-                max="3"
-                step="0.05"
-                value={cropScale}
-                onChange={(e) => setCropScale(parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#1A44C8]"
-              />
-            </div>
-
-            {/* Ações do Modal */}
-            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => { setIsCropModalOpen(false); setCropImageSrc(null); }}
-                className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmCrop}
-                className="flex-1 py-2.5 px-4 bg-[#1A44C8] hover:bg-[#1538A5] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
-              >
-                <Check size={14} />
-                <span>Aplicar Foto</span>
-              </button>
             </div>
           </div>
-        </div>
+        </PortalModal>
       )}
 
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { PortalModal } from '@/app/components/PortalModal';
 import { investmentsService } from '@/lib/services/investments';
 import { transactionsService } from '@/lib/services/transactions';
 import { 
@@ -2157,390 +2158,406 @@ export default function InvestimentosPage() {
           MODAL UNIFICADO: NOVO APORTE / EDIÇÃO DE INVESTIMENTO
       ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            
-            {/* Header com Abas Macro */}
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
-              <div className="flex items-center gap-2">
-                <button 
-                  type="button"
-                  onClick={() => setModalTab('FIXA')}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    modalTab === 'FIXA' 
-                      ? 'bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20' 
-                      : 'text-[#64748B] hover:text-[#181B22]'
-                  }`}
-                >
-                  <Shield size={12} />
-                  Renda Fixa
-                </button>
-
-                <button 
-                  type="button"
-                  onClick={() => setModalTab('VARIAVEL')}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    modalTab === 'VARIAVEL' 
-                      ? 'bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20' 
-                      : 'text-[#64748B] hover:text-[#181B22]'
-                  }`}
-                >
-                  <TrendingUp size={12} />
-                  Renda Variável (Bolsa)
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => { setIsModalOpen(false); setEditingInvestment(null); }}
+          >
+            <div 
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
               
-              {modalTab === 'FIXA' ? (
-                <>
-                  <div>
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Categoria de Renda Fixa</label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <button 
-                        type="button"
-                        onClick={() => { setRfCategory('CAIXINHA_PORQUINHO'); setRfLiquidity('DIARIA'); setRfRate('100% do CDI'); }}
-                        className={`py-2 px-2 rounded-xl border text-[10.5px] font-bold flex flex-col items-center gap-1 transition-all ${
-                          rfCategory === 'CAIXINHA_PORQUINHO' ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
-                        }`}
-                      >
-                        <PiggyBank size={15} />
-                        <span>Porquinho / Caixinha</span>
-                      </button>
+              {/* Header com Abas Macro */}
+              <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => setModalTab('FIXA')}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      modalTab === 'FIXA' 
+                        ? 'bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20' 
+                        : 'text-[#64748B] hover:text-[#181B22]'
+                    }`}
+                  >
+                    <Shield size={12} />
+                    Renda Fixa
+                  </button>
 
-                      <button 
-                        type="button"
-                        onClick={() => { setRfCategory('TESOURO_DIRETO'); setRfLiquidity('VENCIMENTO'); setRfRate('Tesouro Selic'); }}
-                        className={`py-2 px-2 rounded-xl border text-[10.5px] font-bold flex flex-col items-center gap-1 transition-all ${
-                          rfCategory === 'TESOURO_DIRETO' ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
-                        }`}
-                      >
-                        <Landmark size={15} />
-                        <span>Tesouro Direto</span>
-                      </button>
+                  <button 
+                    type="button"
+                    onClick={() => setModalTab('VARIAVEL')}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      modalTab === 'VARIAVEL' 
+                        ? 'bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20' 
+                        : 'text-[#64748B] hover:text-[#181B22]'
+                    }`}
+                  >
+                    <TrendingUp size={12} />
+                    Renda Variável (Bolsa)
+                  </button>
+                </div>
+              </div>
 
-                      <button 
-                        type="button"
-                        onClick={() => { setRfCategory('CDB_LCI_LCA'); setRfLiquidity('VENCIMENTO'); setRfRate('110% do CDI'); }}
-                        className={`py-2 px-2 rounded-xl border text-[10.5px] font-bold flex flex-col items-center gap-1 transition-all ${
-                          rfCategory === 'CDB_LCI_LCA' ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
-                        }`}
-                      >
-                        <Shield size={15} />
-                        <span>CDB / LCI</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Nome / Identificação</label>
-                    <input 
-                      type="text" 
-                      value={rfName}
-                      onChange={(e) => setRfName(e.target.value)}
-                      placeholder="Ex: Caixinha Reserva Nubank, CDB 110% CDI..."
-                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Taxa / Indexador</label>
-                    <input 
-                      type="text" 
-                      value={rfRate}
-                      onChange={(e) => setRfRate(e.target.value)}
-                      placeholder="Ex: 100% do CDI, IPCA + 6.2%"
-                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-medium mb-1.5"
-                    />
-                    <div className="flex flex-wrap gap-1">
-                      {['100% do CDI', '110% do CDI', '120% do CDI', 'IPCA + 6.5%', 'Tesouro Selic'].map(preset => (
-                        <button
-                          key={preset}
+              <div className="p-4 space-y-3.5 overflow-y-auto flex-1 custom-scrollbar">
+                
+                {modalTab === 'FIXA' ? (
+                  <>
+                    <div>
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Categoria de Renda Fixa</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <button 
                           type="button"
-                          onClick={() => setRfRate(preset)}
-                          className={`text-[9px] px-2 py-0.5 rounded-lg border font-bold transition-all ${
-                            rfRate === preset ? 'bg-[#1A44C8] text-white border-[#1A44C8]' : 'bg-[#F8FAFC] text-[#64748B] border-[#E5E7EB] hover:bg-[#F1F3F7]'
+                          onClick={() => { setRfCategory('CAIXINHA_PORQUINHO'); setRfLiquidity('DIARIA'); setRfRate('100% do CDI'); }}
+                          className={`py-2 px-2 rounded-xl border text-[10.5px] font-bold flex flex-col items-center gap-1 transition-all ${
+                            rfCategory === 'CAIXINHA_PORQUINHO' ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
                           }`}
                         >
-                          {preset}
+                          <PiggyBank size={15} />
+                          <span>Porquinho / Caixinha</span>
                         </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-2">
+                        <button 
+                          type="button"
+                          onClick={() => { setRfCategory('TESOURO_DIRETO'); setRfLiquidity('VENCIMENTO'); setRfRate('Tesouro Selic'); }}
+                          className={`py-2 px-2 rounded-xl border text-[10.5px] font-bold flex flex-col items-center gap-1 transition-all ${
+                            rfCategory === 'TESOURO_DIRETO' ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
+                          }`}
+                        >
+                          <Landmark size={15} />
+                          <span>Tesouro Direto</span>
+                        </button>
+
+                        <button 
+                          type="button"
+                          onClick={() => { setRfCategory('CDB_LCI_LCA'); setRfLiquidity('VENCIMENTO'); setRfRate('110% do CDI'); }}
+                          className={`py-2 px-2 rounded-xl border text-[10.5px] font-bold flex flex-col items-center gap-1 transition-all ${
+                            rfCategory === 'CDB_LCI_LCA' ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
+                          }`}
+                        >
+                          <Shield size={15} />
+                          <span>CDB / LCI</span>
+                        </button>
+                      </div>
+                    </div>
+
                     <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data do Aporte</label>
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Nome / Identificação</label>
                       <input 
-                        type="date" 
-                        value={aporteDate}
-                        onChange={(e) => setAporteDate(e.target.value)}
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] font-semibold focus:outline-none focus:border-[#1A44C8]"
+                        type="text" 
+                        value={rfName}
+                        onChange={(e) => setRfName(e.target.value)}
+                        placeholder="Ex: Caixinha Reserva Nubank, CDB 110% CDI..."
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Liquidez</label>
-                      <select 
-                        value={rfLiquidity}
-                        onChange={(e) => setRfLiquidity(e.target.value as any)}
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                      >
-                        <option value="DIARIA">Imediata / Diária (D+0)</option>
-                        <option value="D+1">D+1 Útil</option>
-                        <option value="VENCIMENTO">No Vencimento</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Valor Aportado (R$)</label>
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Taxa / Indexador</label>
                       <input 
-                        type="number" 
-                        step="0.01"
-                        value={rfAmount}
-                        onChange={(e) => setRfAmount(e.target.value)}
-                        placeholder="0,00"
-                        className="w-full bg-[#F1F3F7] border border-[#1A44C8] rounded-xl py-1.5 px-2.5 text-xs text-[#1A44C8] font-extrabold focus:outline-none"
+                        type="text" 
+                        value={rfRate}
+                        onChange={(e) => setRfRate(e.target.value)}
+                        placeholder="Ex: 100% do CDI, IPCA + 6.2%"
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-medium mb-1.5"
                       />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Tipo</label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {(['Ações', 'FIIs', 'BDRs', 'ETFs', 'Criptomoedas', 'Stocks'] as const).map(type => (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => { setRvCategory(type); setRvSearchTicker(''); setLiveQuoteInfo(null); }}
-                          className={`py-1.5 px-2 rounded-xl border text-[10.5px] font-bold transition-all ${
-                            rvCategory === type ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
-                          }`}
-                        >
-                          {type}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="block text-[10.5px] text-[#64748B] font-bold">Código / Ticker</label>
-                      {rvSearchTicker && (
-                        <button
-                          type="button"
-                          onClick={() => fetchQuoteForTicker(rvSearchTicker)}
-                          disabled={fetchingQuote}
-                          className="text-[9.5px] font-bold text-[#1A44C8] hover:underline flex items-center gap-1"
-                        >
-                          <Sparkles size={10} />
-                          {fetchingQuote ? 'Buscando cotação...' : 'Buscar Cotação ao Vivo'}
-                        </button>
-                      )}
-                    </div>
-
-                    <input 
-                      type="text" 
-                      value={rvSearchTicker}
-                      onChange={(e) => {
-                        setRvSearchTicker(e.target.value);
-                        setLiveQuoteInfo(null);
-                      }}
-                      onBlur={() => {
-                        if (rvSearchTicker && !rvPrice) fetchQuoteForTicker(rvSearchTicker);
-                      }}
-                      placeholder="Ex: PETR4, MXRF11, AAPL34, BTC..."
-                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none uppercase font-extrabold"
-                    />
-
-                    {filteredAutocomplete.length > 0 && !rvSearchTicker.includes(' - ') && (
-                      <div className="mt-1 p-1 bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl max-h-28 overflow-y-auto space-y-0.5 custom-scrollbar shadow-lg">
-                        {filteredAutocomplete.map((item, idx) => (
-                          <div 
-                            key={idx} 
-                            onClick={() => {
-                              setRvSearchTicker(item);
-                              fetchQuoteForTicker(item);
-                            }}
-                            className="px-2 py-1 rounded hover:bg-[#F1F3F7] cursor-pointer text-[11px] text-[#64748B] hover:text-[#181B22] flex justify-between items-center"
+                      <div className="flex flex-wrap gap-1">
+                        {['100% do CDI', '110% do CDI', '120% do CDI', 'IPCA + 6.5%', 'Tesouro Selic'].map(preset => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setRfRate(preset)}
+                            className={`text-[9px] px-2 py-0.5 rounded-lg border font-bold transition-all ${
+                              rfRate === preset ? 'bg-[#1A44C8] text-white border-[#1A44C8]' : 'bg-[#F8FAFC] text-[#64748B] border-[#E5E7EB] hover:bg-[#F1F3F7]'
+                            }`}
                           >
-                            <span className="font-bold text-[#181B22]">{item.split(' - ')[0]}</span>
-                            <span className="text-[9.5px] text-[#94A3B8] truncate max-w-[180px]">{item.split(' - ')[1]}</span>
-                          </div>
+                            {preset}
+                          </button>
                         ))}
                       </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data do Aporte</label>
-                      <input 
-                        type="date" 
-                        value={aporteDate}
-                        onChange={(e) => setAporteDate(e.target.value)}
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] font-semibold focus:outline-none focus:border-[#1A44C8]"
-                      />
                     </div>
 
-                    <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Quantidade</label>
-                      <input 
-                        type="number" 
-                        step="any"
-                        value={rvQuantity}
-                        onChange={(e) => setRvQuantity(e.target.value)}
-                        placeholder="Ex: 100"
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
-                      />
-                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data do Aporte</label>
+                        <input 
+                          type="date" 
+                          value={aporteDate}
+                          onChange={(e) => setAporteDate(e.target.value)}
+                          className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] font-semibold focus:outline-none focus:border-[#1A44C8]"
+                        />
+                      </div>
 
+                      <div>
+                        <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Liquidez</label>
+                        <select 
+                          value={rfLiquidity}
+                          onChange={(e) => setRfLiquidity(e.target.value as any)}
+                          className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                        >
+                          <option value="DIARIA">Imediata / Diária (D+0)</option>
+                          <option value="D+1">D+1 Útil</option>
+                          <option value="VENCIMENTO">No Vencimento</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Valor Aportado (R$)</label>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          value={rfAmount}
+                          onChange={(e) => setRfAmount(e.target.value)}
+                          placeholder="0,00"
+                          className="w-full bg-[#F1F3F7] border border-[#1A44C8] rounded-xl py-1.5 px-2.5 text-xs text-[#1A44C8] font-extrabold focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
                     <div>
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Preço Pago na Compra (R$)</label>
-                      <input 
-                        type="number" 
-                        step="0.01"
-                        value={rvPrice}
-                        onChange={(e) => setRvPrice(e.target.value)}
-                        placeholder="0,00"
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
-                      />
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Tipo</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(['Ações', 'FIIs', 'BDRs', 'ETFs', 'Criptomoedas', 'Stocks'] as const).map(type => (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => { setRvCategory(type); setRvSearchTicker(''); setLiveQuoteInfo(null); }}
+                            className={`py-1.5 px-2 rounded-xl border text-[10.5px] font-bold transition-all ${
+                              rvCategory === type ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
+                            }`}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="block text-[10.5px] text-[#64748B] font-bold">Cotação Atual (R$)</label>
-                        {liveQuoteInfo && (
-                          <span className="text-[9px] text-emerald-600 font-extrabold bg-emerald-50 px-1 rounded">Ao vivo</span>
+                        <label className="block text-[10.5px] text-[#64748B] font-bold">Código / Ticker</label>
+                        {rvSearchTicker && (
+                          <button
+                            type="button"
+                            onClick={() => fetchQuoteForTicker(rvSearchTicker)}
+                            disabled={fetchingQuote}
+                            className="text-[9.5px] font-bold text-[#1A44C8] hover:underline flex items-center gap-1"
+                          >
+                            <Sparkles size={10} />
+                            {fetchingQuote ? 'Buscando cotação...' : 'Buscar Cotação ao Vivo'}
+                          </button>
                         )}
                       </div>
+
                       <input 
-                        type="number" 
-                        step="0.01"
-                        value={rvCurrentPrice}
-                        onChange={(e) => setRvCurrentPrice(e.target.value)}
-                        placeholder={liveQuoteInfo ? liveQuoteInfo.price.toFixed(2) : rvPrice || "0,00"}
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
+                        type="text" 
+                        value={rvSearchTicker}
+                        onChange={(e) => {
+                          setRvSearchTicker(e.target.value);
+                          setLiveQuoteInfo(null);
+                        }}
+                        onBlur={() => {
+                          if (rvSearchTicker && !rvPrice) fetchQuoteForTicker(rvSearchTicker);
+                        }}
+                        placeholder="Ex: PETR4, MXRF11, AAPL34, BTC..."
+                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none uppercase font-extrabold"
                       />
-                    </div>
 
-                    <div className="col-span-2">
-                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Proventos / Dividendos Recebidos Acumulados (R$)</label>
-                      <input 
-                        type="number" 
-                        step="0.01"
-                        value={rvDividends}
-                        onChange={(e) => setRvDividends(e.target.value)}
-                        placeholder="Ex: 150,00 (opcional)"
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
-                      />
-                    </div>
-                  </div>
-
-                  {/* BANNER DE RESUMO DE TOTAL EM TEMPO REAL */}
-                  {(() => {
-                    const q = parseFloat(rvQuantity.replace(',', '.')) || 0;
-                    const p = parseFloat(rvPrice.replace(',', '.')) || 0;
-                    const cp = parseFloat(rvCurrentPrice.replace(',', '.')) || (liveQuoteInfo?.price && liveQuoteInfo.price > 0 ? liveQuoteInfo.price : p);
-                    const totalInv = q * p;
-                    const curBal = q * cp;
-                    const profit = curBal - totalInv;
-                    const profitPct = totalInv > 0 ? (profit / totalInv) * 100 : 0;
-                    const isPositive = profit >= 0;
-
-                    if (q <= 0 && !liveQuoteInfo) return null;
-
-                    return (
-                      <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-1.5 text-xs">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-[9.5px] text-[#64748B] font-bold uppercase tracking-wider block">Total Aportado</span>
-                            <span className="text-xs font-bold text-[#181B22]">
-                              R$ {formatCurrency(totalInv)}
-                            </span>
-                          </div>
-
-                          <div className="text-right">
-                            <span className="text-[9.5px] text-[#64748B] font-bold uppercase tracking-wider block">Saldo Atual de Mercado</span>
-                            <span className="text-xs font-extrabold text-[#1A44C8]">
-                              R$ {formatCurrency(curBal)}
-                            </span>
-                          </div>
+                      {filteredAutocomplete.length > 0 && !rvSearchTicker.includes(' - ') && (
+                        <div className="mt-1 p-1 bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl max-h-28 overflow-y-auto space-y-0.5 custom-scrollbar shadow-lg">
+                          {filteredAutocomplete.map((item, idx) => (
+                            <div 
+                              key={idx} 
+                              onClick={() => {
+                                setRvSearchTicker(item);
+                                fetchQuoteForTicker(item);
+                              }}
+                              className="px-2 py-1 rounded hover:bg-[#F1F3F7] cursor-pointer text-[11px] text-[#64748B] hover:text-[#181B22] flex justify-between items-center"
+                            >
+                              <span className="font-bold text-[#181B22]">{item.split(' - ')[0]}</span>
+                              <span className="text-[9.5px] text-[#94A3B8] truncate max-w-[180px]">{item.split(' - ')[1]}</span>
+                            </div>
+                          ))}
                         </div>
+                      )}
+                    </div>
 
-                        {totalInv > 0 && (
-                          <div className={`pt-1 border-t border-[#E2E8F0] flex items-center justify-between text-[11px] font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            <span>Resultado (Ganho/Perda):</span>
-                            <span>
-                              {isPositive ? '+' : ''}R$ {formatCurrency(profit)} ({isPositive ? '+' : ''}{profitPct.toFixed(2)}%)
-                            </span>
-                          </div>
-                        )}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data do Aporte</label>
+                        <input 
+                          type="date" 
+                          value={aporteDate}
+                          onChange={(e) => setAporteDate(e.target.value)}
+                          className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] font-semibold focus:outline-none focus:border-[#1A44C8]"
+                        />
                       </div>
-                    );
-                  })()}
-                </>
-              )}
+
+                      <div>
+                        <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Quantidade</label>
+                        <input 
+                          type="number" 
+                          step="any"
+                          value={rvQuantity}
+                          onChange={(e) => setRvQuantity(e.target.value)}
+                          placeholder="Ex: 100"
+                          className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Preço Pago na Compra (R$)</label>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          value={rvPrice}
+                          onChange={(e) => setRvPrice(e.target.value)}
+                          placeholder="0,00"
+                          className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="block text-[10.5px] text-[#64748B] font-bold">Cotação Atual (R$)</label>
+                          {liveQuoteInfo && (
+                            <span className="text-[9px] text-emerald-600 font-extrabold bg-emerald-50 px-1 rounded">Ao vivo</span>
+                          )}
+                        </div>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          value={rvCurrentPrice}
+                          onChange={(e) => setRvCurrentPrice(e.target.value)}
+                          placeholder={liveQuoteInfo ? liveQuoteInfo.price.toFixed(2) : rvPrice || "0,00"}
+                          className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Proventos / Dividendos Recebidos Acumulados (R$)</label>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          value={rvDividends}
+                          onChange={(e) => setRvDividends(e.target.value)}
+                          placeholder="Ex: 150,00 (opcional)"
+                          className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2 text-xs text-[#181B22] focus:outline-none font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    {/* BANNER DE RESUMO DE TOTAL EM TEMPO REAL */}
+                    {(() => {
+                      const q = parseFloat(rvQuantity.replace(',', '.')) || 0;
+                      const p = parseFloat(rvPrice.replace(',', '.')) || 0;
+                      const cp = parseFloat(rvCurrentPrice.replace(',', '.')) || (liveQuoteInfo?.price && liveQuoteInfo.price > 0 ? liveQuoteInfo.price : p);
+                      const totalInv = q * p;
+                      const curBal = q * cp;
+                      const profit = curBal - totalInv;
+                      const profitPct = totalInv > 0 ? (profit / totalInv) * 100 : 0;
+                      const isPositive = profit >= 0;
+
+                      if (q <= 0 && !liveQuoteInfo) return null;
+
+                      return (
+                        <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-[9.5px] text-[#64748B] font-bold uppercase tracking-wider block">Total Aportado</span>
+                              <span className="text-xs font-bold text-[#181B22]">
+                                R$ {formatCurrency(totalInv)}
+                              </span>
+                            </div>
+
+                            <div className="text-right">
+                              <span className="text-[9.5px] text-[#64748B] font-bold uppercase tracking-wider block">Saldo Atual de Mercado</span>
+                              <span className="text-xs font-extrabold text-[#1A44C8]">
+                                R$ {formatCurrency(curBal)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {totalInv > 0 && (
+                            <div className={`pt-1 border-t border-[#E2E8F0] flex items-center justify-between text-[11px] font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              <span>Resultado (Ganho/Perda):</span>
+                              <span>
+                                {isPositive ? '+' : ''}R$ {formatCurrency(profit)} ({isPositive ? '+' : ''}{profitPct.toFixed(2)}%)
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
+
+              </div>
+
+              <div className="px-4 py-3 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveInvestment}
+                  className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95"
+                >
+                  {editingInvestment ? 'Salvar Alterações' : 'Salvar Aporte'}
+                </button>
+              </div>
 
             </div>
-
-            <div className="px-4 py-3 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
-              <button 
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button"
-                onClick={handleSaveInvestment}
-                className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95"
-              >
-                {editingInvestment ? 'Salvar Alterações' : 'Salvar Aporte'}
-              </button>
-            </div>
-
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {/* =========================================================================
           MODAL DE EXCLUSÃO
       ========================================================================= */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 text-center space-y-3 flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shrink-0">
-              <Trash2 size={18} />
-            </div>
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setDeleteCandidate(null)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 text-center space-y-3 flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
+              <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shrink-0">
+                <Trash2 size={18} />
+              </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <h3 className="text-xs font-bold text-[#181B22] mb-1">Excluir Investimento?</h3>
-              <p className="text-[11px] text-[#64748B]">
-                Remover <strong>&quot;{deleteCandidate.name}&quot;</strong> da sua carteira?
-              </p>
-            </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <h3 className="text-xs font-bold text-[#181B22] mb-1">Excluir Investimento?</h3>
+                <p className="text-[11px] text-[#64748B]">
+                  Remover <strong>&quot;{deleteCandidate.name}&quot;</strong> da sua carteira?
+                </p>
+              </div>
 
-            <div className="flex gap-2 pt-1 shrink-0">
-              <button 
-                onClick={() => setDeleteCandidate(null)}
-                className="flex-1 py-1.5 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7]"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={() => handleDeleteInvestment(deleteCandidate.id)}
-                className="flex-1 py-1.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shadow-md"
-              >
-                Excluir
-              </button>
+              <div className="flex gap-2 pt-1 shrink-0">
+                <button 
+                  onClick={() => setDeleteCandidate(null)}
+                  className="flex-1 py-1.5 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7]"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => handleDeleteInvestment(deleteCandidate.id)}
+                  className="flex-1 py-1.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shadow-md"
+                >
+                  Excluir
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </PortalModal>
       )}
 
     </>

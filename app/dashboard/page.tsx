@@ -24,6 +24,7 @@ import {
   Landmark
 } from 'lucide-react';
 import { usePrivacy } from '@/app/contexts/PrivacyContext';
+import { PortalModal } from '@/app/components/PortalModal';
 
 // Categorias e Subcategorias Oficiais
 const CATEGORIES_DATA: Record<string, string[]> = {
@@ -840,47 +841,55 @@ export default function DashboardPage() {
           MODAL DE SUBCATEGORIAS
       ========================================================================= */}
       {activeCategoryModal && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            
-            <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${activeCategoryModal.palette.bg}`}></span>
-                <h2 className="text-sm font-bold text-[#181B22]">{activeCategoryModal.category}</h2>
-              </div>
-              <span className="text-[11px] text-[#1A44C8] font-bold">
-                R$ {formatCurrency(activeCategoryModal.total)}
-              </span>
-            </div>
-
-            <div className="p-5 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
-              <p className="text-[11px] text-[#64748B] uppercase tracking-wider mb-2 font-semibold">Desmembramento por Item</p>
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
+            onClick={() => setActiveCategoryModal(null)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
               
-              {activeCategoryModal.subcategories.map((sub) => (
-                <div key={sub.name} className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-[#181B22] block">{sub.name}</span>
-                    <span className="text-[10px] text-[#64748B]">{sub.pct.toFixed(1)}% do total da categoria</span>
-                  </div>
-                  <span className="font-bold text-[#1A44C8] text-sm">
-                    R$ {formatCurrency(sub.amount)}
-                  </span>
+              <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${activeCategoryModal.palette.bg}`}></span>
+                  <h2 className="text-sm font-bold text-[#181B22]">{activeCategoryModal.category}</h2>
                 </div>
-              ))}
-            </div>
+                <span className="text-[11px] text-[#1A44C8] font-bold">
+                  R$ {formatCurrency(activeCategoryModal.total)}
+                </span>
+              </div>
 
-            <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex justify-end shrink-0">
-              <button 
-                type="button" 
-                onClick={() => setActiveCategoryModal(null)}
-                className="px-5 py-2 rounded-xl text-xs font-semibold bg-[#1A44C8] hover:bg-[#1538A5] text-white shadow-md transition-all active:scale-95"
-              >
-                Fechar
-              </button>
-            </div>
+              <div className="p-5 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
+                <p className="text-[11px] text-[#64748B] uppercase tracking-wider mb-2 font-semibold">Desmembramento por Item</p>
+                
+                {activeCategoryModal.subcategories.map((sub) => (
+                  <div key={sub.name} className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-semibold text-[#181B22] block">{sub.name}</span>
+                      <span className="text-[10px] text-[#64748B]">{sub.pct.toFixed(1)}% do total da categoria</span>
+                    </div>
+                    <span className="font-bold text-[#1A44C8] text-sm">
+                      R$ {formatCurrency(sub.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
 
+              <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex justify-end shrink-0">
+                <button 
+                  type="button" 
+                  onClick={() => setActiveCategoryModal(null)}
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-[#1A44C8] hover:bg-[#1538A5] text-white shadow-md transition-all active:scale-95"
+                >
+                  Fechar
+                </button>
+              </div>
+
+            </div>
           </div>
-        </div>
+        </PortalModal>
       )}
 
     </div>

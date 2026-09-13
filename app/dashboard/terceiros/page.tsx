@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { usePrivacy } from '@/app/contexts/PrivacyContext';
 import { BankLogo } from '@/app/components/BankLogo';
+import { PortalModal } from '@/app/components/PortalModal';
 
 export interface ThirdPartyDebt {
   id: string;
@@ -839,127 +840,142 @@ export default function TerceirosPage() {
 
       {/* MODAL DETALHES DO DEVEDOR */}
       {selectedPersonPopup && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85dvh] sm:max-h-[88vh] m-auto animate-scale-in-center shrink-0">
-            <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
-              <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
-                <UserCheck size={16} className="text-[#1A44C8]" />
-                Resumo: {selectedPersonPopup}
-              </h3>
-              <button onClick={() => setSelectedPersonPopup(null)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={16}/></button>
-            </div>
-            
-            <div className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-4">
-              {(() => {
-                const person = peopleList.find(p => p.name === selectedPersonPopup);
-                if (!person) return null;
-                const totalPaid = person.totalPaid;
-                const totalRemaining = person.totalRemaining;
-                
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Coluna Esquerda */}
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
-                          <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Já Pago</span>
-                          <div className="text-sm font-extrabold text-[#181B22] mt-1">R$ {formatCurrency(totalPaid)}</div>
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setSelectedPersonPopup(null)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85dvh] sm:max-h-[88vh] m-auto animate-scale-in-center shrink-0"
+            >
+              <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
+                <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
+                  <UserCheck size={16} className="text-[#1A44C8]" />
+                  Resumo: {selectedPersonPopup}
+                </h3>
+                <button onClick={() => setSelectedPersonPopup(null)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={16}/></button>
+              </div>
+              
+              <div className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+                {(() => {
+                  const person = peopleList.find(p => p.name === selectedPersonPopup);
+                  if (!person) return null;
+                  const totalPaid = person.totalPaid;
+                  const totalRemaining = person.totalRemaining;
+                  
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Coluna Esquerda */}
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
+                            <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Já Pago</span>
+                            <div className="text-sm font-extrabold text-[#181B22] mt-1">R$ {formatCurrency(totalPaid)}</div>
+                          </div>
+                          <div className="bg-[#1A44C8]/5 p-3 rounded-xl border border-[#1A44C8]/20">
+                            <span className="text-[10px] text-[#1A44C8] uppercase font-bold">Falta Pagar</span>
+                            <div className="text-sm font-extrabold text-[#1A44C8] mt-1">R$ {formatCurrency(totalRemaining)}</div>
+                          </div>
                         </div>
-                        <div className="bg-[#1A44C8]/5 p-3 rounded-xl border border-[#1A44C8]/20">
-                          <span className="text-[10px] text-[#1A44C8] uppercase font-bold">Falta Pagar</span>
-                          <div className="text-sm font-extrabold text-[#1A44C8] mt-1">R$ {formatCurrency(totalRemaining)}</div>
+                        
+                        <div>
+                          <h4 className="text-[11px] font-bold text-[#181B22] mb-2 border-b border-[#E5E7EB] pb-1">Desmembramento das Dívidas</h4>
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                            {person.debts.map(d => {
+                              const rem = Math.max(0, d.totalAmount - d.paidAmount);
+                              const remainingInst = d.installmentsTotal - d.currentInstallment;
+                              return (
+                                <div key={d.id} className="bg-[#F8FAFC] border border-[#E5E7EB] p-2 rounded-lg flex flex-col gap-1">
+                                  <div className="flex justify-between items-start">
+                                    <span className="text-[10px] font-bold text-[#181B22]">{d.description}</span>
+                                    <span className="text-[10px] font-extrabold text-[#1A44C8]">R$ {formatCurrency(rem)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-[8px] text-[#64748B]">
+                                    <span>{d.originBankOrCard} • {d.installmentsTotal > 1 ? `${remainingInst} parc. restantes` : 'À vista'}</span>
+                                    {rem === 0 ? <span className="text-[#1A44C8] font-bold">Quitado</span> : <span>Total original: R$ {formatCurrency(d.totalAmount)}</span>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center justify-between mt-auto">
+                          <span className="text-[10px] text-amber-700 font-bold">Quitação Antecipada (Total):</span>
+                          <span className="text-sm font-extrabold text-amber-700">R$ {formatCurrency(totalRemaining)}</span>
                         </div>
                       </div>
-                      
+
+                      {/* Coluna Direita: Cronograma */}
                       <div>
-                        <h4 className="text-[11px] font-bold text-[#181B22] mb-2 border-b border-[#E5E7EB] pb-1">Desmembramento das Dívidas</h4>
-                        <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                          {person.debts.map(d => {
-                            const rem = Math.max(0, d.totalAmount - d.paidAmount);
-                            const remainingInst = d.installmentsTotal - d.currentInstallment;
-                            return (
-                              <div key={d.id} className="bg-[#F8FAFC] border border-[#E5E7EB] p-2 rounded-lg flex flex-col gap-1">
-                                <div className="flex justify-between items-start">
-                                  <span className="text-[10px] font-bold text-[#181B22]">{d.description}</span>
-                                  <span className="text-[10px] font-extrabold text-[#1A44C8]">R$ {formatCurrency(rem)}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-[8px] text-[#64748B]">
-                                  <span>{d.originBankOrCard} • {d.installmentsTotal > 1 ? `${remainingInst} parc. restantes` : 'À vista'}</span>
-                                  {rem === 0 ? <span className="text-[#1A44C8] font-bold">Quitado</span> : <span>Total original: R$ {formatCurrency(d.totalAmount)}</span>}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center justify-between mt-auto">
-                        <span className="text-[10px] text-amber-700 font-bold">Quitação Antecipada (Total):</span>
-                        <span className="text-sm font-extrabold text-amber-700">R$ {formatCurrency(totalRemaining)}</span>
-                      </div>
-                    </div>
-
-                    {/* Coluna Direita: Cronograma */}
-                    <div>
-                      <h4 className="text-[11px] font-bold text-[#181B22] mb-2 border-b border-[#E5E7EB] pb-1">Cronograma de Pagamentos</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2 max-h-[340px] overflow-y-auto custom-scrollbar pr-1">
-                        {(() => {
-                          const schedule = [];
-                          const today = new Date();
-                          let maxInst = 0;
-                          person.debts.forEach(d => {
-                            if (d.status !== 'PAID') {
-                              const rem = d.installmentsTotal - d.currentInstallment;
-                              if (rem > maxInst) maxInst = rem;
-                            }
-                          });
-                          
-                          for (let i = 0; i < maxInst; i++) {
-                            let monthTotal = 0;
-                            const monthDate = new Date(today.getFullYear(), today.getMonth() + 1 + i, 1);
-                            const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-                            
-                            const items: string[] = [];
+                        <h4 className="text-[11px] font-bold text-[#181B22] mb-2 border-b border-[#E5E7EB] pb-1">Cronograma de Pagamentos</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2 max-h-[340px] overflow-y-auto custom-scrollbar pr-1">
+                          {(() => {
+                            const schedule = [];
+                            const today = new Date();
+                            let maxInst = 0;
                             person.debts.forEach(d => {
                               if (d.status !== 'PAID') {
                                 const rem = d.installmentsTotal - d.currentInstallment;
-                                if (rem > i) {
-                                  const val = (d.totalAmount - d.paidAmount) / rem;
-                                  monthTotal += val;
-                                  items.push(`${d.originBankOrCard.split(' ')[0]} (${d.currentInstallment + i + 1}/${d.installmentsTotal})`);
-                                }
+                                if (rem > maxInst) maxInst = rem;
                               }
                             });
                             
-                            if (monthTotal > 0) {
-                              schedule.push(
-                                <div key={i} className="flex flex-col bg-[#F8FAFC] border border-[#E5E7EB] p-2.5 rounded-lg group hover:bg-[#F1F3F7] transition-colors relative overflow-hidden">
-                                  <div className="absolute top-0 left-0 w-0.5 h-full bg-[#1A44C8]"></div>
-                                  <div className="flex justify-between items-start mb-1.5 pl-1">
-                                    <span className="text-[10px] font-bold text-[#181B22] capitalize">{monthLabel}</span>
-                                    <span className="text-[10px] font-extrabold text-[#1A44C8] whitespace-nowrap">R$ {formatCurrency(monthTotal)}</span>
+                            for (let i = 0; i < maxInst; i++) {
+                              let monthTotal = 0;
+                              const monthDate = new Date(today.getFullYear(), today.getMonth() + 1 + i, 1);
+                              const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+                              
+                              const items: string[] = [];
+                              person.debts.forEach(d => {
+                                if (d.status !== 'PAID') {
+                                  const rem = d.installmentsTotal - d.currentInstallment;
+                                  if (rem > i) {
+                                    const val = (d.totalAmount - d.paidAmount) / rem;
+                                    monthTotal += val;
+                                    items.push(`${d.originBankOrCard.split(' ')[0]} (${d.currentInstallment + i + 1}/${d.installmentsTotal})`);
+                                  }
+                                }
+                              });
+                              
+                              if (monthTotal > 0) {
+                                schedule.push(
+                                  <div key={i} className="flex flex-col bg-[#F8FAFC] border border-[#E5E7EB] p-2.5 rounded-lg group hover:bg-[#F1F3F7] transition-colors relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-0.5 h-full bg-[#1A44C8]"></div>
+                                    <div className="flex justify-between items-start mb-1.5 pl-1">
+                                      <span className="text-[10px] font-bold text-[#181B22] capitalize">{monthLabel}</span>
+                                      <span className="text-[10px] font-extrabold text-[#1A44C8] whitespace-nowrap">R$ {formatCurrency(monthTotal)}</span>
+                                    </div>
+                                    <span className="text-[8px] text-[#64748B] pl-1 leading-snug line-clamp-2" title={items.join(' • ')}>{items.join(' • ')}</span>
                                   </div>
-                                  <span className="text-[8px] text-[#64748B] pl-1 leading-snug line-clamp-2" title={items.join(' • ')}>{items.join(' • ')}</span>
-                                </div>
-                              );
+                                );
+                              }
                             }
-                          }
-                          return schedule.length > 0 ? schedule : <span className="text-[10px] text-[#94A3B8] block py-2 col-span-2 font-medium">Sem pagamentos futuros.</span>;
-                        })()}
+                            return schedule.length > 0 ? schedule : <span className="text-[10px] text-[#94A3B8] block py-2 col-span-2 font-medium">Sem pagamentos futuros.</span>;
+                          })()}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()}
+              </div>
             </div>
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {/* MODAL NOVO LANÇAMENTO */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85dvh] sm:max-h-[88vh] m-auto animate-scale-in-center shrink-0">
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsNewModalOpen(false)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85dvh] sm:max-h-[88vh] m-auto animate-scale-in-center shrink-0"
+            >
             <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
                 <Plus size={16} className="text-[#1A44C8]" />
@@ -1169,98 +1185,107 @@ export default function TerceirosPage() {
             </div>
           </div>
         </div>
-      )}
+      </PortalModal>
+    )}
 
       {/* MODAL DAR BAIXA / REGISTRAR RECEBIMENTO DE BEM OU DINHEIRO */}
       {selectedDebtForSettle && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85dvh] sm:max-h-[88vh] m-auto animate-scale-in-center shrink-0">
-            <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
-              <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
-                <Coins size={16} className="text-[#1A44C8]" />
-                Dar Baixa / Registrar Recebimento
-              </h3>
-              <button onClick={() => setSelectedDebtForSettle(null)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={16}/></button>
-            </div>
-
-            <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-              <div className="bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB] space-y-1">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-[#64748B] font-bold">Responsável:</span>
-                  <span className="font-bold text-[#181B22]">{selectedDebtForSettle.personName}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-[#64748B] font-bold">Lançamento / Bem:</span>
-                  <span className="font-extrabold text-[#1A44C8]">{selectedDebtForSettle.description} ({selectedDebtForSettle.originBankOrCard})</span>
-                </div>
-                <div className="flex justify-between items-center text-xs pt-1 border-t border-[#E5E7EB]">
-                  <span className="text-[#64748B] font-bold">Saldo Restante Atual:</span>
-                  <span className="font-extrabold text-rose-600">R$ {formatCurrency(selectedDebtForSettle.totalAmount - selectedDebtForSettle.paidAmount)}</span>
-                </div>
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setSelectedDebtForSettle(null)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85dvh] sm:max-h-[88vh] m-auto animate-scale-in-center shrink-0"
+            >
+              <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
+                <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
+                  <Coins size={16} className="text-[#1A44C8]" />
+                  Dar Baixa / Registrar Recebimento
+                </h3>
+                <button onClick={() => setSelectedDebtForSettle(null)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={16}/></button>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-[#64748B] mb-1">Valor Recebido / Abatido nesta Baixa (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="0,00"
-                  value={settleAmount}
-                  onChange={e => setSettleAmount(e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2.5 text-sm text-[#181B22] font-extrabold focus:outline-none focus:border-[#1A44C8]"
-                />
-                <span className="text-[10px] text-[#94A3B8] mt-1 block font-medium">
-                  Você pode fazer a baixa parcial (ex: R$ 1.500) ou a quitação total do valor.
-                </span>
-              </div>
+              <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+                <div className="bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB] space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#64748B] font-bold">Responsável:</span>
+                    <span className="font-bold text-[#181B22]">{selectedDebtForSettle.personName}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#64748B] font-bold">Lançamento / Bem:</span>
+                    <span className="font-extrabold text-[#1A44C8]">{selectedDebtForSettle.description} ({selectedDebtForSettle.originBankOrCard})</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs pt-1 border-t border-[#E5E7EB]">
+                    <span className="text-[#64748B] font-bold">Saldo Restante Atual:</span>
+                    <span className="font-extrabold text-rose-600">R$ {formatCurrency(selectedDebtForSettle.totalAmount - selectedDebtForSettle.paidAmount)}</span>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-[#64748B] mb-1">Como o Pagamento/Abatimento foi Efetuado?</label>
-                <select
-                  value={settleMethod}
-                  onChange={e => setSettleMethod(e.target.value as any)}
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
-                >
-                  <option value="PIX">⚡ PIX / Transferência Bancária</option>
-                  <option value="CASH">💵 Dinheiro Vivo (Espécie)</option>
-                  <option value="BARTER_ASSET">🏍️ Entrega de outro Bem / Troca (Ex: Me deu uma TV/notebook)</option>
-                  <option value="CARD">💳 Cartão / Boleto / Outros</option>
-                </select>
-              </div>
-
-              {settleMethod === 'BARTER_ASSET' && (
-                <div className="animate-in fade-in duration-200">
-                  <label className="block text-[11px] font-bold text-amber-700 mb-1">Descrição do Bem Entregue no Abatimento</label>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Valor Recebido / Abatido nesta Baixa (R$)</label>
                   <input
-                    type="text"
-                    placeholder="Ex: Notebook Dell i7, TV Samsung 55, Moto 125, etc."
-                    value={settleAssetNote}
-                    onChange={e => setSettleAssetNote(e.target.value)}
-                    className="w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-900 font-bold outline-none focus:border-amber-500"
+                    type="number"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={settleAmount}
+                    onChange={e => setSettleAmount(e.target.value)}
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2.5 text-sm text-[#181B22] font-extrabold focus:outline-none focus:border-[#1A44C8]"
                   />
+                  <span className="text-[10px] text-[#94A3B8] mt-1 block font-medium">
+                    Você pode fazer a baixa parcial (ex: R$ 1.500) ou a quitação total do valor.
+                  </span>
                 </div>
-              )}
-            </div>
 
-            <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setSelectedDebtForSettle(null)}
-                className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7]"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSettle}
-                className="flex-1 py-2 px-3 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs shadow-md flex items-center justify-center gap-1.5"
-              >
-                <Check size={14} />
-                <span>Confirmar Baixa</span>
-              </button>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Como o Pagamento/Abatimento foi Efetuado?</label>
+                  <select
+                    value={settleMethod}
+                    onChange={e => setSettleMethod(e.target.value as any)}
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
+                  >
+                    <option value="PIX">⚡ PIX / Transferência Bancária</option>
+                    <option value="CASH">💵 Dinheiro Vivo (Espécie)</option>
+                    <option value="BARTER_ASSET">🏍️ Entrega de outro Bem / Troca (Ex: Me deu uma TV/notebook)</option>
+                    <option value="CARD">💳 Cartão / Boleto / Outros</option>
+                  </select>
+                </div>
+
+                {settleMethod === 'BARTER_ASSET' && (
+                  <div className="animate-in fade-in duration-200">
+                    <label className="block text-[11px] font-bold text-amber-700 mb-1">Descrição do Bem Entregue no Abatimento</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Notebook Dell i7, TV Samsung 55, Moto 125, etc."
+                      value={settleAssetNote}
+                      onChange={e => setSettleAssetNote(e.target.value)}
+                      className="w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-900 font-bold outline-none focus:border-amber-500"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDebtForSettle(null)}
+                  className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSettle}
+                  className="flex-1 py-2 px-3 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs shadow-md flex items-center justify-center gap-1.5"
+                >
+                  <Check size={14} />
+                  <span>Confirmar Baixa</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </PortalModal>
       )}
     </div>
   );

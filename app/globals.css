@@ -130,6 +130,10 @@ html.dark .hover\:bg-gray-50:hover {
 }
 
 html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   overflow-x: hidden;
   max-width: 100vw;
 }

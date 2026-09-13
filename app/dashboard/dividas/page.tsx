@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { PortalModal } from '@/app/components/PortalModal';
 import { 
   Landmark, 
   Plus, 
@@ -1173,566 +1174,598 @@ export default function DividasPage() {
           MODAL 1: CADASTRAR OU EDITAR DÍVIDA (SEM BOTÃO X)
       ========================================================================= */}
       {isNewDebtModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6">
-          <div className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden m-auto animate-scale-in-center shrink-0">
-            
-            <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
-              <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
-                <Landmark size={15} className="text-[#1A44C8]" />
-                {editingDebt ? 'Editar Contrato de Dívida' : 'Cadastrar Dívida ou Empréstimo Pessoal'}
-              </h2>
-            </div>
-
-            <div className="p-5 overflow-y-auto flex-1 space-y-3.5 custom-scrollbar">
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => { setIsNewDebtModalOpen(false); setEditingDebt(null); }}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-lg bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden m-auto animate-scale-in-center shrink-0"
+            >
               
-              {/* Tipo de Credor */}
-              <div>
-                <label className="block text-[11px] text-[#64748B] mb-1.5 font-bold">Origem do Empréstimo / Credor</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setFormCreditorType('PERSON');
-                      setFormIsZeroInterest(true);
-                    }}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      formCreditorType === 'PERSON'
-                        ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]'
-                        : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#1A44C8]/40'
-                    }`}
-                  >
-                    <User size={14} />
-                    Pessoa Física (Amigo / Familiar)
-                  </button>
-
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setFormCreditorType('BANK');
-                      setFormIsZeroInterest(false);
-                    }}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      formCreditorType === 'BANK'
-                        ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]'
-                        : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#1A44C8]/40'
-                    }`}
-                  >
-                    <Landmark size={14} />
-                    Instituição Financeira / Banco
-                  </button>
-                </div>
+              <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
+                <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
+                  <Landmark size={15} className="text-[#1A44C8]" />
+                  {editingDebt ? 'Editar Contrato de Dívida' : 'Cadastrar Dívida ou Empréstimo Pessoal'}
+                </h2>
               </div>
 
-              {/* Nome do Contrato */}
-              <div>
-                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Título da Dívida / Motivo</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: Empréstimo Reforma, Financiamento Carro..." 
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] placeholder-[#94A3B8] focus:outline-none focus:border-[#1A44C8] transition-colors font-medium"
-                />
-              </div>
-
-              {/* Nome do Credor ou Banco */}
-              <div>
-                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">
-                  {formCreditorType === 'PERSON' ? 'Nome da Pessoa (Credor)' : 'Banco ou Financeira'}
-                </label>
-                <input 
-                  type="text" 
-                  placeholder={formCreditorType === 'PERSON' ? 'Ex: Lucas Ferreira (Amigo), Tio Carlos...' : 'Ex: Caixa Econômica, Santander, Nubank...'} 
-                  value={formCreditorName}
-                  onChange={(e) => setFormCreditorName(e.target.value)}
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] placeholder-[#94A3B8] focus:outline-none focus:border-[#1A44C8] transition-colors font-medium"
-                />
-              </div>
-
-              {/* Categoria */}
-              <div>
-                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Categoria</label>
-                <select 
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value as any)}
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
-                >
-                  <option value="EMPRESTIMO">Empréstimo Pessoal</option>
-                  <option value="IMOBILIARIO">Financiamento Imobiliário</option>
-                  <option value="VEICULO">Financiamento Veicular</option>
-                  <option value="CONSIGNADO">Crédito Consignado</option>
-                  <option value="RENEGOCIACAO">Renegociação de Dívida</option>
-                  <option value="OUTROS">Outros Passivos</option>
-                </select>
-              </div>
-
-              {/* Valores: Original e Atual */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="p-5 overflow-y-auto flex-1 space-y-3.5 custom-scrollbar">
+                
+                {/* Tipo de Credor */}
                 <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Valor Original (R$)</label>
-                  <input 
-                    type="number" 
-                    placeholder="0,00" 
-                    value={formOriginalAmount}
-                    onChange={(e) => {
-                      setFormOriginalAmount(e.target.value);
-                      if (!formCurrentBalance) setFormCurrentBalance(e.target.value);
-                    }}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
-                  />
+                  <label className="block text-[11px] text-[#64748B] mb-1.5 font-bold">Origem do Empréstimo / Credor</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setFormCreditorType('PERSON');
+                        setFormIsZeroInterest(true);
+                      }}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                        formCreditorType === 'PERSON'
+                          ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]'
+                          : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#1A44C8]/40'
+                      }`}
+                    >
+                      <User size={14} />
+                      Pessoa Física (Amigo / Familiar)
+                    </button>
+
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setFormCreditorType('BANK');
+                        setFormIsZeroInterest(false);
+                      }}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                        formCreditorType === 'BANK'
+                          ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]'
+                          : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#1A44C8]/40'
+                      }`}
+                    >
+                      <Landmark size={14} />
+                      Instituição Financeira / Banco
+                    </button>
+                  </div>
                 </div>
 
+                {/* Nome do Contrato */}
                 <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Saldo Restante Atual (R$)</label>
-                  <input 
-                    type="number" 
-                    placeholder="0,00" 
-                    value={formCurrentBalance}
-                    onChange={(e) => setFormCurrentBalance(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#1A44C8] rounded-xl px-3 py-2 text-xs text-[#1A44C8] font-extrabold focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Parcelas e Valor Mensal */}
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Parcela (R$)</label>
-                  <input 
-                    type="number" 
-                    placeholder="0,00" 
-                    value={formMonthlyPayment}
-                    onChange={(e) => setFormMonthlyPayment(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Total Parcelas</label>
-                  <input 
-                    type="number" 
-                    placeholder="12" 
-                    value={formTotalInstallments}
-                    onChange={(e) => setFormTotalInstallments(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Pagas</label>
-                  <input 
-                    type="number" 
-                    placeholder="0" 
-                    value={formPaidInstallments}
-                    onChange={(e) => setFormPaidInstallments(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* Taxa de Juros */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-[11px] text-[#64748B] font-bold">Taxa de Juros</label>
-                  <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-[#64748B] font-semibold">
-                    <input 
-                      type="checkbox" 
-                      checked={formIsZeroInterest} 
-                      onChange={(e) => setFormIsZeroInterest(e.target.checked)}
-                      className="rounded bg-[#F1F3F7] border-[#E5E7EB] accent-[#1A44C8]"
-                    />
-                    <span>Sem Juros (0%)</span>
-                  </label>
-                </div>
-                {!formIsZeroInterest && (
+                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Título da Dívida / Motivo</label>
                   <input 
                     type="text" 
-                    placeholder="Ex: 1.5% a.m. ou 9.4% a.a." 
-                    value={formInterestRate}
-                    onChange={(e) => setFormInterestRate(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                    placeholder="Ex: Empréstimo Reforma, Financiamento Carro..." 
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] placeholder-[#94A3B8] focus:outline-none focus:border-[#1A44C8] transition-colors font-medium"
                   />
-                )}
-              </div>
+                </div>
 
-              {/* Dívida de Terceiro */}
-              <div className="p-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#181B22] font-bold">
+                {/* Nome do Credor ou Banco */}
+                <div>
+                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">
+                    {formCreditorType === 'PERSON' ? 'Nome da Pessoa (Credor)' : 'Banco ou Financeira'}
+                  </label>
                   <input 
-                    type="checkbox" 
-                    checked={formIsThirdPartyResponsibility} 
-                    onChange={(e) => setFormIsThirdPartyResponsibility(e.target.checked)}
-                    className="rounded bg-[#FFFFFF] border-[#E5E7EB] accent-amber-600"
+                    type="text" 
+                    placeholder={formCreditorType === 'PERSON' ? 'Ex: Lucas Ferreira (Amigo), Tio Carlos...' : 'Ex: Caixa Econômica, Santander, Nubank...'} 
+                    value={formCreditorName}
+                    onChange={(e) => setFormCreditorName(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] placeholder-[#94A3B8] focus:outline-none focus:border-[#1A44C8] transition-colors font-medium"
                   />
-                  <span>Esta dívida está no meu nome, mas é paga por outra pessoa</span>
-                </label>
+                </div>
 
-                {formIsThirdPartyResponsibility && (
+                {/* Categoria */}
+                <div>
+                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Categoria</label>
+                  <select 
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value as any)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                  >
+                    <option value="EMPRESTIMO">Empréstimo Pessoal</option>
+                    <option value="IMOBILIARIO">Financiamento Imobiliário</option>
+                    <option value="VEICULO">Financiamento Veicular</option>
+                    <option value="CONSIGNADO">Crédito Consignado</option>
+                    <option value="RENEGOCIACAO">Renegociação de Dívida</option>
+                    <option value="OUTROS">Outros Passivos</option>
+                  </select>
+                </div>
+
+                {/* Valores: Original e Atual */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Valor Original (R$)</label>
                     <input 
-                      type="text" 
-                      placeholder="Nome do responsável real (Ex: Irmão, Amigo, Sócio...)" 
-                      value={formThirdPartyDebtorName}
-                      onChange={(e) => setFormThirdPartyDebtorName(e.target.value)}
-                      className="w-full bg-[#FFFFFF] border border-amber-300 rounded-xl px-3 py-2 text-xs text-[#181B22] placeholder-[#94A3B8] focus:outline-none font-medium"
+                      type="number" 
+                      placeholder="0,00" 
+                      value={formOriginalAmount}
+                      onChange={(e) => {
+                        setFormOriginalAmount(e.target.value);
+                        if (!formCurrentBalance) setFormCurrentBalance(e.target.value);
+                      }}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
                     />
                   </div>
-                )}
+
+                  <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Saldo Restante Atual (R$)</label>
+                    <input 
+                      type="number" 
+                      placeholder="0,00" 
+                      value={formCurrentBalance}
+                      onChange={(e) => setFormCurrentBalance(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#1A44C8] rounded-xl px-3 py-2 text-xs text-[#1A44C8] font-extrabold focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Parcelas e Valor Mensal */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Parcela (R$)</label>
+                    <input 
+                      type="number" 
+                      placeholder="0,00" 
+                      value={formMonthlyPayment}
+                      onChange={(e) => setFormMonthlyPayment(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Total Parcelas</label>
+                    <input 
+                      type="number" 
+                      placeholder="12" 
+                      value={formTotalInstallments}
+                      onChange={(e) => setFormTotalInstallments(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Pagas</label>
+                    <input 
+                      type="number" 
+                      placeholder="0" 
+                      value={formPaidInstallments}
+                      onChange={(e) => setFormPaidInstallments(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Taxa de Juros */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[11px] text-[#64748B] font-bold">Taxa de Juros</label>
+                    <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-[#64748B] font-semibold">
+                      <input 
+                        type="checkbox" 
+                        checked={formIsZeroInterest} 
+                        onChange={(e) => setFormIsZeroInterest(e.target.checked)}
+                        className="rounded bg-[#F1F3F7] border-[#E5E7EB] accent-[#1A44C8]"
+                      />
+                      <span>Sem Juros (0%)</span>
+                    </label>
+                  </div>
+                  {!formIsZeroInterest && (
+                    <input 
+                      type="text" 
+                      placeholder="Ex: 1.5% a.m. ou 9.4% a.a." 
+                      value={formInterestRate}
+                      onChange={(e) => setFormInterestRate(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                    />
+                  )}
+                </div>
+
+                {/* Dívida de Terceiro */}
+                <div className="p-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-[#181B22] font-bold">
+                    <input 
+                      type="checkbox" 
+                      checked={formIsThirdPartyResponsibility} 
+                      onChange={(e) => setFormIsThirdPartyResponsibility(e.target.checked)}
+                      className="rounded bg-[#FFFFFF] border-[#E5E7EB] accent-amber-600"
+                    />
+                    <span>Esta dívida está no meu nome, mas é paga por outra pessoa</span>
+                  </label>
+
+                  {formIsThirdPartyResponsibility && (
+                    <div>
+                      <input 
+                        type="text" 
+                        placeholder="Nome do responsável real (Ex: Irmão, Amigo, Sócio...)" 
+                        value={formThirdPartyDebtorName}
+                        onChange={(e) => setFormThirdPartyDebtorName(e.target.value)}
+                        className="w-full bg-[#FFFFFF] border border-amber-300 rounded-xl px-3 py-2 text-xs text-[#181B22] placeholder-[#94A3B8] focus:outline-none font-medium"
+                      />
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex justify-end gap-2 shrink-0">
+                <button 
+                  type="button" 
+                  onClick={() => setIsNewDebtModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-[#64748B] hover:text-[#181B22] transition-colors font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleSaveDebt}
+                  className="px-5 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-semibold transition-all shadow-md active:scale-95"
+                >
+                  {editingDebt ? 'Salvar Alterações' : 'Cadastrar Dívida'}
+                </button>
               </div>
 
             </div>
-
-            <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex justify-end gap-2 shrink-0">
-              <button 
-                type="button" 
-                onClick={() => setIsNewDebtModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs text-[#64748B] hover:text-[#181B22] transition-colors font-semibold"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button" 
-                onClick={handleSaveDebt}
-                className="px-5 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-semibold transition-all shadow-md active:scale-95"
-              >
-                {editingDebt ? 'Salvar Alterações' : 'Cadastrar Dívida'}
-              </button>
-            </div>
-
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {/* =========================================================================
           MODAL 2: REGISTRAR PAGAMENTO (SEM BOTÃO X)
       ========================================================================= */}
       {isAmortizeModalOpen && selectedDebtForAmortize && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden m-auto animate-scale-in-center shrink-0">
-            
-            <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
-              <div>
-                <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
-                  <Zap size={15} className="text-[#1A44C8]" />
-                  Registrar Pagamento
-                </h2>
-                <p className="text-[10px] text-[#64748B] mt-0.5 font-medium">{selectedDebtForAmortize.name}</p>
-              </div>
-            </div>
-
-            <div className="p-5 overflow-y-auto flex-1 space-y-3.5 custom-scrollbar">
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => { setIsAmortizeModalOpen(false); setSelectedDebtForAmortize(null); }}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden m-auto animate-scale-in-center shrink-0"
+            >
               
-              {/* Saldo Restante Atual */}
-              <div className="p-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl flex justify-between items-center text-xs">
-                <span className="text-[#64748B] font-bold">Saldo Restante:</span>
-                <span className="font-extrabold text-[#181B22]">R$ {formatCurrency(selectedDebtForAmortize.currentBalance)}</span>
+              <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex justify-between items-center bg-[#F8FAFC] shrink-0">
+                <div>
+                  <h2 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
+                    <Zap size={15} className="text-[#1A44C8]" />
+                    Registrar Pagamento
+                  </h2>
+                  <p className="text-[10px] text-[#64748B] mt-0.5 font-medium">{selectedDebtForAmortize.name}</p>
+                </div>
               </div>
 
-              {/* Tipo de Pagamento */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAmortizeType('EXTRAORDINARY')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    amortizeType === 'EXTRAORDINARY'
-                      ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]'
-                      : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
-                  }`}
+              <div className="p-5 overflow-y-auto flex-1 space-y-3.5 custom-scrollbar">
+                
+                {/* Saldo Restante Atual */}
+                <div className="p-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl flex justify-between items-center text-xs">
+                  <span className="text-[#64748B] font-bold">Saldo Restante:</span>
+                  <span className="font-extrabold text-[#181B22]">R$ {formatCurrency(selectedDebtForAmortize.currentBalance)}</span>
+                </div>
+
+                {/* Tipo de Pagamento */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAmortizeType('EXTRAORDINARY')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      amortizeType === 'EXTRAORDINARY'
+                        ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]'
+                        : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
+                    }`}
+                  >
+                    <Sparkles size={13} />
+                    Pagamento Extra
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAmortizeType('REGULAR')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      amortizeType === 'REGULAR'
+                        ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]'
+                        : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
+                    }`}
+                  >
+                    <Clock size={13} />
+                    Parcela do Mês
+                  </button>
+                </div>
+
+                {/* Valor Pago */}
+                <div>
+                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Valor Efetivamente Pago (R$)</label>
+                  <input 
+                    type="number" 
+                    placeholder="0,00" 
+                    value={amortizeAmount}
+                    onChange={(e) => setAmortizeAmount(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#1A44C8] rounded-xl px-3 py-2 text-xs text-[#1A44C8] font-extrabold focus:outline-none"
+                  />
+                </div>
+
+                {/* Desconto / Juros Economizados */}
+                <div>
+                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Desconto Obtido / Juros Abatidos (R$)</label>
+                  <input 
+                    type="number" 
+                    placeholder="0,00 (Opcional)" 
+                    value={amortizeDiscount}
+                    onChange={(e) => setAmortizeDiscount(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                  />
+                  <span className="text-[9.5px] text-[#64748B] mt-1 block">O desconto somado ao valor pago reduz diretamente o saldo devedor principal.</span>
+                </div>
+
+                {/* Observações */}
+                <div>
+                  <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Anotação / Origem do Recurso</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: Pagamento com FGTS, 13º Salário, PIX direto..." 
+                    value={amortizeNotes}
+                    onChange={(e) => setAmortizeNotes(e.target.value)}
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
+                  />
+                </div>
+
+              </div>
+
+              <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex justify-end gap-2 shrink-0">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAmortizeModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-[#64748B] hover:text-[#181B22] transition-colors font-semibold"
                 >
-                  <Sparkles size={13} />
-                  Pagamento Extra
+                  Cancelar
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setAmortizeType('REGULAR')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    amortizeType === 'REGULAR'
-                      ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]'
-                      : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B]'
-                  }`}
+                <button 
+                  type="button" 
+                  onClick={handleConfirmAmortization}
+                  className="px-5 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-semibold transition-all shadow-md active:scale-95"
                 >
-                  <Clock size={13} />
-                  Parcela do Mês
+                  Confirmar Pagamento
                 </button>
-              </div>
-
-              {/* Valor Pago */}
-              <div>
-                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Valor Efetivamente Pago (R$)</label>
-                <input 
-                  type="number" 
-                  placeholder="0,00" 
-                  value={amortizeAmount}
-                  onChange={(e) => setAmortizeAmount(e.target.value)}
-                  className="w-full bg-[#F1F3F7] border border-[#1A44C8] rounded-xl px-3 py-2 text-xs text-[#1A44C8] font-extrabold focus:outline-none"
-                />
-              </div>
-
-              {/* Desconto / Juros Economizados */}
-              <div>
-                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Desconto Obtido / Juros Abatidos (R$)</label>
-                <input 
-                  type="number" 
-                  placeholder="0,00 (Opcional)" 
-                  value={amortizeDiscount}
-                  onChange={(e) => setAmortizeDiscount(e.target.value)}
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
-                />
-                <span className="text-[9.5px] text-[#64748B] mt-1 block">O desconto somado ao valor pago reduz diretamente o saldo devedor principal.</span>
-              </div>
-
-              {/* Observações */}
-              <div>
-                <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Anotação / Origem do Recurso</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: Pagamento com FGTS, 13º Salário, PIX direto..." 
-                  value={amortizeNotes}
-                  onChange={(e) => setAmortizeNotes(e.target.value)}
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
-                />
               </div>
 
             </div>
-
-            <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex justify-end gap-2 shrink-0">
-              <button 
-                type="button" 
-                onClick={() => setIsAmortizeModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs text-[#64748B] hover:text-[#181B22] transition-colors font-semibold"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button" 
-                onClick={handleConfirmAmortization}
-                className="px-5 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-semibold transition-all shadow-md active:scale-95"
-              >
-                Confirmar Pagamento
-              </button>
-            </div>
-
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {/* =========================================================================
           MODAL 3: HISTÓRICO DE PAGAMENTOS (COMPACTO, CLARO & DIRETO)
       ========================================================================= */}
       {viewingHistoryDebt && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6">
-          <div className="w-full max-w-2xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden m-auto animate-scale-in-center shrink-0">
-            
-            {/* Cabeçalho Compacto */}
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-[#1A44C8]/10 border border-[#1A44C8]/20 flex items-center justify-center text-[#1A44C8] shrink-0 shadow-sm">
-                  <FileSpreadsheet size={15} />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <h2 className="text-xs font-bold text-[#181B22] truncate">
-                      {viewingHistoryDebt.name}
-                    </h2>
-                    <span className="text-[8.5px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 font-semibold shrink-0">
-                      {CATEGORY_MAP[viewingHistoryDebt.category]?.label || viewingHistoryDebt.category}
-                    </span>
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setViewingHistoryDebt(null)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-2xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden m-auto animate-scale-in-center shrink-0"
+            >
+              
+              {/* Cabeçalho Compacto */}
+              <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-[#1A44C8]/10 border border-[#1A44C8]/20 flex items-center justify-center text-[#1A44C8] shrink-0 shadow-sm">
+                    <FileSpreadsheet size={15} />
                   </div>
-                  <p className="text-[10px] text-[#64748B] truncate">
-                    {viewingHistoryDebt.bank} • Histórico de Pagamentos & Amortizações
-                  </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <h2 className="text-xs font-bold text-[#181B22] truncate">
+                        {viewingHistoryDebt.name}
+                      </h2>
+                      <span className="text-[8.5px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 font-semibold shrink-0">
+                        {CATEGORY_MAP[viewingHistoryDebt.category]?.label || viewingHistoryDebt.category}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#64748B] truncate">
+                      {viewingHistoryDebt.bank} • Histórico de Pagamentos & Amortizações
+                    </p>
+                  </div>
+                </div>
+
+                {/* Ações do Header */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {viewingHistoryDebt.status === 'ACTIVE' && (
+                    <button
+                      onClick={() => {
+                        const debtToAmortize = viewingHistoryDebt;
+                        setViewingHistoryDebt(null);
+                        setSelectedDebtForAmortize(debtToAmortize);
+                        setIsAmortizeModalOpen(true);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-[#1A44C8] hover:bg-[#1538A5] text-white text-[11px] font-semibold transition-all flex items-center gap-1 shadow-sm active:scale-95"
+                    >
+                      <Zap size={11} strokeWidth={2.5} />
+                      Pagar
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setViewingHistoryDebt(null)}
+                    className="p-1 rounded-lg text-[#94A3B8] hover:text-[#181B22] hover:bg-[#E2E8F0] transition-colors"
+                    title="Fechar"
+                  >
+                    <X size={15} />
+                  </button>
                 </div>
               </div>
 
-              {/* Ações do Header */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                {viewingHistoryDebt.status === 'ACTIVE' && (
-                  <button
-                    onClick={() => {
-                      const debtToAmortize = viewingHistoryDebt;
-                      setViewingHistoryDebt(null);
-                      setSelectedDebtForAmortize(debtToAmortize);
-                      setIsAmortizeModalOpen(true);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-[#1A44C8] hover:bg-[#1538A5] text-white text-[11px] font-semibold transition-all flex items-center gap-1 shadow-sm active:scale-95"
-                  >
-                    <Zap size={11} strokeWidth={2.5} />
-                    Pagar
-                  </button>
+              {/* Resumo Financeiro Claro & Imediato (O que foi pago, descontos e saldo) */}
+              <div className="grid grid-cols-3 gap-2 p-3 bg-[#F8FAFC] border-b border-[#E5E7EB] shrink-0">
+                <div className="bg-[#FFFFFF] p-2.5 rounded-xl border border-[#E5E7EB] shadow-sm">
+                  <span className="text-[9px] text-[#64748B] font-semibold uppercase block">Total Já Pago</span>
+                  <span className="text-sm font-extrabold text-[#1A44C8] tracking-tight block">
+                    R$ {formatCurrency(viewingHistoryDebt.totalPaid)}
+                  </span>
+                  <span className="text-[9px] text-[#94A3B8] block mt-0.5">
+                    {viewingHistoryDebt.paidInstallments} de {viewingHistoryDebt.totalInstallments} parcelas
+                  </span>
+                </div>
+
+                <div className="bg-[#FFFFFF] p-2.5 rounded-xl border border-[#E5E7EB] shadow-sm">
+                  <span className="text-[9px] text-[#64748B] font-semibold uppercase block">Descontos Obtidos</span>
+                  <span className="text-sm font-extrabold text-[#00A3FF] tracking-tight block">
+                    R$ {formatCurrency(viewingHistoryDebt.totalDiscounts)}
+                  </span>
+                  <span className="text-[9px] text-emerald-600 font-medium block mt-0.5">
+                    Juros economizados
+                  </span>
+                </div>
+
+                <div className="bg-[#FFFFFF] p-2.5 rounded-xl border border-[#E5E7EB] shadow-sm">
+                  <span className="text-[9px] text-[#64748B] font-semibold uppercase block">Saldo Restante</span>
+                  <span className="text-sm font-extrabold text-[#181B22] tracking-tight block">
+                    R$ {formatCurrency(viewingHistoryDebt.currentBalance)}
+                  </span>
+                  <span className="text-[9px] text-[#94A3B8] block mt-0.5">
+                    Valor em aberto
+                  </span>
+                </div>
+              </div>
+
+              {/* Tabela de Lançamentos Compacta & Fácil de Ler */}
+              <div className="p-3 overflow-y-auto flex-1 custom-scrollbar">
+                {viewingHistoryDebt.amortizations.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-[#E5E7EB] rounded-xl">
+                    <FileSpreadsheet size={24} className="mx-auto text-[#94A3B8] mb-1.5" />
+                    <p className="text-xs font-bold text-[#181B22]">Nenhum pagamento registrado ainda</p>
+                    <p className="text-[10px] text-[#64748B] mt-0.5">Clique em &quot;Pagar&quot; acima para registrar parcelas ou amortizações extraordinárias.</p>
+                  </div>
+                ) : (
+                  <div className="border border-[#E5E7EB] rounded-xl overflow-hidden shadow-sm">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#F8FAFC] border-b border-[#E5E7EB] text-[9.5px] uppercase tracking-wider text-[#64748B] select-none">
+                          <th className="py-2 px-2.5 font-bold w-24">Data</th>
+                          <th className="py-2 px-2.5 font-bold">Tipo</th>
+                          <th className="py-2 px-2.5 font-bold text-right">Valor Pago</th>
+                          <th className="py-2 px-2.5 font-bold text-right">Desconto</th>
+                          <th className="py-2 px-2.5 font-bold">Anotação</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E5E7EB] text-[11px]">
+                        {viewingHistoryDebt.amortizations.map((am, index) => {
+                          return (
+                            <tr key={am.id} className="hover:bg-[#F8FAFC] transition-colors">
+                              <td className="py-2 px-2.5 text-[#181B22] font-semibold whitespace-nowrap">
+                                <span className="text-[9.5px] text-[#94A3B8] mr-1.5 font-normal">#{index + 1}</span>
+                                {am.date}
+                              </td>
+                              <td className="py-2 px-2.5 whitespace-nowrap">
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                                  am.type === 'EXTRAORDINARY'
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    : 'bg-[#1A44C8]/10 text-[#1A44C8] border-[#1A44C8]/20'
+                                }`}>
+                                  {am.type === 'EXTRAORDINARY' ? 'Extra' : 'Parcela'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2.5 text-right font-extrabold text-[#181B22] whitespace-nowrap">
+                                R$ {formatCurrency(am.amountPaid)}
+                              </td>
+                              <td className="py-2 px-2.5 text-right whitespace-nowrap">
+                                {am.discountOrSavedInterest > 0 ? (
+                                  <span className="text-[10px] font-bold text-[#00A3FF] bg-[#00A3FF]/10 px-1.5 py-0.5 rounded border border-[#00A3FF]/20">
+                                    -R$ {formatCurrency(am.discountOrSavedInterest)}
+                                  </span>
+                                ) : (
+                                  <span className="text-[#94A3B8]">—</span>
+                                )}
+                              </td>
+                              <td className="py-2 px-2.5 text-[#64748B] text-[10px] truncate max-w-[160px]">
+                                {am.notes || '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-[#F8FAFC] border-t-2 border-[#CBD5E1] text-[11px] font-bold">
+                          <td colSpan={2} className="py-2 px-2.5 text-right text-[10px] uppercase text-[#64748B]">
+                            Totais:
+                          </td>
+                          <td className="py-2 px-2.5 text-right text-[#181B22] font-black">
+                            R$ {formatCurrency(viewingHistoryDebt.amortizations.reduce((acc, a) => acc + a.amountPaid, 0))}
+                          </td>
+                          <td className="py-2 px-2.5 text-right text-[#00A3FF] font-black">
+                            -R$ {formatCurrency(viewingHistoryDebt.amortizations.reduce((acc, a) => acc + a.discountOrSavedInterest, 0))}
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 )}
-                <button
-                  onClick={() => setViewingHistoryDebt(null)}
-                  className="p-1 rounded-lg text-[#94A3B8] hover:text-[#181B22] hover:bg-[#E2E8F0] transition-colors"
-                  title="Fechar"
+              </div>
+
+              {/* Rodapé Compacto */}
+              <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
+                <span className="text-[10px] text-[#64748B]">
+                  {viewingHistoryDebt.amortizations.length} registro(s) arquivado(s)
+                </span>
+                <button 
+                  onClick={() => setViewingHistoryDebt(null)} 
+                  className="px-4 py-1 rounded-xl text-xs bg-[#FFFFFF] hover:bg-[#F1F3F7] text-[#181B22] font-semibold border border-[#E5E7EB] shadow-sm transition-all"
                 >
-                  <X size={15} />
+                  Fechar
                 </button>
               </div>
+
             </div>
-
-            {/* Resumo Financeiro Claro & Imediato (O que foi pago, descontos e saldo) */}
-            <div className="grid grid-cols-3 gap-2 p-3 bg-[#F8FAFC] border-b border-[#E5E7EB] shrink-0">
-              <div className="bg-[#FFFFFF] p-2.5 rounded-xl border border-[#E5E7EB] shadow-sm">
-                <span className="text-[9px] text-[#64748B] font-semibold uppercase block">Total Já Pago</span>
-                <span className="text-sm font-extrabold text-[#1A44C8] tracking-tight block">
-                  R$ {formatCurrency(viewingHistoryDebt.totalPaid)}
-                </span>
-                <span className="text-[9px] text-[#94A3B8] block mt-0.5">
-                  {viewingHistoryDebt.paidInstallments} de {viewingHistoryDebt.totalInstallments} parcelas
-                </span>
-              </div>
-
-              <div className="bg-[#FFFFFF] p-2.5 rounded-xl border border-[#E5E7EB] shadow-sm">
-                <span className="text-[9px] text-[#64748B] font-semibold uppercase block">Descontos Obtidos</span>
-                <span className="text-sm font-extrabold text-[#00A3FF] tracking-tight block">
-                  R$ {formatCurrency(viewingHistoryDebt.totalDiscounts)}
-                </span>
-                <span className="text-[9px] text-emerald-600 font-medium block mt-0.5">
-                  Juros economizados
-                </span>
-              </div>
-
-              <div className="bg-[#FFFFFF] p-2.5 rounded-xl border border-[#E5E7EB] shadow-sm">
-                <span className="text-[9px] text-[#64748B] font-semibold uppercase block">Saldo Restante</span>
-                <span className="text-sm font-extrabold text-[#181B22] tracking-tight block">
-                  R$ {formatCurrency(viewingHistoryDebt.currentBalance)}
-                </span>
-                <span className="text-[9px] text-[#94A3B8] block mt-0.5">
-                  Valor em aberto
-                </span>
-              </div>
-            </div>
-
-            {/* Tabela de Lançamentos Compacta & Fácil de Ler */}
-            <div className="p-3 overflow-y-auto flex-1 custom-scrollbar">
-              {viewingHistoryDebt.amortizations.length === 0 ? (
-                <div className="text-center py-8 border-2 border-dashed border-[#E5E7EB] rounded-xl">
-                  <FileSpreadsheet size={24} className="mx-auto text-[#94A3B8] mb-1.5" />
-                  <p className="text-xs font-bold text-[#181B22]">Nenhum pagamento registrado ainda</p>
-                  <p className="text-[10px] text-[#64748B] mt-0.5">Clique em &quot;Pagar&quot; acima para registrar parcelas ou amortizações extraordinárias.</p>
-                </div>
-              ) : (
-                <div className="border border-[#E5E7EB] rounded-xl overflow-hidden shadow-sm">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-[#F8FAFC] border-b border-[#E5E7EB] text-[9.5px] uppercase tracking-wider text-[#64748B] select-none">
-                        <th className="py-2 px-2.5 font-bold w-24">Data</th>
-                        <th className="py-2 px-2.5 font-bold">Tipo</th>
-                        <th className="py-2 px-2.5 font-bold text-right">Valor Pago</th>
-                        <th className="py-2 px-2.5 font-bold text-right">Desconto</th>
-                        <th className="py-2 px-2.5 font-bold">Anotação</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E5E7EB] text-[11px]">
-                      {viewingHistoryDebt.amortizations.map((am, index) => {
-                        return (
-                          <tr key={am.id} className="hover:bg-[#F8FAFC] transition-colors">
-                            <td className="py-2 px-2.5 text-[#181B22] font-semibold whitespace-nowrap">
-                              <span className="text-[9.5px] text-[#94A3B8] mr-1.5 font-normal">#{index + 1}</span>
-                              {am.date}
-                            </td>
-                            <td className="py-2 px-2.5 whitespace-nowrap">
-                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                                am.type === 'EXTRAORDINARY'
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                  : 'bg-[#1A44C8]/10 text-[#1A44C8] border-[#1A44C8]/20'
-                              }`}>
-                                {am.type === 'EXTRAORDINARY' ? 'Extra' : 'Parcela'}
-                              </span>
-                            </td>
-                            <td className="py-2 px-2.5 text-right font-extrabold text-[#181B22] whitespace-nowrap">
-                              R$ {formatCurrency(am.amountPaid)}
-                            </td>
-                            <td className="py-2 px-2.5 text-right whitespace-nowrap">
-                              {am.discountOrSavedInterest > 0 ? (
-                                <span className="text-[10px] font-bold text-[#00A3FF] bg-[#00A3FF]/10 px-1.5 py-0.5 rounded border border-[#00A3FF]/20">
-                                  -R$ {formatCurrency(am.discountOrSavedInterest)}
-                                </span>
-                              ) : (
-                                <span className="text-[#94A3B8]">—</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-2.5 text-[#64748B] text-[10px] truncate max-w-[160px]">
-                              {am.notes || '—'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-[#F8FAFC] border-t-2 border-[#CBD5E1] text-[11px] font-bold">
-                        <td colSpan={2} className="py-2 px-2.5 text-right text-[10px] uppercase text-[#64748B]">
-                          Totais:
-                        </td>
-                        <td className="py-2 px-2.5 text-right text-[#181B22] font-black">
-                          R$ {formatCurrency(viewingHistoryDebt.amortizations.reduce((acc, a) => acc + a.amountPaid, 0))}
-                        </td>
-                        <td className="py-2 px-2.5 text-right text-[#00A3FF] font-black">
-                          -R$ {formatCurrency(viewingHistoryDebt.amortizations.reduce((acc, a) => acc + a.discountOrSavedInterest, 0))}
-                        </td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* Rodapé Compacto */}
-            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
-              <span className="text-[10px] text-[#64748B]">
-                {viewingHistoryDebt.amortizations.length} registro(s) arquivado(s)
-              </span>
-              <button 
-                onClick={() => setViewingHistoryDebt(null)} 
-                className="px-4 py-1 rounded-xl text-xs bg-[#FFFFFF] hover:bg-[#F1F3F7] text-[#181B22] font-semibold border border-[#E5E7EB] shadow-sm transition-all"
-              >
-                Fechar
-              </button>
-            </div>
-
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {/* =========================================================================
           MODAL 4: CONFIRMAÇÃO DE EXCLUSÃO (SEM BOTÃO X)
       ========================================================================= */}
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 shadow-2xl space-y-4 flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden m-auto animate-scale-in-center shrink-0">
-            <div className="flex items-center gap-3 text-rose-600 shrink-0">
-              <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
-                <Trash2 size={18} />
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setDeleteCandidate(null)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 shadow-2xl space-y-4 flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden m-auto animate-scale-in-center shrink-0"
+            >
+              <div className="flex items-center gap-3 text-rose-600 shrink-0">
+                <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
+                  <Trash2 size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#181B22]">Excluir Dívida</h3>
+                  <p className="text-xs text-[#64748B]">Tem certeza que deseja remover?</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#181B22]">Excluir Dívida</h3>
-                <p className="text-xs text-[#64748B]">Tem certeza que deseja remover?</p>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                <p className="text-xs text-[#64748B] bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
+                  O contrato <strong className="text-[#181B22]">{deleteCandidate.name}</strong> será excluído permanentemente do painel.
+                </p>
               </div>
-            </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
-              <p className="text-xs text-[#64748B] bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
-                O contrato <strong className="text-[#181B22]">{deleteCandidate.name}</strong> será excluído permanentemente do painel.
-              </p>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 shrink-0">
-              <button 
-                onClick={() => setDeleteCandidate(null)}
-                className="px-4 py-2 rounded-xl text-xs text-[#64748B] hover:text-[#181B22] font-semibold"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={() => handleDeleteDebt(deleteCandidate.id)}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-md"
-              >
-                Excluir Definitivamente
-              </button>
+              <div className="flex justify-end gap-2 pt-2 shrink-0">
+                <button 
+                  onClick={() => setDeleteCandidate(null)}
+                  className="px-4 py-2 rounded-xl text-xs text-[#64748B] hover:text-[#181B22] font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => handleDeleteDebt(deleteCandidate.id)}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-md"
+                >
+                  Excluir Definitivamente
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </PortalModal>
       )}
 
     </>

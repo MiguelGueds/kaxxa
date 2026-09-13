@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { usePrivacy } from '@/app/contexts/PrivacyContext';
 import { BankLogo } from '@/app/components/BankLogo';
+import { PortalModal } from '@/app/components/PortalModal';
 
 // Categorias Limpas e Padronizadas
 const CATEGORIES_FLAT_LIST = [
@@ -1103,29 +1104,31 @@ export default function MinhasFaturasPage() {
               <p className="text-[9px] text-[#64748B] mt-1.5 font-medium">{limitUsagePct.toFixed(1)}% em uso de R$ {formatCurrency(totalLimitGlobal)}</p>
 
               {isLimitPopupOpen && (
-                <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300" onClick={(e) => { e.stopPropagation(); setIsLimitPopupOpen(false); }}>
-                  <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col p-4.5 m-auto animate-scale-in-center shrink-0 cursor-default" onClick={e => e.stopPropagation()}>
-                    <div className="flex justify-between items-center border-b border-[#E5E7EB] pb-2 mb-3">
-                      <h4 className="text-xs font-bold text-[#181B22]">Limite Disponível Por Cartão</h4>
-                      <button onClick={() => setIsLimitPopupOpen(false)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={14}/></button>
-                    </div>
-                    <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                      {cards.map(c => {
-                        const used = getCardLimitUsed(c);
-                        const avail = Math.max(0, c.limitTotal - used);
-                        return (
-                          <div key={c.id} className="flex justify-between items-center text-xs p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <BankLogo name={c.bank || c.name} size="xs" />
-                              <span className="text-[#181B22] font-bold truncate">{c.name}</span>
+                <PortalModal>
+                  <div className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300" onClick={(e) => { e.stopPropagation(); setIsLimitPopupOpen(false); }}>
+                    <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col p-4.5 m-auto animate-scale-in-center shrink-0 cursor-default" onClick={e => e.stopPropagation()}>
+                      <div className="flex justify-between items-center border-b border-[#E5E7EB] pb-2 mb-3">
+                        <h4 className="text-xs font-bold text-[#181B22]">Limite Disponível Por Cartão</h4>
+                        <button onClick={() => setIsLimitPopupOpen(false)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={14}/></button>
+                      </div>
+                      <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                        {cards.map(c => {
+                          const used = getCardLimitUsed(c);
+                          const avail = Math.max(0, c.limitTotal - used);
+                          return (
+                            <div key={c.id} className="flex justify-between items-center text-xs p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <BankLogo name={c.bank || c.name} size="xs" />
+                                <span className="text-[#181B22] font-bold truncate">{c.name}</span>
+                              </div>
+                              <span className="text-[#1A44C8] font-extrabold whitespace-nowrap ml-2">R$ {formatCurrency(avail)}</span>
                             </div>
-                            <span className="text-[#1A44C8] font-extrabold whitespace-nowrap ml-2">R$ {formatCurrency(avail)}</span>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
+                </PortalModal>
               )}
             </div>
           </div>
@@ -1583,230 +1586,213 @@ export default function MinhasFaturasPage() {
       </div>
 
       {isNewCardModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
-              <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
-                <CreditCard size={14} className="text-[#1A44C8]" />
-                Cadastrar Novo Cartão de Crédito
-              </h2>
-            </div>
-
-            <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-              <div>
-                <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Nome do Cartão</label>
-                <input 
-                  type="text"
-                  value={newCardName}
-                  onChange={(e) => setNewCardName(e.target.value)}
-                  placeholder="Ex: Nubank Ultravioleta, Itaú Black..."
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
-                />
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsNewCardModalOpen(false)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
+              <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
+                <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
+                  <CreditCard size={14} className="text-[#1A44C8]" />
+                  Cadastrar Novo Cartão de Crédito
+                </h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
                 <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Instituição / Banco</label>
-                  <select 
-                    value={newCardBank}
-                    onChange={(e) => setNewCardBank(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                  >
-                    <option value="Nubank">Nubank</option>
-                    <option value="Itaú">Itaú</option>
-                    <option value="Banco Inter">Banco Inter</option>
-                    <option value="C6 Bank">C6 Bank</option>
-                    <option value="Bradesco">Bradesco</option>
-                    <option value="Santander">Santander</option>
-                    <option value="XP Investimentos">XP Investimentos</option>
-                    <option value="BTG Pactual">BTG Pactual</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Bandeira / Categoria</label>
-                  <select 
-                    value={newCardBrand}
-                    onChange={(e) => setNewCardBrand(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                  >
-                    <option value="Mastercard Black">Mastercard Black</option>
-                    <option value="Visa Infinite">Visa Infinite</option>
-                    <option value="Elo Nanquim">Elo Nanquim</option>
-                    <option value="Visa Platinum">Visa Platinum</option>
-                    <option value="Mastercard Gold">Mastercard Gold</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Limite Total (R$)</label>
+                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Nome do Cartão</label>
                   <input 
-                    type="number"
-                    value={newCardLimit}
-                    onChange={(e) => setNewCardLimit(e.target.value)}
-                    placeholder="15000"
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] font-bold focus:outline-none focus:border-[#1A44C8]"
+                    type="text"
+                    value={newCardName}
+                    onChange={(e) => setNewCardName(e.target.value)}
+                    placeholder="Ex: Nubank Ultravioleta, Itaú Black..."
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Dia Fechamento</label>
-                  <input 
-                    type="number"
-                    min="1"
-                    max="31"
-                    value={newCardClosingDay}
-                    onChange={(e) => setNewCardClosingDay(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none font-medium"
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Instituição / Banco</label>
+                    <select 
+                      value={newCardBank}
+                      onChange={(e) => setNewCardBank(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                    >
+                      <option value="Nubank">Nubank</option>
+                      <option value="Itaú">Itaú</option>
+                      <option value="Banco Inter">Banco Inter</option>
+                      <option value="C6 Bank">C6 Bank</option>
+                      <option value="Bradesco">Bradesco</option>
+                      <option value="Santander">Santander</option>
+                      <option value="XP Investimentos">XP Investimentos</option>
+                      <option value="BTG Pactual">BTG Pactual</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Bandeira / Categoria</label>
+                    <select 
+                      value={newCardBrand}
+                      onChange={(e) => setNewCardBrand(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                    >
+                      <option value="Mastercard Black">Mastercard Black</option>
+                      <option value="Visa Infinite">Visa Infinite</option>
+                      <option value="Elo Nanquim">Elo Nanquim</option>
+                      <option value="Visa Platinum">Visa Platinum</option>
+                      <option value="Mastercard Gold">Mastercard Gold</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Dia Vencimento</label>
-                  <input 
-                    type="number"
-                    min="1"
-                    max="31"
-                    value={newCardDueDay}
-                    onChange={(e) => setNewCardDueDay(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none font-medium"
-                  />
-                </div>
-              </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Limite Total (R$)</label>
+                    <input 
+                      type="number"
+                      value={newCardLimit}
+                      onChange={(e) => setNewCardLimit(e.target.value)}
+                      placeholder="15000"
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] font-bold focus:outline-none focus:border-[#1A44C8]"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Últimos 4 Dígitos</label>
-                <input 
-                  type="text"
-                  maxLength={4}
-                  value={newCardLastDigits}
-                  onChange={(e) => setNewCardLastDigits(e.target.value)}
-                  placeholder="Ex: 4092"
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-mono font-bold"
-                />
-              </div>
-            </div>
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Dia Fechamento</label>
+                    <input 
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={newCardClosingDay}
+                      onChange={(e) => setNewCardClosingDay(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none font-medium"
+                    />
+                  </div>
 
-            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
-              <button 
-                type="button"
-                onClick={() => setIsNewCardModalOpen(false)}
-                className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleSaveNewCard}
-                disabled={!newCardName.trim()}
-                className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95 disabled:opacity-50"
-              >
-                Salvar Cartão
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isNewExpenseModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
-              <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
-                {editingExpense ? (
-                  <>
-                    <Pencil size={13} className="text-[#1A44C8]" />
-                    Editar Lançamento no Cartão
-                  </>
-                ) : (
-                  <>
-                    <Plus size={14} className="text-[#1A44C8]" />
-                    Novo Lançamento no Cartão
-                  </>
-                )}
-              </h2>
-            </div>
-
-            <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-              <div>
-                <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Cartão de Crédito</label>
-                <select 
-                  value={formCardId}
-                  onChange={(e) => setFormCardId(e.target.value)}
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                >
-                  {cards.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} (•••• {c.lastDigits})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Estabelecimento / Descrição</label>
-                <input 
-                  type="text"
-                  value={formDesc}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFormDesc(val);
-                    const detected = autoDetectCardCategory(val);
-                    if (detected) setFormCategory(detected);
-                  }}
-                  placeholder="Ex: Supermercado, iFood, Uber, Zara..."
-                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Valor Total (R$)</label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    value={formAmount}
-                    onChange={(e) => setFormAmount(e.target.value)}
-                    placeholder="0,00"
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-bold focus:border-[#1A44C8] mb-1"
-                  />
-                  <div className="flex flex-wrap gap-1">
-                    {[30, 50, 100, 250, 500].map(val => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => setFormAmount(val.toString())}
-                        className="px-1.5 py-0.5 rounded-lg bg-[#F1F3F7] hover:bg-[#E5E7EB] text-[9px] text-[#64748B] font-semibold border border-[#E5E7EB] transition-colors"
-                      >
-                        +{val}
-                      </button>
-                    ))}
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Dia Vencimento</label>
+                    <input 
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={newCardDueDay}
+                      onChange={(e) => setNewCardDueDay(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none font-medium"
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data da Compra</label>
+                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Últimos 4 Dígitos</label>
                   <input 
-                    type="date"
-                    value={formDate}
-                    onChange={(e) => setFormDate(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                    type="text"
+                    maxLength={4}
+                    value={newCardLastDigits}
+                    onChange={(e) => setNewCardLastDigits(e.target.value)}
+                    placeholder="Ex: 4092"
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-mono font-bold"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
+                <button 
+                  type="button"
+                  onClick={() => setIsNewCardModalOpen(false)}
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleSaveNewCard}
+                  disabled={!newCardName.trim()}
+                  className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95 disabled:opacity-50"
+                >
+                  Salvar Cartão
+                </button>
+              </div>
+            </div>
+          </div>
+        </PortalModal>
+      )}
+
+      {isNewExpenseModalOpen && (
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => { setIsNewExpenseModalOpen(false); setEditingExpense(null); }}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
+              
+              <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
+                <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
+                  {editingExpense ? (
+                    <>
+                      <Pencil size={13} className="text-[#1A44C8]" />
+                      Editar Lançamento no Cartão
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={14} className="text-[#1A44C8]" />
+                      Novo Lançamento no Cartão
+                    </>
+                  )}
+                </h2>
+              </div>
+
+              <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
                 <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Parcelamento</label>
+                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Cartão de Crédito</label>
                   <select 
-                    value={formInstallments}
-                    onChange={(e) => setFormInstallments(e.target.value)}
+                    value={formCardId}
+                    onChange={(e) => setFormCardId(e.target.value)}
                     className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
                   >
-                    <option value={1}>À Vista (1x)</option>
-                    {[2,3,4,5,6,7,8,9,10,11,12,18,24].map(n => (
-                      <option key={n} value={n}>{n}x parcelado</option>
+                    {cards.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} (•••• {c.lastDigits})</option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Descrição da Compra</label>
+                  <input 
+                    type="text"
+                    value={formDesc}
+                    onChange={(e) => setFormDesc(e.target.value)}
+                    placeholder="Ex: iFood Almoço, Uber Viagem, Amazon..."
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Valor (R$)</label>
+                    <input 
+                      type="number"
+                      step="0.01"
+                      value={formAmount}
+                      onChange={(e) => setFormAmount(e.target.value)}
+                      placeholder="0,00"
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] font-bold focus:outline-none focus:border-[#1A44C8]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Data da Compra</label>
+                    <input 
+                      type="date"
+                      value={formDate}
+                      onChange={(e) => setFormDate(e.target.value)}
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none font-medium cursor-pointer"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -1816,366 +1802,438 @@ export default function MinhasFaturasPage() {
                     onChange={(e) => setFormCategory(e.target.value)}
                     className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
                   >
-                    {categoriesList.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
+                    {categoriesList.map(c => (
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Responsável / Pessoa</label>
-                <div className="flex items-center gap-1.5">
-                  <select 
-                    value={formThirdPartyName}
-                    onChange={(e) => setFormThirdPartyName(e.target.value)}
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                  >
-                    <option value="Titular (Você)">Titular (Você)</option>
-                    {registeredThirdParties.map(tp => (
-                      <option key={tp} value={tp}>{tp}</option>
-                    ))}
-                  </select>
+                {/* Opção de Compra Parcelada */}
+                <div className="pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      checked={formIsInstallment}
+                      onChange={(e) => setFormIsInstallment(e.target.checked)}
+                      className="rounded border-[#CBD5E1] text-[#1A44C8] focus:ring-0"
+                    />
+                    <span className="text-xs font-bold text-[#181B22]">Compra Parcelada</span>
+                  </label>
+
+                  {formIsInstallment && (
+                    <div className="mt-2 pl-6 animate-fade-in-up">
+                      <label className="block text-[10px] text-[#64748B] mb-1 font-bold">Quantidade de Parcelas</label>
+                      <input 
+                        type="number"
+                        min="2"
+                        max="72"
+                        value={formInstallments}
+                        onChange={(e) => setFormInstallments(e.target.value)}
+                        className="w-24 bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1 px-2.5 text-xs text-[#181B22] font-bold focus:outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Opção de Lançamento de Terceiro */}
+                <div className="pt-1 border-t border-[#F1F3F7]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      checked={formIsThirdParty}
+                      onChange={(e) => setFormIsThirdParty(e.target.checked)}
+                      className="rounded border-[#CBD5E1] text-[#1A44C8] focus:ring-0"
+                    />
+                    <span className="text-xs font-bold text-[#181B22]">Compra de Terceiro / Amigo</span>
+                  </label>
+
+                  {formIsThirdParty && (
+                    <div className="mt-2 pl-6 space-y-2 animate-fade-in-up">
+                      <div>
+                        <label className="block text-[10px] text-[#64748B] mb-1 font-bold">Nome da Pessoa Responsável</label>
+                        {registeredThirdParties.length > 0 ? (
+                          <select 
+                            value={formThirdPartyName}
+                            onChange={(e) => setFormThirdPartyName(e.target.value)}
+                            className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1 px-2.5 text-xs text-[#181B22] font-medium"
+                          >
+                            <option value="">Selecione ou digite um nome...</option>
+                            {registeredThirdParties.map(p => (
+                              <option key={p} value={p}>{p}</option>
+                            ))}
+                          </select>
+                        ) : null}
+                        <input 
+                          type="text"
+                          value={formThirdPartyName}
+                          onChange={(e) => setFormThirdPartyName(e.target.value)}
+                          placeholder="Ex: Lucas Ferreira, Rodrigo..."
+                          className="w-full mt-1 bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1 px-2.5 text-xs text-[#181B22] font-medium placeholder:text-[#94A3B8]"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsNewExpenseModalOpen(false);
-                  setEditingExpense(null);
-                }}
-                className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleSaveExpense}
-                disabled={!formDesc.trim() || (parseFloat(formAmount.replace(',', '.')) || 0) <= 0}
-                className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95 disabled:opacity-50"
-              >
-                {editingExpense ? 'Salvar Alterações' : 'Adicionar Compra'}
-              </button>
+              <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
+                <button 
+                  type="button"
+                  onClick={() => setIsNewExpenseModalOpen(false)}
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleSaveExpense}
+                  disabled={!formDesc.trim() || (parseFloat(formAmount.replace(',', '.')) || 0) <= 0}
+                  className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95 disabled:opacity-50"
+                >
+                  {editingExpense ? 'Salvar Alterações' : 'Adicionar Compra'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {isPaymentModalOpen && paymentTargetCard && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
-              <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
-                <CheckCheck size={14} className="text-[#1A44C8]" />
-                Registrar Pagamento de Fatura
-              </h2>
-            </div>
-
-            <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-              <div className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] text-[#64748B] font-medium">{paymentTargetCard.name}</p>
-                  <p className="text-sm font-extrabold text-[#181B22]">
-                    R$ {formatCurrency(getCardStatusData(paymentTargetCard).cardTotalDue)}
-                  </p>
-                </div>
-                <BankLogo name={paymentTargetCard.bank || paymentTargetCard.name} size="sm" />
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => { setIsPaymentModalOpen(false); setPaymentTargetCard(null); }}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
+              <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
+                <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
+                  <CheckCheck size={14} className="text-[#1A44C8]" />
+                  Registrar Pagamento de Fatura
+                </h2>
               </div>
 
-              <div>
-                <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Modalidade de Pagamento</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    type="button" 
-                    onClick={() => setPaymentMode('TOTAL')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
-                      paymentMode === 'TOTAL'
-                        ? 'border-[#1A44C8]/30 bg-[#1A44C8]/10 text-[#1A44C8]'
-                        : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#CBD5E1]'
-                    }`}
-                  >
-                    Valor Total
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setPaymentMode('PARTIAL')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
-                      paymentMode === 'PARTIAL'
-                        ? 'border-[#1A44C8]/30 bg-[#1A44C8]/10 text-[#1A44C8]'
-                        : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#CBD5E1]'
-                    }`}
-                  >
-                    Valor Parcial
-                  </button>
-                </div>
-              </div>
-
-              {paymentMode === 'PARTIAL' && (
-                <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Valor Pago (R$)</label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    value={customPaymentAmount}
-                    onChange={(e) => setCustomPaymentAmount(e.target.value)}
-                    placeholder="0,00"
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-bold"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
-              <button 
-                type="button" 
-                onClick={() => setIsPaymentModalOpen(false)}
-                className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button" 
-                onClick={handleConfirmPayment}
-                className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95"
-              >
-                Confirmar Quitação
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
-            <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
-              <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
-                <Upload size={14} className="text-[#1A44C8]" />
-                Importar Fatura de Cartão
-              </h2>
-            </div>
-
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              accept=".pdf,.ofx,.csv,.xlsx,.xls,.txt" 
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  handleProcessFile(e.target.files[0]);
-                }
-              }} 
-              className="hidden" 
-            />
-
-            <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-              {importStep === 1 ? (
-                <div>
-                  <div className="mb-3">
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Selecione o Cartão Destino</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {cards.map(c => (
-                        <button 
-                          key={c.id} 
-                          type="button" 
-                          onClick={() => setImportCardId(c.id)}
-                          className={`p-2.5 rounded-xl border flex items-center gap-2 text-left transition-all ${
-                            importCardId === c.id 
-                              ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' 
-                              : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#CBD5E1]'
-                          }`}
-                        >
-                          <BankLogo name={c.bank || c.name} size="xs" />
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-bold text-[#181B22] truncate">{c.name.split(' ')[0]}</p>
-                            <p className="text-[8.5px] text-[#64748B] truncate">•••• {c.lastDigits}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+              <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                <div className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-[#64748B] font-medium">{paymentTargetCard.name}</p>
+                    <p className="text-sm font-extrabold text-[#181B22]">
+                      R$ {formatCurrency(getCardStatusData(paymentTargetCard).cardTotalDue)}
+                    </p>
                   </div>
+                  <BankLogo name={paymentTargetCard.bank || paymentTargetCard.name} size="sm" />
+                </div>
 
-                  <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                        handleProcessFile(e.dataTransfer.files[0]);
-                      }
-                    }}
-                    className="border-2 border-dashed border-[#CBD5E1] hover:border-[#1A44C8] rounded-2xl p-6 text-center cursor-pointer transition-all bg-[#F8FAFC] hover:bg-[#1A44C8]/[0.03] group"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center mx-auto mb-2 border border-[#1A44C8]/20 group-hover:scale-105 transition-transform">
-                      <FileSpreadsheet size={22} />
-                    </div>
-                    <h3 className="text-xs font-bold text-[#181B22] mb-0.5">Clique ou arraste o arquivo da fatura</h3>
-                    <p className="text-[10px] text-[#64748B] mb-3">Suporta arquivos PDF, OFX, CSV, Excel ou TXT</p>
+                <div>
+                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Modalidade de Pagamento</label>
+                  <div className="grid grid-cols-2 gap-2">
                     <button 
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        fileInputRef.current?.click();
-                      }}
-                      className="px-4 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-bold transition-all shadow-md active:scale-95"
+                      type="button" 
+                      onClick={() => setPaymentMode('TOTAL')}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
+                        paymentMode === 'TOTAL'
+                          ? 'border-[#1A44C8]/30 bg-[#1A44C8]/10 text-[#1A44C8]'
+                          : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#CBD5E1]'
+                      }`}
                     >
-                      Selecionar Arquivo do Computador
+                      Valor Total
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setPaymentMode('PARTIAL')}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
+                        paymentMode === 'PARTIAL'
+                          ? 'border-[#1A44C8]/30 bg-[#1A44C8]/10 text-[#1A44C8]'
+                          : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#CBD5E1]'
+                      }`}
+                    >
+                      Valor Parcial
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl">
-                    <div>
-                      <h4 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
-                        Lançamentos Detectados ({extractedImports.length})
-                        {uploadFileName && <span className="text-[9.5px] font-normal text-[#64748B]">({uploadFileName})</span>}
-                      </h4>
-                      <p className="text-[9.5px] text-[#64748B]">Defina a categoria e o responsável (pessoa) para cada compra</p>
-                    </div>
-                    
-                    {/* Atribuir responsável em lote */}
-                    <div className="flex items-center gap-1.5 text-[10px]">
-                      <span className="text-[#64748B] font-semibold whitespace-nowrap">Atribuir a todos:</span>
-                      <select 
-                        onChange={(e) => {
-                          const targetResp = e.target.value;
-                          if (targetResp) {
-                            setExtractedImports(prev => prev.map(p => ({ ...p, thirdPartyName: targetResp })));
-                          }
-                        }}
-                        className="bg-white border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10px] text-[#181B22] font-bold focus:outline-none cursor-pointer"
-                      >
-                        <option value="">-- Escolher --</option>
-                        <option value="Titular (Você)">Titular (Você)</option>
-                        {registeredThirdParties.map(tp => (
-                          <option key={tp} value={tp}>{tp}</option>
-                        ))}
-                      </select>
-                    </div>
+
+                {paymentMode === 'PARTIAL' && (
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Valor Pago (R$)</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={customPaymentAmount}
+                      onChange={(e) => setCustomPaymentAmount(e.target.value)}
+                      placeholder="0,00"
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-bold"
+                    />
                   </div>
+                )}
+              </div>
 
-                  <div className="space-y-2 max-h-[50vh] overflow-y-auto custom-scrollbar">
-                    {extractedImports.map((item) => (
-                      <div key={item.id} className="p-3 bg-[#FFFFFF] rounded-xl border border-[#E5E7EB] shadow-xs flex flex-col gap-2 hover:border-[#1A44C8]/30 transition-all">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <input 
-                              type="checkbox" 
-                              checked={item.checked}
-                              onChange={() => setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, checked: !p.checked } : p))}
-                              className="rounded accent-[#1A44C8] w-4 h-4 cursor-pointer shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <p className="font-bold text-[#181B22] text-xs truncate">{item.description}</p>
-                              <p className="text-[9.5px] text-[#64748B]">{item.date.split('-').reverse().join('/')} {item.installmentText && `• Parcela ${item.installmentText}`}</p>
-                            </div>
-                          </div>
-
-                          <span className="font-extrabold text-[#181B22] text-xs shrink-0">
-                            R$ {formatCurrency(item.amount)}
-                          </span>
-                        </div>
-
-                        {/* Linha de Filtros: Categoria + Responsável (Pessoa) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-[#F1F3F7]">
-                          <div>
-                            <label className="block text-[9px] text-[#94A3B8] font-bold uppercase tracking-wider mb-0.5">Categoria</label>
-                            <select 
-                              value={item.category}
-                              onChange={(e) => {
-                                const newCat = e.target.value;
-                                setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, category: newCat } : p));
-                              }}
-                              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10.5px] text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                            >
-                              {categoriesList.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-[9px] text-[#94A3B8] font-bold uppercase tracking-wider mb-0.5">Responsável / Pessoa</label>
-                            <select 
-                              value={item.thirdPartyName || 'Titular (Você)'}
-                              onChange={(e) => {
-                                const newResp = e.target.value;
-                                setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, thirdPartyName: newResp } : p));
-                              }}
-                              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10.5px] text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                            >
-                              <option value="Titular (Você)">Titular (Você)</option>
-                              {registeredThirdParties.map(tp => (
-                                <option key={tp} value={tp}>{tp}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
-              <button 
-                type="button" 
-                onClick={() => {
-                  setIsImportModalOpen(false);
-                  setImportStep(1);
-                }}
-                className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
-              >
-                Cancelar
-              </button>
-              {importStep === 2 && (
+              <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
                 <button 
                   type="button" 
-                  onClick={handleConfirmImport}
+                  onClick={() => setIsPaymentModalOpen(false)}
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleConfirmPayment}
                   className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95"
                 >
-                  Salvar na Fatura ({extractedImports.filter(i => i.checked).length})
+                  Confirmar Quitação
                 </button>
-              )}
+              </div>
             </div>
           </div>
-        </div>
+        </PortalModal>
+      )}
+
+      {isImportModalOpen && (
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsImportModalOpen(false)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[88vh] overflow-hidden my-auto animate-scale-in-center shrink-0"
+            >
+              <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
+                <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
+                  <Upload size={14} className="text-[#1A44C8]" />
+                  Importar Fatura de Cartão
+                </h2>
+              </div>
+
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                accept=".pdf,.ofx,.csv,.xlsx,.xls,.txt" 
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleProcessFile(e.target.files[0]);
+                  }
+                }} 
+                className="hidden" 
+              />
+
+              <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                {importStep === 1 ? (
+                  <div>
+                    <div className="mb-3">
+                      <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Selecione o Cartão Destino</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {cards.map(c => (
+                          <button 
+                            key={c.id} 
+                            type="button" 
+                            onClick={() => setImportCardId(c.id)}
+                            className={`p-2.5 rounded-xl border flex items-center gap-2 text-left transition-all ${
+                              importCardId === c.id 
+                                ? 'border-[#1A44C8] bg-[#1A44C8]/10 text-[#1A44C8]' 
+                                : 'border-[#E5E7EB] bg-[#F8FAFC] text-[#64748B] hover:border-[#CBD5E1]'
+                            }`}
+                          >
+                            <BankLogo name={c.bank || c.name} size="xs" />
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-bold text-[#181B22] truncate">{c.name.split(' ')[0]}</p>
+                              <p className="text-[8.5px] text-[#64748B] truncate">•••• {c.lastDigits}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          handleProcessFile(e.dataTransfer.files[0]);
+                        }
+                      }}
+                      className="border-2 border-dashed border-[#CBD5E1] hover:border-[#1A44C8] rounded-2xl p-6 text-center cursor-pointer transition-all bg-[#F8FAFC] hover:bg-[#1A44C8]/[0.03] group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center mx-auto mb-2 border border-[#1A44C8]/20 group-hover:scale-105 transition-transform">
+                        <FileSpreadsheet size={22} />
+                      </div>
+                      <h3 className="text-xs font-bold text-[#181B22] mb-0.5">Clique ou arraste o arquivo da fatura</h3>
+                      <p className="text-[10px] text-[#64748B] mb-3">Suporta arquivos PDF, OFX, CSV, Excel ou TXT</p>
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          fileInputRef.current?.click();
+                        }}
+                        className="px-4 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white text-xs font-bold transition-all shadow-md active:scale-95"
+                      >
+                        Selecionar Arquivo do Computador
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl">
+                      <div>
+                        <h4 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
+                          Lançamentos Detectados ({extractedImports.length})
+                          {uploadFileName && <span className="text-[9.5px] font-normal text-[#64748B]">({uploadFileName})</span>}
+                        </h4>
+                        <p className="text-[9.5px] text-[#64748B]">Defina a categoria e o responsável (pessoa) para cada compra</p>
+                      </div>
+                      
+                      {/* Atribuir responsável em lote */}
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <span className="text-[#64748B] font-semibold whitespace-nowrap">Atribuir a todos:</span>
+                        <select 
+                          onChange={(e) => {
+                            const targetResp = e.target.value;
+                            if (targetResp) {
+                              setExtractedImports(prev => prev.map(p => ({ ...p, thirdPartyName: targetResp })));
+                            }
+                          }}
+                          className="bg-white border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10px] text-[#181B22] font-bold focus:outline-none cursor-pointer"
+                        >
+                          <option value="">-- Escolher --</option>
+                          <option value="Titular (Você)">Titular (Você)</option>
+                          {registeredThirdParties.map(tp => (
+                            <option key={tp} value={tp}>{tp}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 max-h-[50vh] overflow-y-auto custom-scrollbar">
+                      {extractedImports.map((item) => (
+                        <div key={item.id} className="p-3 bg-[#FFFFFF] rounded-xl border border-[#E5E7EB] shadow-xs flex flex-col gap-2 hover:border-[#1A44C8]/30 transition-all">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <input 
+                                type="checkbox" 
+                                checked={item.checked}
+                                onChange={() => setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, checked: !p.checked } : p))}
+                                className="rounded accent-[#1A44C8] w-4 h-4 cursor-pointer shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="font-bold text-[#181B22] text-xs truncate">{item.description}</p>
+                                <p className="text-[9.5px] text-[#64748B]">{item.date.split('-').reverse().join('/')} {item.installmentText && `• Parcela ${item.installmentText}`}</p>
+                              </div>
+                            </div>
+
+                            <span className="font-extrabold text-[#181B22] text-xs shrink-0">
+                              R$ {formatCurrency(item.amount)}
+                            </span>
+                          </div>
+
+                          {/* Linha de Filtros: Categoria + Responsável (Pessoa) */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-[#F1F3F7]">
+                            <div>
+                              <label className="block text-[9px] text-[#94A3B8] font-bold uppercase tracking-wider mb-0.5">Categoria</label>
+                              <select 
+                                value={item.category}
+                                onChange={(e) => {
+                                  const newCat = e.target.value;
+                                  setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, category: newCat } : p));
+                                }}
+                                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10.5px] text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                              >
+                                {categoriesList.map(cat => (
+                                  <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[9px] text-[#94A3B8] font-bold uppercase tracking-wider mb-0.5">Responsável / Pessoa</label>
+                              <select 
+                                value={item.thirdPartyName || 'Titular (Você)'}
+                                onChange={(e) => {
+                                  const newResp = e.target.value;
+                                  setExtractedImports(prev => prev.map(p => p.id === item.id ? { ...p, thirdPartyName: newResp } : p));
+                                }}
+                                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10.5px] text-[#181B22] focus:outline-none cursor-pointer font-medium"
+                              >
+                                <option value="Titular (Você)">Titular (Você)</option>
+                                {registeredThirdParties.map(tp => (
+                                  <option key={tp} value={tp}>{tp}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-4 py-2.5 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsImportModalOpen(false);
+                    setImportStep(1);
+                  }}
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#EAEAEA] transition-all"
+                >
+                  Cancelar
+                </button>
+                {importStep === 2 && (
+                  <button 
+                    type="button" 
+                    onClick={handleConfirmImport}
+                    className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95"
+                  >
+                    Salvar na Fatura ({extractedImports.filter(i => i.checked).length})
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </PortalModal>
       )}
 
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
-          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 text-center my-auto animate-scale-in-center flex flex-col max-h-[88dvh] sm:max-h-[90vh] shrink-0">
-            <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
-              <Trash2 size={18} />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold text-[#181B22]">Remover Lançamento?</h3>
-              <p className="text-xs text-[#64748B]">
-                Tem certeza que deseja excluir <strong>{deleteCandidate.description}</strong> (R$ {formatCurrency(deleteCandidate.amount)})?
-              </p>
-            </div>
+        <PortalModal>
+          <div 
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setDeleteCandidate(null)}
+          >
+            <div 
+              onClick={e => e.stopPropagation()} 
+              className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 text-center my-auto animate-scale-in-center flex flex-col max-h-[85dvh] sm:max-h-[88vh] shrink-0"
+            >
+              <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
+                <Trash2 size={18} />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-[#181B22]">Remover Lançamento?</h3>
+                <p className="text-xs text-[#64748B]">
+                  Tem certeza que deseja excluir <strong>{deleteCandidate.description}</strong> (R$ {formatCurrency(deleteCandidate.amount)})?
+                </p>
+              </div>
 
-            <div className="flex gap-2">
-              <button 
-                type="button" 
-                onClick={() => setDeleteCandidate(null)}
-                className="flex-1 py-2 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7] transition-all"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button" 
-                onClick={() => handleDeleteExpense(deleteCandidate.id)}
-                className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-all shadow-md active:scale-95"
-              >
-                Excluir
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setDeleteCandidate(null)}
+                  className="flex-1 py-2 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7] transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => handleDeleteExpense(deleteCandidate.id)}
+                  className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-all shadow-md active:scale-95"
+                >
+                  Excluir
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </PortalModal>
       )}
 
     </>

@@ -50,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        <div id="kaxxa-portal-root" className="relative z-[999999]" />
       </body>
     </html>
   );
