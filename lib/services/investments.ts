@@ -76,23 +76,25 @@ export const investmentsService = {
         if (user.email) {
           const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
           if (legacyId !== user.id) {
-            const { data: legacyInvestments } = await client
-              .from('investments')
-              .select('*')
-              .eq('user_id', legacyId);
-
-            if (legacyInvestments && legacyInvestments.length > 0) {
-              await client
+            try {
+              const { data: legacyInvestments } = await client
                 .from('investments')
-                .update({ user_id: user.id })
+                .select('*')
                 .eq('user_id', legacyId);
 
-              legacyInvestments.forEach(inv => {
-                if (!rawList.some(r => r.id === inv.id)) {
-                  rawList.push({ ...inv, user_id: user.id });
-                }
-              });
-            }
+              if (legacyInvestments && legacyInvestments.length > 0) {
+                await client
+                  .from('investments')
+                  .update({ user_id: user.id })
+                  .eq('user_id', legacyId);
+
+                legacyInvestments.forEach(inv => {
+                  if (!rawList.some(r => r.id === inv.id)) {
+                    rawList.push({ ...inv, user_id: user.id });
+                  }
+                });
+              }
+            } catch (e) {}
           }
         }
 
@@ -118,10 +120,15 @@ export const investmentsService = {
         if (realPendingLocal.length > 0) {
           for (const item of realPendingLocal) {
             try {
-              const { id, user_id, ...cleanItem } = item;
+              const { user_id, ...cleanItem } = item;
+              const payloadToSync = {
+                ...cleanItem,
+                id: item.id || ('inv-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+                user_id: user.id
+              };
               const { data: inserted } = await client
                 .from('investments')
-                .insert({ ...cleanItem, user_id: user.id })
+                .insert(payloadToSync)
                 .select()
                 .single();
               if (inserted) {
@@ -168,6 +175,7 @@ export const investmentsService = {
     };
 
     const cleanPayload = {
+      id: newItem.id,
       macro_type: inv.macro_type,
       category: inv.category,
       name: inv.name,
@@ -183,7 +191,7 @@ export const investmentsService = {
       profitability_pct: Number(inv.profitability_pct || 0),
       total_dividends_received: Number(inv.total_dividends_received || 0),
       user_id: user.id,
-      created_at: inv.created_at || new Date().toISOString(),
+      created_at: newItem.created_at,
     };
 
     let insertedData = null;

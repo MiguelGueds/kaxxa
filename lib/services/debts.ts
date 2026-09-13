@@ -123,10 +123,15 @@ export const debtsService = {
         if (pendingLocal.length > 0) {
           for (const item of pendingLocal) {
             try {
-              const { id, user_id, amortizations, ...cleanItem } = item;
+              const { user_id, amortizations, ...cleanItem } = item;
+              const payloadToSync = {
+                ...cleanItem,
+                id: item.id || ('dbt-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+                user_id: user.id
+              };
               const { data: inserted } = await client
                 .from('debts')
-                .insert({ ...cleanItem, user_id: user.id })
+                .insert(payloadToSync)
                 .select('*, amortizations(*)')
                 .single();
 
@@ -165,6 +170,7 @@ export const debtsService = {
 
     const payload = {
       ...debtData,
+      id: newItem.id,
       user_id: user.id,
     };
 

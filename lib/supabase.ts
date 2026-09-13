@@ -32,33 +32,8 @@ export function getCachedUser(): { id: string; email?: string } | null {
     const raw = localStorage.getItem('kaxxa_user_cache');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.email && (!parsed.id || parsed.id.startsWith('user_17'))) {
-        parsed.id = 'usr_' + parsed.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        localStorage.setItem('kaxxa_user_cache', JSON.stringify(parsed));
-      }
       if (parsed && parsed.id) return parsed;
     }
-
-    // Fallback via e-mail salvo na sessão do navegador
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && (k.includes('email') || k.includes('auth') || k.includes('user'))) {
-        const val = localStorage.getItem(k);
-        if (val && val.includes('@')) {
-          try {
-            const match = val.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-            if (match && match[0]) {
-              const email = match[0].toLowerCase();
-              const fallbackId = 'usr_' + email.replace(/[^a-z0-9]/g, '_');
-              const fallbackUser = { id: fallbackId, email };
-              localStorage.setItem('kaxxa_user_cache', JSON.stringify(fallbackUser));
-              return fallbackUser;
-            }
-          } catch {}
-        }
-      }
-    }
-
     return null;
   } catch {
     return null;

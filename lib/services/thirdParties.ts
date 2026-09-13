@@ -108,10 +108,15 @@ export const thirdPartiesService = {
         if (pendingLocal.length > 0) {
           for (const item of pendingLocal) {
             try {
-              const { id, user_id, ...cleanItem } = item;
+              const { user_id, ...cleanItem } = item;
+              const payloadToSync = {
+                ...cleanItem,
+                id: item.id || ('tp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+                user_id: user.id
+              };
               const { data: inserted } = await client
                 .from('third_party_debts')
-                .insert({ ...cleanItem, user_id: user.id })
+                .insert(payloadToSync)
                 .select()
                 .single();
               if (inserted) {
@@ -155,6 +160,7 @@ export const thirdPartiesService = {
 
     const payload = {
       ...debt,
+      id: newItem.id,
       user_id: user.id,
     };
 
