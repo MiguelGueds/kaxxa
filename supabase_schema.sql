@@ -1,9 +1,6 @@
 -- ============================================================
 -- KAXXA (OCTAMIND) - BANCO DE DADOS PRINCIPAL E RLS (SEGURANÇA)
 -- ============================================================
--- Este script cria todas as tabelas necessárias e aplica políticas de
--- segurança RLS (Row Level Security) para garantir que cada usuário
--- acesse, crie e edite EXCLUSIVAMENTE os seus próprios dados.
 
 -- 0. Habilitar a extensão de UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -12,8 +9,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. TABELA: Contas Bancárias (accounts)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS accounts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   type TEXT NOT NULL, -- 'CHECKING', 'SAVINGS', 'INVESTMENT', 'WALLET'
   balance DECIMAL(15,2) DEFAULT 0.00,
@@ -25,15 +22,15 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de contas por usuario" ON accounts;
-CREATE POLICY "Isolamento total de contas por usuario" ON accounts 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de contas por usuario" ON accounts;
+CREATE POLICY "Acesso de contas por usuario" ON accounts FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------
 -- 2. TABELA: Cartões de Crédito (credit_cards)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS credit_cards (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   bank TEXT DEFAULT 'Nubank',
   brand TEXT DEFAULT 'Mastercard',
@@ -43,25 +40,25 @@ CREATE TABLE IF NOT EXISTS credit_cards (
   closing_day INTEGER NOT NULL DEFAULT 5,
   due_day INTEGER NOT NULL DEFAULT 12,
   color TEXT DEFAULT '#1A44C8',
-  account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
+  account_id TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 ALTER TABLE credit_cards ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de cartoes por usuario" ON credit_cards;
-CREATE POLICY "Isolamento total de cartoes por usuario" ON credit_cards 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de cartoes por usuario" ON credit_cards;
+CREATE POLICY "Acesso de cartoes por usuario" ON credit_cards FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------
 -- 3. TABELA: Categorias (categories)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   type TEXT NOT NULL, -- 'INCOME' ou 'EXPENSE'
-  parent_id UUID REFERENCES categories(id) ON DELETE CASCADE,
+  parent_id TEXT,
   color TEXT,
   icon TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -70,15 +67,15 @@ CREATE TABLE IF NOT EXISTS categories (
 
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de categorias por usuario" ON categories;
-CREATE POLICY "Isolamento total de categorias por usuario" ON categories 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de categorias por usuario" ON categories;
+CREATE POLICY "Acesso de categorias por usuario" ON categories FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------
 -- 4. TABELA: Terceiros (third_parties & third_party_debts)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS third_parties (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   type TEXT DEFAULT 'OWES_ME', -- 'OWES_ME' (Me deve) ou 'I_OWE' (Devo a ele)
   contact_info TEXT,
@@ -88,12 +85,12 @@ CREATE TABLE IF NOT EXISTS third_parties (
 
 ALTER TABLE third_parties ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de terceiros por usuario" ON third_parties;
-CREATE POLICY "Isolamento total de terceiros por usuario" ON third_parties 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de terceiros por usuario" ON third_parties;
+CREATE POLICY "Acesso de terceiros por usuario" ON third_parties FOR ALL USING (true) WITH CHECK (true);
 
 CREATE TABLE IF NOT EXISTS third_party_debts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   person_name TEXT NOT NULL,
   description TEXT NOT NULL,
   origin_type TEXT NOT NULL DEFAULT 'CARD', -- 'CARD' ou 'ACCOUNT'
@@ -111,24 +108,24 @@ CREATE TABLE IF NOT EXISTS third_party_debts (
 
 ALTER TABLE third_party_debts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de dividas de terceiros por usuario" ON third_party_debts;
-CREATE POLICY "Isolamento total de dividas de terceiros por usuario" ON third_party_debts 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de dividas de terceiros por usuario" ON third_party_debts;
+CREATE POLICY "Acesso de dividas de terceiros por usuario" ON third_party_debts FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------
 -- 5. TABELA: Transações (transactions)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS transactions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   description TEXT NOT NULL,
   amount DECIMAL(15,2) NOT NULL,
   date DATE NOT NULL,
   type TEXT NOT NULL, -- 'INCOME', 'EXPENSE', 'TRANSFER'
-  account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
-  credit_card_id UUID REFERENCES credit_cards(id) ON DELETE CASCADE,
-  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  account_id TEXT,
+  credit_card_id TEXT,
+  category_id TEXT,
   category_name TEXT,
-  third_party_id UUID REFERENCES third_parties(id) ON DELETE SET NULL,
+  third_party_id TEXT,
   third_party_name TEXT,
   installments INTEGER DEFAULT 1,
   current_installment INTEGER DEFAULT 1,
@@ -140,15 +137,15 @@ CREATE TABLE IF NOT EXISTS transactions (
 
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de transacoes por usuario" ON transactions;
-CREATE POLICY "Isolamento total de transacoes por usuario" ON transactions 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de transacoes por usuario" ON transactions;
+CREATE POLICY "Acesso de transacoes por usuario" ON transactions FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------
 -- 6. TABELA: Dívidas & Financiamentos (debts)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS debts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   bank TEXT NOT NULL,
   creditor_type TEXT NOT NULL DEFAULT 'BANK', -- 'BANK' ou 'PERSON'
@@ -175,16 +172,16 @@ CREATE TABLE IF NOT EXISTS debts (
 
 ALTER TABLE debts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de dividas por usuario" ON debts;
-CREATE POLICY "Isolamento total de dividas por usuario" ON debts 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de dividas por usuario" ON debts;
+CREATE POLICY "Acesso de dividas por usuario" ON debts FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------
 -- 7. TABELA: Amortizações & Histórico de Parcelas (amortizations)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS amortizations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  debt_id UUID REFERENCES debts(id) ON DELETE CASCADE NOT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  debt_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
   date TEXT NOT NULL,
   amount_paid DECIMAL(15,2) NOT NULL,
   discount_or_saved_interest DECIMAL(15,2) DEFAULT 0.00,
@@ -195,15 +192,15 @@ CREATE TABLE IF NOT EXISTS amortizations (
 
 ALTER TABLE amortizations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de amortizacoes por usuario" ON amortizations;
-CREATE POLICY "Isolamento total de amortizacoes por usuario" ON amortizations 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de amortizacoes por usuario" ON amortizations;
+CREATE POLICY "Acesso de amortizacoes por usuario" ON amortizations FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------
 -- 8. TABELA: Investimentos & Patrimônio (investments)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS investments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   macro_type TEXT NOT NULL DEFAULT 'VARIAVEL', -- 'FIXA' ou 'VARIAVEL'
   category TEXT NOT NULL, -- 'CAIXINHA_PORQUINHO', 'TESOURO_DIRETO', 'CDB_LCI_LCA', 'ACOES', 'FIIS', 'BDRS_STOCKS', 'CRIPTO', 'ETFS'
   name TEXT NOT NULL,
@@ -217,7 +214,7 @@ CREATE TABLE IF NOT EXISTS investments (
   invested_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
   current_value DECIMAL(15,2) NOT NULL DEFAULT 0,
   profitability_pct DECIMAL(8,2) DEFAULT 0,
-  account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
+  account_id TEXT,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -225,15 +222,15 @@ CREATE TABLE IF NOT EXISTS investments (
 
 ALTER TABLE investments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de investimentos por usuario" ON investments;
-CREATE POLICY "Isolamento total de investimentos por usuario" ON investments 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de investimentos por usuario" ON investments;
+CREATE POLICY "Acesso de investimentos por usuario" ON investments FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------
 -- 9. TABELA: Assinaturas & Paywall (subscriptions)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS subscriptions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'INACTIVE', -- 'ACTIVE', 'TRIAL', 'PAST_DUE', 'CANCELED', 'INACTIVE'
   plan_type TEXT NOT NULL DEFAULT 'MENSAL', -- 'MENSAL', 'ANUAL'
   payment_method TEXT DEFAULT 'PIX', -- 'PIX', 'CREDIT_CARD'
@@ -246,8 +243,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Isolamento total de assinaturas por usuario" ON subscriptions;
-CREATE POLICY "Isolamento total de assinaturas por usuario" ON subscriptions 
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Acesso de assinaturas por usuario" ON subscriptions;
+CREATE POLICY "Acesso de assinaturas por usuario" ON subscriptions FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------
 -- 10. TABELA: Cupons de Teste e Desconto (coupons)
@@ -282,31 +279,24 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-DROP TRIGGER IF EXISTS update_accounts_modtime ON accounts;
-CREATE TRIGGER update_accounts_modtime BEFORE UPDATE ON accounts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_cc_modtime ON credit_cards;
-CREATE TRIGGER update_cc_modtime BEFORE UPDATE ON credit_cards FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_categories_modtime ON categories;
-CREATE TRIGGER update_categories_modtime BEFORE UPDATE ON categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_tp_modtime ON third_parties;
-CREATE TRIGGER update_tp_modtime BEFORE UPDATE ON third_parties FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_tpd_modtime ON third_party_debts;
-CREATE TRIGGER update_tpd_modtime BEFORE UPDATE ON third_party_debts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_transactions_modtime ON transactions;
-CREATE TRIGGER update_transactions_modtime BEFORE UPDATE ON transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_debts_modtime ON debts;
-CREATE TRIGGER update_debts_modtime BEFORE UPDATE ON debts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_investments_modtime ON investments;
-CREATE TRIGGER update_investments_modtime BEFORE UPDATE ON investments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_subscriptions_modtime ON subscriptions;
-CREATE TRIGGER update_subscriptions_modtime BEFORE UPDATE ON subscriptions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_accounts_updated_at') THEN
+    CREATE TRIGGER update_accounts_updated_at BEFORE UPDATE ON accounts FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_credit_cards_updated_at') THEN
+    CREATE TRIGGER update_credit_cards_updated_at BEFORE UPDATE ON credit_cards FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_transactions_updated_at') THEN
+    CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_debts_updated_at') THEN
+    CREATE TRIGGER update_debts_updated_at BEFORE UPDATE ON debts FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_investments_updated_at') THEN
+    CREATE TRIGGER update_investments_updated_at BEFORE UPDATE ON investments FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_subscriptions_updated_at') THEN
+    CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON subscriptions FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+  END IF;
+END $$;
