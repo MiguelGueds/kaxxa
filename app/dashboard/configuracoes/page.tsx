@@ -258,61 +258,6 @@ function SettingsContent() {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto animate-fade-in-up w-full space-y-6">
-      {/* SUB-ABAS EM FORMATO PILL MODERNO */}
-      <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
-        <button 
-          type="button"
-          onClick={() => handleSelectTab('CONTAS')} 
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-            activeTab === 'CONTAS'
-              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-          }`}
-        >
-          <Landmark size={14} />
-          <span>Contas bancárias</span>
-        </button>
-
-        <button 
-          type="button"
-          onClick={() => handleSelectTab('CARTOES')} 
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-            activeTab === 'CARTOES'
-              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-          }`}
-        >
-          <CreditCard size={14} />
-          <span>Cartões</span>
-        </button>
-
-        <button 
-          type="button"
-          onClick={() => handleSelectTab('CATEGORIAS')} 
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-            activeTab === 'CATEGORIAS'
-              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-          }`}
-        >
-          <Tag size={14} />
-          <span>Categorias</span>
-        </button>
-
-        <button 
-          type="button"
-          onClick={() => handleSelectTab('TERCEIROS')} 
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-            activeTab === 'TERCEIROS'
-              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
-          }`}
-        >
-          <UserCircle2 size={14} />
-          <span>Pessoas</span>
-        </button>
-      </div>
-
       <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
         
         {/* ======================================================== */}
@@ -733,7 +678,7 @@ function SettingsContent() {
       {/* Modal Kaxxa Proprietário de Confirmação de Exclusão */}
       {deleteTarget && (
         <div 
-          className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
           onClick={() => setDeleteTarget(null)}
         >
           <div 
@@ -803,7 +748,7 @@ function TabButton({ active, onClick, icon, label, badge }: { active: boolean, o
 function ModalWrapper({ children, title, onClose }: { children: React.ReactNode, title: string, onClose: () => void }) {
   return (
     <div 
-      className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 

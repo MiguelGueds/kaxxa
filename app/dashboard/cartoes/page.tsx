@@ -1103,22 +1103,29 @@ export default function MinhasFaturasPage() {
               <p className="text-[9px] text-[#64748B] mt-1.5 font-medium">{limitUsagePct.toFixed(1)}% em uso de R$ {formatCurrency(totalLimitGlobal)}</p>
 
               {isLimitPopupOpen && (
-                <>
-                  <div className="fixed inset-0 z-40 cursor-default" onClick={(e) => { e.stopPropagation(); setIsLimitPopupOpen(false); }}></div>
-                  <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2 cursor-default" onClick={e => e.stopPropagation()}>
-                    <h4 className="text-[9px] font-bold text-[#94A3B8] uppercase tracking-wider border-b border-[#E5E7EB] pb-1 mb-1">Por Cartão</h4>
-                    {cards.map(c => {
-                      const used = getCardLimitUsed(c);
-                      const avail = Math.max(0, c.limitTotal - used);
-                      return (
-                        <div key={c.id} className="flex justify-between items-center text-[10px]">
-                          <span className="text-[#181B22] font-semibold truncate pr-2">{c.name}</span>
-                          <span className="text-[#1A44C8] font-extrabold whitespace-nowrap">R$ {formatCurrency(avail)}</span>
-                        </div>
-                      );
-                    })}
+                <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300" onClick={(e) => { e.stopPropagation(); setIsLimitPopupOpen(false); }}>
+                  <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col p-4.5 m-auto animate-scale-in-center shrink-0 cursor-default" onClick={e => e.stopPropagation()}>
+                    <div className="flex justify-between items-center border-b border-[#E5E7EB] pb-2 mb-3">
+                      <h4 className="text-xs font-bold text-[#181B22]">Limite Disponível Por Cartão</h4>
+                      <button onClick={() => setIsLimitPopupOpen(false)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={14}/></button>
+                    </div>
+                    <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                      {cards.map(c => {
+                        const used = getCardLimitUsed(c);
+                        const avail = Math.max(0, c.limitTotal - used);
+                        return (
+                          <div key={c.id} className="flex justify-between items-center text-xs p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <BankLogo name={c.bank || c.name} size="xs" />
+                              <span className="text-[#181B22] font-bold truncate">{c.name}</span>
+                            </div>
+                            <span className="text-[#1A44C8] font-extrabold whitespace-nowrap ml-2">R$ {formatCurrency(avail)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -1576,7 +1583,7 @@ export default function MinhasFaturasPage() {
       </div>
 
       {isNewCardModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
               <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
@@ -1702,7 +1709,7 @@ export default function MinhasFaturasPage() {
       )}
 
       {isNewExpenseModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-md bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             
             <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
@@ -1857,7 +1864,7 @@ export default function MinhasFaturasPage() {
       )}
 
       {isPaymentModalOpen && paymentTargetCard && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
               <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
@@ -1941,7 +1948,7 @@ export default function MinhasFaturasPage() {
       )}
 
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-xl bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[90vh] overflow-hidden my-auto animate-scale-in-center shrink-0">
             <div className="px-4 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex justify-between items-center shrink-0">
               <h2 className="text-xs font-bold text-[#181B22] flex items-center gap-2">
@@ -2139,7 +2146,7 @@ export default function MinhasFaturasPage() {
       )}
 
       {deleteCandidate && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300">
           <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl p-5 space-y-4 text-center my-auto animate-scale-in-center flex flex-col max-h-[88dvh] sm:max-h-[90vh] shrink-0">
             <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 size={18} />

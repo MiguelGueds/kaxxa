@@ -317,6 +317,7 @@ export const cardsService = {
     if (!user) return null;
 
     const payload = {
+      id: crypto.randomUUID(),
       user_id: user.id,
       credit_card_id: expense.credit_card_id,
       description: expense.description,
@@ -378,6 +379,7 @@ export const cardsService = {
     if (!user) return null;
 
     const rows = expenses.map(e => ({
+      id: crypto.randomUUID(),
       user_id: user.id,
       credit_card_id: e.credit_card_id,
       description: e.description,

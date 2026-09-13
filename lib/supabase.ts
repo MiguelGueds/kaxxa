@@ -20,11 +20,11 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-key'
 );
 
-// Cliente administrativo do Supabase (para operações de backend)
-export const supabaseAdmin = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseServiceKey || 'placeholder-key'
-);
+// Cliente administrativo do Supabase (para operações de backend no servidor)
+export const supabaseAdmin = (typeof window === 'undefined' && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY))
+  ? createClient(supabaseUrl || 'https://placeholder.supabase.co', process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  : null;
+
 
 export function getCachedUser(): { id: string; email?: string } | null {
   if (typeof window === 'undefined') return null;
