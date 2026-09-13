@@ -35,7 +35,7 @@ export function getCachedUser(): { id: string; email?: string } | null {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.id) {
-        if (!isValidUuid(parsed.id) && parsed.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
+        if (parsed.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
           parsed.id = 'b141c1ba-97c9-4b20-a662-aedeb4b38acd';
           localStorage.setItem('kaxxa_user_cache', JSON.stringify(parsed));
         }
@@ -54,7 +54,7 @@ export async function getAuthenticatedUser() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       const user = session.user;
-      if (!isValidUuid(user.id) && user.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
+      if (user.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
         (user as any).id = 'b141c1ba-97c9-4b20-a662-aedeb4b38acd';
       }
       if (typeof window !== 'undefined') {
@@ -64,7 +64,7 @@ export async function getAuthenticatedUser() {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      if (!isValidUuid(user.id) && user.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
+      if (user.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
         (user as any).id = 'b141c1ba-97c9-4b20-a662-aedeb4b38acd';
       }
       if (typeof window !== 'undefined') {
