@@ -104,7 +104,33 @@ export const cardsService = {
         .order('name', { ascending: true });
 
       if (!error && data !== null) {
-        const formatted = (data || []).map(c => ({
+        let rawList = [...data];
+
+        // Tenta buscar e migrar cartões com o ID legado de e-mail (ex: usr_somoskaxxa_gmail_com)
+        if (user.email) {
+          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          if (legacyId !== user.id) {
+            const { data: legacyCards } = await client
+              .from('credit_cards')
+              .select('*')
+              .eq('user_id', legacyId);
+
+            if (legacyCards && legacyCards.length > 0) {
+              await client
+                .from('credit_cards')
+                .update({ user_id: user.id })
+                .eq('user_id', legacyId);
+
+              legacyCards.forEach(c => {
+                if (!rawList.some(r => r.id === c.id)) {
+                  rawList.push({ ...c, user_id: user.id });
+                }
+              });
+            }
+          }
+        }
+
+        const formatted = rawList.map(c => ({
           ...c,
           credit_limit: Number(c.credit_limit || 0),
           limit_used: Number(c.limit_used || 0),

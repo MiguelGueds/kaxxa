@@ -65,7 +65,33 @@ export const thirdPartiesService = {
         .order('created_at', { ascending: false });
 
       if (!error && data !== null) {
-        const formatted = (data || []).map(d => ({
+        let rawList = [...data];
+
+        // Tenta buscar e migrar dívidas de terceiros com o ID legado de e-mail (ex: usr_somoskaxxa_gmail_com)
+        if (user.email) {
+          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          if (legacyId !== user.id) {
+            const { data: legacyThirdPartyDebts } = await client
+              .from('third_party_debts')
+              .select('*')
+              .eq('user_id', legacyId);
+
+            if (legacyThirdPartyDebts && legacyThirdPartyDebts.length > 0) {
+              await client
+                .from('third_party_debts')
+                .update({ user_id: user.id })
+                .eq('user_id', legacyId);
+
+              legacyThirdPartyDebts.forEach(d => {
+                if (!rawList.some(r => r.id === d.id)) {
+                  rawList.push({ ...d, user_id: user.id });
+                }
+              });
+            }
+          }
+        }
+
+        const formatted = rawList.map(d => ({
           ...d,
           total_amount: Number(d.total_amount || 0),
           paid_amount: Number(d.paid_amount || 0),

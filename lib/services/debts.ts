@@ -85,7 +85,33 @@ export const debtsService = {
         .order('created_at', { ascending: false });
 
       if (!error && data !== null) {
-        const formatted = data as DbDebt[];
+        let rawList = [...data];
+
+        // Tenta buscar e migrar dívidas com o ID legado de e-mail (ex: usr_somoskaxxa_gmail_com)
+        if (user.email) {
+          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          if (legacyId !== user.id) {
+            const { data: legacyDebts } = await client
+              .from('debts')
+              .select('*, amortizations(*)')
+              .eq('user_id', legacyId);
+
+            if (legacyDebts && legacyDebts.length > 0) {
+              await client
+                .from('debts')
+                .update({ user_id: user.id })
+                .eq('user_id', legacyId);
+
+              legacyDebts.forEach(d => {
+                if (!rawList.some(r => r.id === d.id)) {
+                  rawList.push({ ...d, user_id: user.id });
+                }
+              });
+            }
+          }
+        }
+
+        const formatted = rawList as DbDebt[];
 
         const localItems = getLocalDebts(user.id);
         const pendingLocal = localItems.filter(local =>

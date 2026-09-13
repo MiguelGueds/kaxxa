@@ -50,7 +50,6 @@ export function getTrialRemainingText(endDateStr?: string): { text: string; hour
   };
 }
 
-// Armazenamento em memória e disco para resiliência (caso a tabela do Supabase ainda não tenha sido criada)
 let MEMORY_SUBSCRIPTIONS: Record<string, DbSubscription> = {};
 
 function getFs() {
@@ -107,10 +106,13 @@ function loadLocalSubscriptions(): Record<string, DbSubscription> {
   return MEMORY_SUBSCRIPTIONS;
 }
 
+export function clearMemorySubscriptions() {
+  MEMORY_SUBSCRIPTIONS = {};
+}
+
 export function saveSubscriptionLocal(sub: DbSubscription) {
   MEMORY_SUBSCRIPTIONS[sub.user_id] = sub;
 
-  // No navegador, persiste também no localStorage
   if (typeof window !== 'undefined') {
     try {
       if (sub.status === 'TRIAL' || sub.status === 'ACTIVE') {
@@ -147,43 +149,13 @@ export function saveSubscriptionLocal(sub: DbSubscription) {
 
 export const subscriptionService = {
   /**
-   * Retorna a assinatura ativa ou mais recente do usuário, com fallback resiliente e auto-recuperação.
+   * Retorna a assinatura ativa ou mais recente do usuário com o Supabase como fonte primária.
    */
   async getSubscription(): Promise<DbSubscription | null> {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    // 1. Verificação no localStorage (no navegador) para resposta instantânea
-    if (typeof window !== 'undefined') {
-      try {
-        const localTrial = localStorage.getItem('kaxxa_trial_active');
-        if (localTrial) {
-          const parsed = JSON.parse(localTrial);
-          const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
-          const localUserId = parsed.userId || parsed.subscription?.user_id;
-          if (endsAt && localUserId === user.id) {
-            const isExpired = parseExpirationTime(endsAt) < Date.now();
-            if (!isExpired) {
-              return {
-                id: parsed.id || parsed.subscription?.id || 'trial-local',
-                user_id: user.id,
-                status: 'TRIAL',
-                plan_type: 'MENSAL',
-                payment_method: 'PIX',
-                amount: 0,
-                current_period_end: endsAt,
-                created_at: parsed.createdAt || new Date().toISOString()
-              };
-            } else {
-              // Limpa cache expirado
-              localStorage.removeItem('kaxxa_trial_active');
-            }
-          }
-        }
-      } catch {}
-    }
-
-    // Se for administrador (somoskaxxa@gmail.com), acesso vitalício de desenvolvedor
+    // Administradores Master têm acesso irrestrito garantido
     if (isAdminEmail(user.email)) {
       return {
         id: 'admin-master',
@@ -197,7 +169,7 @@ export const subscriptionService = {
       };
     }
 
-    // 2. Consulta ao Supabase
+    // 1. Fonte Primária de Verdade: Tabela subscriptions no Supabase
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
@@ -214,22 +186,44 @@ export const subscriptionService = {
           saveSubscriptionLocal(data as DbSubscription);
           return data as DbSubscription;
         }
+
+        // Tenta buscar por ID legado de e-mail (ex: usr_somoskaxxa_gmail_com) se o usuário tiver e-mail
+        if (user.email) {
+          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          const { data: legacyData } = await client
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', legacyId)
+            .order('updated_at', { ascending: false, nullsFirst: false })
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (legacyData) {
+            // Migra o registro para o user.id oficial do Supabase Auth
+            await client
+              .from('subscriptions')
+              .update({ user_id: user.id, updated_at: new Date().toISOString() })
+              .eq('id', legacyData.id);
+
+            const migratedSub = { ...legacyData, user_id: user.id } as DbSubscription;
+            saveSubscriptionLocal(migratedSub);
+            return migratedSub;
+          }
+        }
       } catch (err) {
-        console.warn('Supabase subscriptions indisponível, usando fallback local:', err);
+        console.warn('Supabase subscriptions indisponível, tentando auto-heal por cupom:', err);
       }
 
-      // 2.1 AUTO-HEAL: Se não encontrou assinatura na tabela subscriptions,
-      // verifica se o usuário usou um cupom de degustação registrado
+      // 2. AUTO-HEAL: Se não encontrou linha em subscriptions, verifica se o e-mail ou user_id usou um cupom no Supabase
       try {
         const client = supabaseAdmin || supabase;
-
-        // A) Verificar se o e-mail ou user.id está registrado em algum cupom
         const { data: coupons } = await client.from('coupons').select('*');
         if (coupons && coupons.length > 0) {
           for (const c of coupons) {
             const usedList = Array.isArray(c.used_by) ? c.used_by : [];
             const usage = usedList.find((u: any) =>
-              (u.user_id && u.user_id === user.id) ||
+              (u.user_id && (u.user_id === user.id || u.user_id.includes(user.id) || user.id.includes(u.user_id))) ||
               (u.email && user.email && u.email.toLowerCase() === user.email.toLowerCase())
             );
 
@@ -251,7 +245,6 @@ export const subscriptionService = {
                 });
                 return healedSub;
               } else {
-                // Retorna assinatura sintética expirada baseada no cupom usado anteriormente
                 return {
                   id: `expired-coupon-${c.code.toLowerCase()}`,
                   user_id: user.id,
@@ -271,36 +264,19 @@ export const subscriptionService = {
       }
     }
 
-    // 3. Fallback local em memória / arquivo
-    const localMap = loadLocalSubscriptions();
-    return localMap[user.id] || null;
-  },
-
-  /**
-   * Verifica se o usuário possui acesso liberado ao sistema e identifica o motivo de expiração.
-   */
-  async isAccessGranted(): Promise<{ 
-    granted: boolean; 
-    subscription: DbSubscription | null; 
-    expiredReason?: 'TRIAL_EXPIRED' | 'SUBSCRIPTION_EXPIRED' | null 
-  }> {
-    const user = await getAuthenticatedUser();
-
-    // 1. Verificação PRIORITÁRIA no navegador para trials ativados ou acesso concedido
+    // 3. Fallback apenas se offline / Supabase indisponível
     if (typeof window !== 'undefined') {
       try {
-        const accessGrantedFlag = localStorage.getItem('kaxxa_access_granted');
         const localTrial = localStorage.getItem('kaxxa_trial_active');
-
         if (localTrial) {
           const parsed = JSON.parse(localTrial);
           const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
-          if (endsAt) {
+          if (endsAt && (parsed.userId === user.id || !parsed.userId)) {
             const isExpired = parseExpirationTime(endsAt) < Date.now();
             if (!isExpired) {
-              const trialSub: DbSubscription = {
-                id: parsed.id || parsed.subscription?.id || 'trial-local',
-                user_id: user?.id || parsed.userId || 'usr_somoskaxxa_gmail_com',
+              return {
+                id: parsed.id || 'trial-local',
+                user_id: user.id,
                 status: 'TRIAL',
                 plan_type: 'MENSAL',
                 payment_method: 'PIX',
@@ -308,31 +284,25 @@ export const subscriptionService = {
                 current_period_end: endsAt,
                 created_at: parsed.createdAt || new Date().toISOString()
               };
-              return { granted: true, subscription: trialSub, expiredReason: null };
-            } else {
-              localStorage.removeItem('kaxxa_trial_active');
             }
           }
         }
-
-        if (accessGrantedFlag === 'true') {
-          const activeSub: DbSubscription = {
-            id: 'local-granted',
-            user_id: user?.id || 'usr_somoskaxxa_gmail_com',
-            status: 'ACTIVE',
-            plan_type: 'MENSAL',
-            payment_method: 'PIX',
-            amount: 0,
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            created_at: new Date().toISOString()
-          };
-          return { granted: true, subscription: activeSub, expiredReason: null };
-        }
-      } catch (e) {
-        console.warn('Erro ao ler permissão local:', e);
-      }
+      } catch {}
     }
 
+    const localMap = loadLocalSubscriptions();
+    return localMap[user.id] || null;
+  },
+
+  /**
+   * Verifica se o usuário possui acesso liberado ao sistema.
+   */
+  async isAccessGranted(): Promise<{ 
+    granted: boolean; 
+    subscription: DbSubscription | null; 
+    expiredReason?: 'TRIAL_EXPIRED' | 'SUBSCRIPTION_EXPIRED' | null 
+  }> {
+    const user = await getAuthenticatedUser();
     if (!user) {
       return { granted: false, subscription: null, expiredReason: null };
     }
@@ -354,20 +324,6 @@ export const subscriptionService = {
 
     const sub = await this.getSubscription();
     if (!sub) {
-      // Se possui sessão válida de usuário no navegador, garante acesso
-      if (user && user.email) {
-        const defaultSub: DbSubscription = {
-          id: 'user-default-sub',
-          user_id: user.id,
-          status: 'ACTIVE',
-          plan_type: 'MENSAL',
-          payment_method: 'PIX',
-          amount: 0,
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date().toISOString()
-        };
-        return { granted: true, subscription: defaultSub, expiredReason: null };
-      }
       return { granted: false, subscription: null, expiredReason: null };
     }
 
@@ -388,7 +344,7 @@ export const subscriptionService = {
   },
 
   /**
-   * Ativa ou renova a assinatura de um usuário com persistência dupla.
+   * Ativa ou renova a assinatura de um usuário no Supabase e localmente.
    */
   async activateSubscription(params: {
     userId: string;
@@ -418,14 +374,12 @@ export const subscriptionService = {
       created_at: new Date().toISOString()
     };
 
-    // Sempre salva localmente primeiro (resiliência garantida)
     saveSubscriptionLocal(subData);
 
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
 
-        // 1. Verifica se já existe um registro para o user_id
         const { data: existing } = await client
           .from('subscriptions')
           .select('id')
@@ -454,10 +408,10 @@ export const subscriptionService = {
           }
         }
 
-        // 2. Se não existia, faz insert de novo registro
         const { data: inserted, error: insertErr } = await client
           .from('subscriptions')
           .insert({
+            id: subData.id,
             user_id: params.userId,
             status: status,
             plan_type: planType,
@@ -466,6 +420,7 @@ export const subscriptionService = {
             amount: amount,
             current_period_end: periodEnd,
             updated_at: new Date().toISOString(),
+            created_at: new Date().toISOString()
           })
           .select()
           .single();
@@ -474,35 +429,11 @@ export const subscriptionService = {
           saveSubscriptionLocal(inserted as DbSubscription);
           return inserted as DbSubscription;
         }
-
-        // 3. Fallback no cliente: se gravação administrativa falhar (ex: RLS anon client), tenta pelo cliente público do navegador se disponível
-        if (typeof window !== 'undefined') {
-          const { data: clientSaved } = await supabase
-            .from('subscriptions')
-            .upsert({
-              user_id: params.userId,
-              status: status,
-              plan_type: planType,
-              payment_method: params.paymentMethod,
-              payment_id: params.paymentId,
-              amount: amount,
-              current_period_end: periodEnd,
-              updated_at: new Date().toISOString(),
-            }, { onConflict: 'user_id' })
-            .select()
-            .single();
-
-          if (clientSaved) {
-            saveSubscriptionLocal(clientSaved as DbSubscription);
-            return clientSaved as DbSubscription;
-          }
-        }
       } catch (err) {
-        console.warn('Supabase subscriptions indisponível para gravação, usando local:', err);
+        console.warn('Erro ao salvar assinatura no Supabase:', err);
       }
     }
 
     return subData;
   }
 };
-

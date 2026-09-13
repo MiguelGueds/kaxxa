@@ -149,12 +149,12 @@ export default function AdminCouponsPage() {
         const data = await res.json();
         throw new Error(data.error || 'Não foi possível excluir o cupom.');
       }
-      const updated = coupons.filter(c => c.id !== idOrCode && c.code !== idOrCode);
+      const updated = coupons.filter(c => c.id !== idOrCode && c.code.toUpperCase() !== idOrCode.toUpperCase());
       setCoupons(updated);
       localStorage.setItem('kaxxa_admin_coupons', JSON.stringify(updated));
       setSuccessMsg('Cupom excluído com sucesso!');
       setTimeout(() => setSuccessMsg(''), 3000);
-      loadCoupons();
+      await loadCoupons();
     } catch (err: any) {
       console.error('Erro ao excluir cupom:', err);
       setErrorMsg(err.message || 'Erro ao excluir cupom');

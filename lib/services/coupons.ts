@@ -230,14 +230,15 @@ export const couponService = {
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
-        const { error } = await client
+        await client
           .from('coupons')
           .delete()
-          .or(`id.eq.${idOrCode},code.ilike.${norm},code.eq.${idOrCode}`);
+          .eq('id', idOrCode);
 
-        if (error) {
-          console.warn('Erro ao excluir cupom no Supabase:', error);
-        }
+        await client
+          .from('coupons')
+          .delete()
+          .ilike('code', norm);
       } catch (e) {
         console.warn('Exceção ao excluir cupom no Supabase:', e);
       }

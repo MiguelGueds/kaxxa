@@ -70,7 +70,33 @@ export const transactionsService = {
         .limit(limit);
 
       if (!error && data !== null) {
-        const formatted = (data || []).map(t => ({
+        let rawList = [...data];
+
+        // Tenta buscar e migrar transações com o ID legado de e-mail (ex: usr_somoskaxxa_gmail_com)
+        if (user.email) {
+          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          if (legacyId !== user.id) {
+            const { data: legacyTransactions } = await client
+              .from('transactions')
+              .select('*')
+              .eq('user_id', legacyId);
+
+            if (legacyTransactions && legacyTransactions.length > 0) {
+              await client
+                .from('transactions')
+                .update({ user_id: user.id })
+                .eq('user_id', legacyId);
+
+              legacyTransactions.forEach(t => {
+                if (!rawList.some(r => r.id === t.id)) {
+                  rawList.push({ ...t, user_id: user.id });
+                }
+              });
+            }
+          }
+        }
+
+        const formatted = rawList.map(t => ({
           ...t,
           amount: Number(t.amount || 0),
         })) as DbTransaction[];

@@ -59,7 +59,33 @@ export const accountsService = {
         .order('name', { ascending: true });
 
       if (!error && data !== null) {
-        const formatted = (data || []).map(acc => ({
+        let rawList = [...data];
+
+        // Tenta buscar e migrar contas com o ID legado de e-mail (ex: usr_somoskaxxa_gmail_com)
+        if (user.email) {
+          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          if (legacyId !== user.id) {
+            const { data: legacyAccounts } = await client
+              .from('accounts')
+              .select('*')
+              .eq('user_id', legacyId);
+
+            if (legacyAccounts && legacyAccounts.length > 0) {
+              await client
+                .from('accounts')
+                .update({ user_id: user.id })
+                .eq('user_id', legacyId);
+
+              legacyAccounts.forEach(acc => {
+                if (!rawList.some(r => r.id === acc.id)) {
+                  rawList.push({ ...acc, user_id: user.id });
+                }
+              });
+            }
+          }
+        }
+
+        const formatted = rawList.map(acc => ({
           ...acc,
           balance: Number(acc.balance ?? acc.initial_balance ?? 0),
           initial_balance: Number(acc.initial_balance ?? 0),

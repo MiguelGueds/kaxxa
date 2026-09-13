@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { clearMemorySubscriptions } from '@/lib/services/subscription';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -58,13 +59,6 @@ export function getCachedUser(): { id: string; email?: string } | null {
       }
     }
 
-    // Se houver acesso ativado no navegador, garante usuário padrão ativo
-    if (localStorage.getItem('kaxxa_access_granted') || localStorage.getItem('kaxxa_trial_active')) {
-      const defaultUser = { id: 'usr_somoskaxxa_gmail_com', email: 'somoskaxxa@gmail.com' };
-      localStorage.setItem('kaxxa_user_cache', JSON.stringify(defaultUser));
-      return defaultUser;
-    }
-
     return null;
   } catch {
     return null;
@@ -93,14 +87,18 @@ export async function getAuthenticatedUser() {
 }
 
 export async function performGlobalSignOut() {
+  clearMemorySubscriptions();
   if (typeof window !== 'undefined') {
     localStorage.removeItem('kaxxa_access_granted');
     localStorage.removeItem('kaxxa_trial_active');
     localStorage.removeItem('kaxxa_pending_coupon');
+    localStorage.removeItem('kaxxa_user_cache');
+    localStorage.removeItem('kaxxa_admin_coupons');
+    
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && !k.includes('_backup') && (k.startsWith('kaxxa_') || k.startsWith('sb-') || k.includes('auth') || k.includes('mindfinance_'))) {
+      if (k && (k.startsWith('kaxxa_') || k.startsWith('sb-') || k.includes('auth') || k.includes('mindfinance_') || k.includes('_backup'))) {
         keysToRemove.push(k);
       }
     }

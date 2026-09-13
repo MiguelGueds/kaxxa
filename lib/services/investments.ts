@@ -70,7 +70,33 @@ export const investmentsService = {
         .order('created_at', { ascending: false });
 
       if (!error && data !== null) {
-        const formatted = data.map(inv => ({
+        let rawList = [...data];
+
+        // Tenta buscar e migrar investimentos com o ID legado de e-mail (ex: usr_somoskaxxa_gmail_com)
+        if (user.email) {
+          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          if (legacyId !== user.id) {
+            const { data: legacyInvestments } = await client
+              .from('investments')
+              .select('*')
+              .eq('user_id', legacyId);
+
+            if (legacyInvestments && legacyInvestments.length > 0) {
+              await client
+                .from('investments')
+                .update({ user_id: user.id })
+                .eq('user_id', legacyId);
+
+              legacyInvestments.forEach(inv => {
+                if (!rawList.some(r => r.id === inv.id)) {
+                  rawList.push({ ...inv, user_id: user.id });
+                }
+              });
+            }
+          }
+        }
+
+        const formatted = rawList.map(inv => ({
           ...inv,
           quantity: Number(inv.quantity || 0),
           average_price: Number(inv.average_price || 0),
