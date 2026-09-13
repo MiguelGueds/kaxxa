@@ -187,31 +187,6 @@ export const subscriptionService = {
           saveSubscriptionLocal(data as DbSubscription);
           return data as DbSubscription;
         }
-
-        // Tenta buscar por ID legado de e-mail (ex: usr_somoskaxxa_gmail_com) se o usuário tiver e-mail
-        if (user.email) {
-          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-          const { data: legacyData } = await client
-            .from('subscriptions')
-            .select('*')
-            .eq('user_id', legacyId)
-            .order('updated_at', { ascending: false, nullsFirst: false })
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (legacyData) {
-            // Migra o registro para o user.id oficial do Supabase Auth
-            await client
-              .from('subscriptions')
-              .update({ user_id: user.id, updated_at: new Date().toISOString() })
-              .eq('id', legacyData.id);
-
-            const migratedSub = { ...legacyData, user_id: user.id } as DbSubscription;
-            saveSubscriptionLocal(migratedSub);
-            return migratedSub;
-          }
-        }
       } catch (err) {
         console.warn('Supabase subscriptions indisponível, tentando auto-heal por cupom:', err);
       }

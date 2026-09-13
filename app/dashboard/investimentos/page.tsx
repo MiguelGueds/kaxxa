@@ -522,7 +522,38 @@ export default function InvestimentosPage() {
             }
           }
         } else {
-          setInvestments([]);
+          const cached = investmentsService.getCachedInvestments();
+          if (cached && cached.length > 0) {
+            const cachedMapped = cached.map(inv => {
+              const qty = Number(inv.quantity || 0);
+              const avgPrice = Number(inv.average_price || 0);
+              const totalInv = Number(inv.invested_amount || (qty * avgPrice));
+              const curVal = Number(inv.current_value || totalInv);
+              return {
+                id: inv.id,
+                macroType: inv.macro_type,
+                category: inv.category as AssetCategory,
+                name: inv.name,
+                ticker: inv.ticker,
+                institution: inv.institution,
+                rateOrYield: inv.rate_or_yield,
+                liquidity: (inv.liquidity as 'DIARIA' | 'D+1' | 'VENCIMENTO') || 'DIARIA',
+                dueDate: inv.due_date,
+                quantity: qty,
+                averagePrice: avgPrice,
+                currentPrice: qty > 0 && curVal > 0 ? Number((curVal / qty).toFixed(2)) : avgPrice,
+                totalInvested: totalInv,
+                currentBalance: curVal,
+                monthlyEstimatedYield: inv.macro_type === 'FIXA' ? curVal * 0.0092 : (inv.category === 'FIIS' ? curVal * 0.0085 : curVal * 0.006),
+                totalDividendsReceived: getExactDividends(inv),
+                isFgcProtected: inv.category !== 'TESOURO_DIRETO',
+                createdAt: inv.created_at || new Date().toISOString()
+              };
+            });
+            setInvestments(cachedMapped);
+          } else {
+            setInvestments([]);
+          }
           setLoading(false);
         }
       } catch (e) {

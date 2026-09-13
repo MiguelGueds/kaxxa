@@ -28,8 +28,44 @@ const STORAGE_KEY = 'kaxxa_investments_backup';
 function getLocalInvestments(userId: string): DbInvestment[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
-    return raw ? JSON.parse(raw) : [];
+    const itemsMap = new Map<string, DbInvestment>();
+    const staticMockIds = new Set(['rf-1', 'rf-2', 'rf-3', 'rf-4', 'rf-5', 'rv-1', 'rv-2', 'rv-3', 'rv-4', 'rv-5']);
+
+    const candidateKeys = [
+      `${STORAGE_KEY}_${userId}`,
+      STORAGE_KEY,
+      `${STORAGE_KEY}_usr_miguelguedes110_gmail_com`,
+      'mindfinance_investments_backup',
+      'kaxxa_investments',
+    ];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('kaxxa_investments') || k.includes('investments_backup') || k.includes('investimento'))) {
+        if (!candidateKeys.includes(k)) candidateKeys.push(k);
+      }
+    }
+
+    for (const key of candidateKeys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list)) {
+            for (const item of list) {
+              if (item && item.name && !staticMockIds.has(item.id)) {
+                const dedupeKey = `${(item.name || '').trim().toLowerCase()}_${item.category || ''}`;
+                if (!itemsMap.has(dedupeKey)) {
+                  itemsMap.set(dedupeKey, item);
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    return Array.from(itemsMap.values());
   } catch {
     return [];
   }
@@ -39,6 +75,7 @@ function saveLocalInvestments(userId: string, items: DbInvestment[]) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch (e) {
     console.error('Erro ao salvar investimentos no localStorage:', e);
   }
@@ -49,11 +86,9 @@ export const investmentsService = {
     if (typeof window === 'undefined') return [];
     try {
       const rawUser = localStorage.getItem('kaxxa_user_cache');
-      if (!rawUser) return [];
-      const user = JSON.parse(rawUser);
-      if (!user || !user.id) return [];
+      const userId = rawUser ? JSON.parse(rawUser)?.id || 'default' : 'default';
       const staticMockIds = new Set(['rf-1', 'rf-2', 'rf-3', 'rf-4', 'rf-5', 'rv-1', 'rv-2', 'rv-3', 'rv-4', 'rv-5']);
-      return getLocalInvestments(user.id).filter(i => !staticMockIds.has(i.id));
+      return getLocalInvestments(userId).filter(i => !staticMockIds.has(i.id));
     } catch {
       return [];
     }
@@ -73,32 +108,6 @@ export const investmentsService = {
 
       if (!error && data !== null) {
         let rawList = [...data];
-
-        // Tenta buscar e migrar investimentos com o ID legado de e-mail (ex: usr_somoskaxxa_gmail_com)
-        if (user.email) {
-          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-          if (legacyId !== user.id) {
-            try {
-              const { data: legacyInvestments } = await client
-                .from('investments')
-                .select('*')
-                .eq('user_id', legacyId);
-
-              if (legacyInvestments && legacyInvestments.length > 0) {
-                await client
-                  .from('investments')
-                  .update({ user_id: user.id })
-                  .eq('user_id', legacyId);
-
-                legacyInvestments.forEach(inv => {
-                  if (!rawList.some(r => r.id === inv.id)) {
-                    rawList.push({ ...inv, user_id: user.id });
-                  }
-                });
-              }
-            } catch (e) {}
-          }
-        }
 
         const formatted = rawList.map(inv => ({
           ...inv,

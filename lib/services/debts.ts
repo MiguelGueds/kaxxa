@@ -43,8 +43,42 @@ const STORAGE_KEY = 'kaxxa_debts_backup';
 function getLocalDebts(userId: string): DbDebt[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
-    return raw ? JSON.parse(raw) : [];
+    const itemsMap = new Map<string, DbDebt>();
+    const candidateKeys = [
+      `${STORAGE_KEY}_${userId}`,
+      STORAGE_KEY,
+      `${STORAGE_KEY}_usr_miguelguedes110_gmail_com`,
+      'mindfinance_debts_backup',
+      'kaxxa_debts',
+    ];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('kaxxa_debts') || k.includes('debts_backup') || k.includes('divida') || k.includes('dívida'))) {
+        if (!candidateKeys.includes(k)) candidateKeys.push(k);
+      }
+    }
+
+    for (const key of candidateKeys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list)) {
+            for (const item of list) {
+              if (item && item.name) {
+                const dedupeKey = (item.name || '').trim().toLowerCase();
+                if (!itemsMap.has(dedupeKey)) {
+                  itemsMap.set(dedupeKey, item);
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    return Array.from(itemsMap.values());
   } catch {
     return [];
   }
@@ -54,6 +88,7 @@ function saveLocalDebts(userId: string, items: DbDebt[]) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch (e) {
     console.error('Erro ao salvar dívidas no localStorage:', e);
   }
@@ -64,10 +99,8 @@ export const debtsService = {
     if (typeof window === 'undefined') return [];
     try {
       const rawUser = localStorage.getItem('kaxxa_user_cache');
-      if (!rawUser) return [];
-      const user = JSON.parse(rawUser);
-      if (!user || !user.id) return [];
-      return getLocalDebts(user.id);
+      const userId = rawUser ? JSON.parse(rawUser)?.id || 'default' : 'default';
+      return getLocalDebts(userId);
     } catch {
       return [];
     }
@@ -87,30 +120,6 @@ export const debtsService = {
 
       if (!error && data !== null) {
         let rawList = [...data];
-
-        // Tenta buscar e migrar dívidas com o ID legado de e-mail (ex: usr_somoskaxxa_gmail_com)
-        if (user.email) {
-          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-          if (legacyId !== user.id) {
-            const { data: legacyDebts } = await client
-              .from('debts')
-              .select('*, amortizations(*)')
-              .eq('user_id', legacyId);
-
-            if (legacyDebts && legacyDebts.length > 0) {
-              await client
-                .from('debts')
-                .update({ user_id: user.id })
-                .eq('user_id', legacyId);
-
-              legacyDebts.forEach(d => {
-                if (!rawList.some(r => r.id === d.id)) {
-                  rawList.push({ ...d, user_id: user.id });
-                }
-              });
-            }
-          }
-        }
 
         const formatted = rawList as DbDebt[];
 

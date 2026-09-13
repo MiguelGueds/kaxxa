@@ -27,8 +27,42 @@ const STORAGE_KEY = 'kaxxa_transactions_backup';
 function getLocalTransactions(userId: string): DbTransaction[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
-    return raw ? JSON.parse(raw) : [];
+    const itemsMap = new Map<string, DbTransaction>();
+    const candidateKeys = [
+      `${STORAGE_KEY}_${userId}`,
+      STORAGE_KEY,
+      `${STORAGE_KEY}_usr_miguelguedes110_gmail_com`,
+      'mindfinance_transactions_backup',
+      'kaxxa_transactions',
+    ];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('kaxxa_transactions') || k.includes('transactions_backup') || k.includes('transac') || k.includes('lancamentos'))) {
+        if (!candidateKeys.includes(k)) candidateKeys.push(k);
+      }
+    }
+
+    for (const key of candidateKeys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list)) {
+            for (const item of list) {
+              if (item && (item.description || item.amount)) {
+                const dedupeKey = `${(item.description || '').trim().toLowerCase()}_${item.date || ''}_${item.amount || 0}`;
+                if (!itemsMap.has(dedupeKey)) {
+                  itemsMap.set(dedupeKey, item);
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    return Array.from(itemsMap.values());
   } catch {
     return [];
   }
@@ -38,6 +72,7 @@ function saveLocalTransactions(userId: string, items: DbTransaction[]) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch (e) {
     console.error('Erro ao salvar transações no localStorage:', e);
   }
@@ -48,10 +83,8 @@ export const transactionsService = {
     if (typeof window === 'undefined') return [];
     try {
       const rawUser = localStorage.getItem('kaxxa_user_cache');
-      if (!rawUser) return [];
-      const user = JSON.parse(rawUser);
-      if (!user || !user.id) return [];
-      return getLocalTransactions(user.id);
+      const userId = rawUser ? JSON.parse(rawUser)?.id || 'default' : 'default';
+      return getLocalTransactions(userId);
     } catch {
       return [];
     }
@@ -72,30 +105,6 @@ export const transactionsService = {
 
       if (!error && data !== null) {
         let rawList = [...data];
-
-        // Tenta buscar e migrar transações com o ID legado de e-mail (ex: usr_somoskaxxa_gmail_com)
-        if (user.email) {
-          const legacyId = 'usr_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-          if (legacyId !== user.id) {
-            const { data: legacyTransactions } = await client
-              .from('transactions')
-              .select('*')
-              .eq('user_id', legacyId);
-
-            if (legacyTransactions && legacyTransactions.length > 0) {
-              await client
-                .from('transactions')
-                .update({ user_id: user.id })
-                .eq('user_id', legacyId);
-
-              legacyTransactions.forEach(t => {
-                if (!rawList.some(r => r.id === t.id)) {
-                  rawList.push({ ...t, user_id: user.id });
-                }
-              });
-            }
-          }
-        }
 
         const formatted = rawList.map(t => ({
           ...t,
