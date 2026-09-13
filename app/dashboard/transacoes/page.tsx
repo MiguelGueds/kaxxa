@@ -358,24 +358,38 @@ export default function SaldoExtratoPage() {
         return { ...b, balance: Math.max(0, newBal) };
       }));
     } else {
-      const bankAccount = banks.find(b => b.name === selectedBank);
+      let bankAccount = banks.find(b => b.name === selectedBank) || banks[0];
       let newId: string | number = Date.now();
 
-      // Salvar no Supabase de forma assíncrona
-      transactionsService.createTransaction({
-        description: description.trim() || (transactionType === 'INCOME' ? 'Entrada Avulsa' : 'Saída Avulsa'),
-        amount: parsedAmount,
-        date: date,
-        type: transactionType,
-        account_id: bankAccount?.id,
-        category_name: isThirdParty ? 'Empréstimo a Terceiro' : selectedCategory,
-        third_party_name: isThirdParty ? thirdPartyName : undefined,
-        is_paid: true
-      }).then(saved => {
+      const saveTx = async () => {
+        let accountId = bankAccount?.id;
+        if (!accountId) {
+          const newAcc = await accountsService.createAccount({
+            name: selectedBank || 'Conta Principal',
+            type: 'CHECKING',
+            balance: transactionType === 'INCOME' ? parsedAmount : -parsedAmount,
+          });
+          if (newAcc) accountId = newAcc.id;
+        }
+
+        const saved = await transactionsService.createTransaction({
+          description: description.trim() || (transactionType === 'INCOME' ? 'Entrada Avulsa' : 'Saída Avulsa'),
+          amount: parsedAmount,
+          date: date,
+          type: transactionType,
+          account_id: accountId,
+          category_name: isThirdParty ? 'Empréstimo a Terceiro' : selectedCategory,
+          third_party_name: isThirdParty ? thirdPartyName : undefined,
+          is_paid: true
+        });
+
         if (saved) {
           setTransactions(prev => prev.map(item => item.id === newId ? { ...item, id: saved.id } : item));
+          window.dispatchEvent(new CustomEvent('kaxxa_refresh_data'));
         }
-      }).catch(err => console.error('Erro ao persistir transação no Supabase:', err));
+      };
+
+      saveTx().catch(err => console.error('Erro ao persistir transação no Supabase:', err));
 
       const newTx: TransactionItem = {
         id: newId,

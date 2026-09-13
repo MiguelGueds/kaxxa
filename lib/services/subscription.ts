@@ -322,12 +322,26 @@ export const subscriptionService = {
       return { granted: true, subscription: adminSub, expiredReason: null };
     }
 
-    const sub = await this.getSubscription();
-    if (!sub) {
-      return { granted: false, subscription: null, expiredReason: null };
+    let sub = await this.getSubscription();
+
+    // Se o usuário está autenticado no Supabase e a assinatura não existe ou expirou, concede 30 dias de teste automaticamente
+    if (!sub || (sub.current_period_end && parseExpirationTime(sub.current_period_end) < Date.now())) {
+      try {
+        sub = await this.activateSubscription({
+          userId: user.id,
+          status: 'TRIAL',
+          planType: 'MENSAL',
+          paymentMethod: 'PIX',
+          paymentId: `trial-auto-${user.id.substring(0, 8)}`,
+          amount: 0,
+          durationDays: 30,
+        });
+      } catch (e) {
+        console.warn('Erro ao renovar degustação de 30 dias no Supabase:', e);
+      }
     }
 
-    if (sub.status === 'ACTIVE' || sub.status === 'TRIAL') {
+    if (sub && (sub.status === 'ACTIVE' || sub.status === 'TRIAL')) {
       if (sub.current_period_end) {
         const isExpired = parseExpirationTime(sub.current_period_end) < Date.now();
         if (isExpired) {
@@ -339,7 +353,7 @@ export const subscriptionService = {
       return { granted: true, subscription: sub, expiredReason: null };
     }
 
-    const reason = (sub.status as string) === 'TRIAL' || (sub.amount === 0) ? 'TRIAL_EXPIRED' : 'SUBSCRIPTION_EXPIRED';
+    const reason = sub && ((sub.status as string) === 'TRIAL' || (sub.amount === 0)) ? 'TRIAL_EXPIRED' : 'SUBSCRIPTION_EXPIRED';
     return { granted: false, subscription: sub, expiredReason: reason };
   },
 
