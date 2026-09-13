@@ -300,23 +300,6 @@ export const subscriptionService = {
 
     let sub = await this.getSubscription();
 
-    // Se o usuário está autenticado no Supabase e a assinatura não existe ou expirou, concede 30 dias de teste automaticamente
-    if (!sub || (sub.current_period_end && parseExpirationTime(sub.current_period_end) < Date.now())) {
-      try {
-        sub = await this.activateSubscription({
-          userId: user.id,
-          status: 'TRIAL',
-          planType: 'MENSAL',
-          paymentMethod: 'PIX',
-          paymentId: `trial-auto-${user.id.substring(0, 8)}`,
-          amount: 0,
-          durationDays: 30,
-        });
-      } catch (e) {
-        console.warn('Erro ao renovar degustação de 30 dias no Supabase:', e);
-      }
-    }
-
     if (sub && (sub.status === 'ACTIVE' || sub.status === 'TRIAL')) {
       if (sub.current_period_end) {
         const isExpired = parseExpirationTime(sub.current_period_end) < Date.now();

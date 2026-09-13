@@ -353,20 +353,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Rodapé da Sidebar - Sair da Conta */}
-          <div className="pt-2 border-t border-[#F1F3F7]">
-            <button 
-              onClick={async (e) => { e.preventDefault(); await performGlobalSignOut(); router.push('/login'); }} 
-              className={`flex items-center rounded-xl bg-transparent hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all text-[#64748B] hover:text-rose-600 group text-xs font-semibold ${
-                isSidebarCollapsed ? 'justify-center p-2 w-full' : 'justify-start gap-2.5 px-3 py-2 w-full'
-              }`}
-              title="Sair da Conta"
-            >
-              <LogOut size={15} className="group-hover:text-rose-600 transition-colors shrink-0" />
-              {!isSidebarCollapsed && <span>Sair da Conta</span>}
-            </button>
-          </div>
+        {/* Rodapé da Sidebar - Sair da Conta (Fixo no fundo, nunca some com scroll) */}
+        <div className="p-2.5 border-t border-[#F1F3F7] shrink-0 bg-white">
+          <button 
+            onClick={async (e) => { e.preventDefault(); await performGlobalSignOut(); router.push('/login'); }} 
+            className={`flex items-center rounded-xl bg-transparent hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all text-[#64748B] hover:text-rose-600 group text-xs font-semibold ${
+              isSidebarCollapsed ? 'justify-center p-2 w-full' : 'justify-start gap-2.5 px-3 py-2 w-full'
+            }`}
+            title="Sair da Conta"
+          >
+            <LogOut size={15} className="group-hover:text-rose-600 transition-colors shrink-0" />
+            {!isSidebarCollapsed && <span>Sair da Conta</span>}
+          </button>
         </div>
       </aside>
 
@@ -470,6 +470,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
               <ChevronRight size={11} className="text-[#94A3B8] hidden sm:block shrink-0 ml-0.5" />
             </Link>
+
+            {/* Botão Sair da Conta Visível no Celular */}
+            <button
+              type="button"
+              onClick={async (e) => { e.preventDefault(); await performGlobalSignOut(); router.push('/login'); }}
+              className="lg:hidden h-8 w-8 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] hover:bg-rose-50 text-[#64748B] hover:text-rose-600 hover:border-rose-200 flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
+              title="Sair da Conta"
+              aria-label="Sair da Conta"
+            >
+              <LogOut size={14} />
+            </button>
           </div>
         </header>
 

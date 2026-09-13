@@ -240,21 +240,35 @@ export const cardsService = {
 
       if (!error && data) {
         insertedData = data;
-      } else {
-        if (supabaseAdmin) {
-          const { data: adminData, error: adminErr } = await supabaseAdmin
-            .from('credit_cards')
-            .insert(payload)
-            .select()
-            .single();
+      } else if (supabaseAdmin) {
+        const { data: adminData, error: adminErr } = await supabaseAdmin
+          .from('credit_cards')
+          .insert(payload)
+          .select()
+          .single();
 
-          if (!adminErr && adminData) {
-            insertedData = adminData;
-          }
+        if (!adminErr && adminData) {
+          insertedData = adminData;
         }
       }
     } catch (err) {
-      console.warn('Exceção ao cadastrar cartão no Supabase, salvando localmente:', err);
+      console.warn('Exceção direta ao cadastrar cartão no Supabase, tentando rota do servidor:', err);
+    }
+
+    if (!insertedData && typeof window !== 'undefined') {
+      try {
+        const res = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'insert', table: 'credit_cards', payload }),
+        });
+        if (res.ok) {
+          const resJson = await res.json();
+          if (resJson.data) insertedData = resJson.data;
+        }
+      } catch (proxyErr) {
+        console.warn('Erro no proxy de cartões:', proxyErr);
+      }
     }
 
     if (insertedData) {

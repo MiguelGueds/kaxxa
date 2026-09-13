@@ -182,16 +182,16 @@ export const accountsService = {
     try {
       let insertedData = null;
 
-      const { data, error } = await supabase
-        .from('accounts')
-        .insert(payload)
-        .select()
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('accounts')
+          .insert(payload)
+          .select()
+          .single();
 
-      if (!error && data) {
-        insertedData = data;
-      } else {
-        if (supabaseAdmin) {
+        if (!error && data) {
+          insertedData = data;
+        } else if (supabaseAdmin) {
           const { data: adminData, error: adminErr } = await supabaseAdmin
             .from('accounts')
             .insert(payload)
@@ -201,6 +201,24 @@ export const accountsService = {
           if (!adminErr && adminData) {
             insertedData = adminData;
           }
+        }
+      } catch (err) {
+        console.warn('Supabase direto falhou para contas, tentando rota do servidor:', err);
+      }
+
+      if (!insertedData && typeof window !== 'undefined') {
+        try {
+          const res = await fetch('/api/db', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'insert', table: 'accounts', payload }),
+          });
+          if (res.ok) {
+            const resJson = await res.json();
+            if (resJson.data) insertedData = resJson.data;
+          }
+        } catch (proxyErr) {
+          console.warn('Erro no proxy de contas:', proxyErr);
         }
       }
 

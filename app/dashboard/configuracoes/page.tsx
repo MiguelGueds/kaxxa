@@ -212,21 +212,36 @@ function SettingsContent() {
       const user = await getAuthenticatedUser();
       if (!user?.id) throw new Error('Usuário não autenticado');
       const newId = generateUuid();
-      const { error } = await supabase.from('categories').insert({ 
+      const payload = { 
         id: newId,
         user_id: user.id, 
         name: categoryName.trim(), 
         type: categoryType, 
         parent_id: categoryParentId 
-      });
-      if (error) {
-        setErrorMsg(error.message);
-      } else {
-        setSuccessMsg('Salvo!');
-        setCategoryName('');
-        setIsCategoryModalOpen(false);
-        fetchData();
+      };
+
+      let saved = false;
+      try {
+        const { error } = await supabase.from('categories').insert(payload);
+        if (!error) saved = true;
+      } catch {}
+
+      if (!saved) {
+        const res = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'insert', table: 'categories', payload }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Erro ao salvar categoria');
+        }
       }
+
+      setSuccessMsg('Salvo!');
+      setCategoryName('');
+      setIsCategoryModalOpen(false);
+      fetchData();
     } catch (err: any) {
       setErrorMsg(err?.message || 'Erro ao salvar categoria');
     } finally {
@@ -337,18 +352,33 @@ function SettingsContent() {
       const user = await getAuthenticatedUser();
       if (!user?.id) throw new Error('Usuário não autenticado');
       const tpId = generateUuid();
-      const { error } = await supabase.from('third_parties').insert({ 
+      const payload = { 
         id: tpId,
         user_id: user.id, 
         name: thirdPartyName.trim()
-      });
-      if (error) {
-        setErrorMsg(error.message);
-      } else {
-        setSuccessMsg('Pessoa salva!');
-        setIsThirdPartyModalOpen(false);
-        fetchData();
+      };
+
+      let saved = false;
+      try {
+        const { error } = await supabase.from('third_parties').insert(payload);
+        if (!error) saved = true;
+      } catch {}
+
+      if (!saved) {
+        const res = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'insert', table: 'third_parties', payload }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Erro ao salvar terceiro');
+        }
       }
+
+      setSuccessMsg('Pessoa salva!');
+      setIsThirdPartyModalOpen(false);
+      fetchData();
     } catch (err: any) {
       setErrorMsg(err?.message || "Erro ao salvar terceiro");
     } finally {
