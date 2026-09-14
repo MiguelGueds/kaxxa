@@ -366,15 +366,86 @@ html, body {
   }
 }
 
+/* Animações Ultra-Leves (Hardware Accelerated CSS) */
+@keyframes luxuryFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-luxury-fade {
   animation: luxuryFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .card-luxury-hover {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
 }
 
 .card-luxury-hover:hover {
   transform: translateY(-2px);
 }
+
+/* Floating Luxury Cards with Satin Degradê and Micro-Highlights */
+.card-luxury-float {
+  position: relative;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFD 100%);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 2px 6px -1px rgba(0, 0, 0, 0.02), inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.card-luxury-float:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 1);
+  border-color: rgba(203, 213, 225, 0.9);
+}
+
+html.dark .card-luxury-float {
+  background: linear-gradient(180deg, #0E121B 0%, #090C13 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+html.dark .card-luxury-float:hover {
+  border-color: rgba(0, 71, 255, 0.35);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65), 0 0 25px rgba(0, 71, 255, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Luxury Sapphire Navigation Rail Glow */
+@keyframes navBeaconPulse {
+  0%, 100% {
+    opacity: 0.8;
+    box-shadow: 0 0 10px rgba(0, 71, 255, 0.6);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 16px rgba(0, 71, 255, 0.95);
+  }
+}
+
+.animate-nav-beacon {
+  animation: navBeaconPulse 2.4s ease-in-out infinite;
+}
+
+/* Atmospheric Background Lighting */
+.bg-luxury-atmosphere {
+  background-color: #F8F9FC;
+  background-image: 
+    radial-gradient(ellipse 70% 40% at 50% -10%, rgba(0, 71, 255, 0.038) 0%, transparent 70%),
+    radial-gradient(circle 500px at 95% 20%, rgba(0, 49, 184, 0.02) 0%, transparent 60%);
+}
+
+html.dark .bg-luxury-atmosphere {
+  background-color: #05070B;
+  background-image: 
+    radial-gradient(ellipse 70% 40% at 50% -10%, rgba(0, 71, 255, 0.12) 0%, transparent 70%),
+    radial-gradient(circle 600px at 100% 10%, rgba(0, 49, 184, 0.08) 0%, transparent 60%),
+    radial-gradient(circle 400px at 0% 90%, rgba(0, 71, 255, 0.05) 0%, transparent 60%);
+}
+
 

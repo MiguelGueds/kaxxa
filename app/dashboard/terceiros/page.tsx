@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { thirdPartiesService } from '@/lib/services/thirdParties';
 import { accountsService } from '@/lib/services/accounts';
 import { cardsService } from '@/lib/services/cards';
+import { transactionsService } from '@/lib/services/transactions';
 import { 
   Plus, 
   CreditCard, 
@@ -25,7 +26,10 @@ import {
   Handshake,
   Receipt,
   Coins,
-  Check
+  Check,
+  Calendar,
+  Building2,
+  ArrowDownLeft
 } from 'lucide-react';
 import { usePrivacy } from '@/app/contexts/PrivacyContext';
 import { BankLogo } from '@/app/components/BankLogo';
@@ -129,7 +133,18 @@ export default function TerceirosPage() {
   const [formNotes, setFormNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Modal Baixa / Pagamento Parcial / Recebimento de Bem
+  // Modal Baixa / Registrar Recebimento Ampliado
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentPersonName, setPaymentPersonName] = useState('');
+  const [paymentDebtId, setPaymentDebtId] = useState<string>('ALL');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CASH' | 'BARTER_ASSET' | 'CARD'>('PIX');
+  const [paymentAssetNote, setPaymentAssetNote] = useState('');
+  const [paymentTargetAccountId, setPaymentTargetAccountId] = useState('');
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [paymentToast, setPaymentToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Mantido para compatibilidade com qualquer trigger legado
   const [selectedDebtForSettle, setSelectedDebtForSettle] = useState<ThirdPartyDebt | null>(null);
   const [settleAmount, setSettleAmount] = useState('');
   const [settleMethod, setSettleMethod] = useState<'PIX' | 'CASH' | 'BARTER_ASSET' | 'CARD'>('PIX');
@@ -300,59 +315,20 @@ export default function TerceirosPage() {
     setFormNotes('');
   };
 
-  const handleOpenSettleModal = (debt: ThirdPartyDebt) => {
-    setSelectedDebtForSettle(debt);
+  const handleOpenPayDebtModal = (debt: ThirdPartyDebt) => {
+    setPaymentPersonName(debt.personName);
+    setPaymentDebtId(debt.id);
     const remaining = Math.max(0, debt.totalAmount - debt.paidAmount);
-    setSettleAmount(remaining.toString());
-    setSettleMethod('PIX');
-    setSettleAssetNote('');
+    setPaymentAmount(remaining.toString());
+    setPaymentMethod('PIX');
+    setPaymentAssetNote('');
+    setPaymentTargetAccountId('');
+    setPaymentDate(new Date().toISOString().split('T')[0]);
+    setIsPaymentModalOpen(true);
   };
 
-  const handleConfirmSettle = async () => {
-    if (!selectedDebtForSettle) return;
-    const amountVal = parseFloat(settleAmount.replace(',', '.')) || 0;
-    if (amountVal <= 0) return;
-
-    const debt = selectedDebtForSettle;
-    const newPaidAmount = Math.min(debt.totalAmount, debt.paidAmount + amountVal);
-    const isFullPaid = newPaidAmount >= debt.totalAmount;
-    const newStatus: 'PAID' | 'PARTIAL' = isFullPaid ? 'PAID' : 'PARTIAL';
-
-    const methodLabels: Record<string, string> = {
-      PIX: 'PIX/Transferência',
-      CASH: 'Dinheiro Espécie',
-      BARTER_ASSET: `Abatimento por Bem (${settleAssetNote.trim() || 'Objeto em troca'})`,
-      CARD: 'Cartão/Outros'
-    };
-
-    const methodText = methodLabels[settleMethod] || 'PIX';
-    const nowStr = new Date().toLocaleDateString('pt-BR');
-    const paymentLog = `[Baixa R$ ${amountVal.toFixed(2)} via ${methodText} em ${nowStr}]`;
-    const updatedNotes = debt.notes ? `${debt.notes}\n${paymentLog}` : paymentLog;
-
-    try {
-      await thirdPartiesService.updateDebt(debt.id, {
-        paid_amount: newPaidAmount,
-        status: newStatus,
-        notes: updatedNotes,
-      });
-    } catch (e) {
-      console.error('Erro ao dar baixa no Supabase:', e);
-    }
-
-    setDebts(prev => prev.map(d => {
-      if (d.id === debt.id) {
-        return {
-          ...d,
-          paidAmount: newPaidAmount,
-          status: newStatus,
-          notes: updatedNotes,
-        };
-      }
-      return d;
-    }));
-
-    setSelectedDebtForSettle(null);
+  const handleOpenSettleModal = (debt: ThirdPartyDebt) => {
+    handleOpenPayDebtModal(debt);
   };
 
   const handleDeleteDebt = async (debtId: string) => {
@@ -533,82 +509,259 @@ export default function TerceirosPage() {
     }
   };
 
+  // Lista de devedores com saldo em aberto
+  const peopleWithPendingBalance = useMemo(() => {
+    return peopleList.filter(p => p.totalRemaining > 0);
+  }, [peopleList]);
+
+  // Lista de dívidas abertas da pessoa selecionada no modal de pagamento
+  const selectedPersonPendingDebts = useMemo(() => {
+    if (!paymentPersonName) return [];
+    return debts.filter(d => d.personName === paymentPersonName && d.status !== 'PAID');
+  }, [debts, paymentPersonName]);
+
+  const handleOpenGlobalPaymentModal = () => {
+    const defaultPerson = selectedPersonFilter 
+      ? peopleList.find(p => p.name === selectedPersonFilter)
+      : (peopleWithPendingBalance[0] || peopleList[0]);
+    
+    const personName = defaultPerson ? defaultPerson.name : (availablePeopleList[0] || '');
+    setPaymentPersonName(personName);
+    setPaymentDebtId('ALL');
+    setPaymentAmount(defaultPerson ? Math.max(0, defaultPerson.totalRemaining).toString() : '');
+    setPaymentMethod('PIX');
+    setPaymentAssetNote('');
+    setPaymentTargetAccountId('');
+    setPaymentDate(new Date().toISOString().split('T')[0]);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handleOpenPayPersonModal = (person: { name: string; totalRemaining: number }) => {
+    setPaymentPersonName(person.name);
+    setPaymentDebtId('ALL');
+    setPaymentAmount(Math.max(0, person.totalRemaining).toString());
+    setPaymentMethod('PIX');
+    setPaymentAssetNote('');
+    setPaymentTargetAccountId('');
+    setPaymentDate(new Date().toISOString().split('T')[0]);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handleSelectPaymentPerson = (name: string) => {
+    setPaymentPersonName(name);
+    setPaymentDebtId('ALL');
+    const p = peopleList.find(item => item.name === name);
+    setPaymentAmount(p ? Math.max(0, p.totalRemaining).toString() : '');
+  };
+
+  const handleSelectPaymentDebt = (debtId: string) => {
+    setPaymentDebtId(debtId);
+    if (debtId === 'ALL') {
+      const p = peopleList.find(item => item.name === paymentPersonName);
+      setPaymentAmount(p ? Math.max(0, p.totalRemaining).toString() : '');
+    } else {
+      const d = debts.find(item => item.id === debtId);
+      if (d) {
+        setPaymentAmount(Math.max(0, d.totalAmount - d.paidAmount).toString());
+      }
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    const amountVal = parseFloat(paymentAmount.replace(',', '.')) || 0;
+    if (amountVal <= 0 || !paymentPersonName.trim()) return;
+
+    const methodLabels: Record<string, string> = {
+      PIX: 'PIX/Transferência',
+      CASH: 'Dinheiro Vivo',
+      BARTER_ASSET: `Abatimento por Bem (${paymentAssetNote.trim() || 'Objeto em troca'})`,
+      CARD: 'Cartão/Outros'
+    };
+    const methodText = methodLabels[paymentMethod] || 'PIX';
+    const nowStr = paymentDate ? new Date(paymentDate + 'T12:00:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+    const paymentLog = `[Baixa R$ ${amountVal.toFixed(2)} via ${methodText} em ${nowStr}]`;
+
+    try {
+      if (paymentDebtId !== 'ALL') {
+        const debt = debts.find(d => d.id === paymentDebtId);
+        if (debt) {
+          const newPaidAmount = Math.min(debt.totalAmount, debt.paidAmount + amountVal);
+          const isFullPaid = newPaidAmount >= debt.totalAmount;
+          const newStatus: 'PAID' | 'PARTIAL' = isFullPaid ? 'PAID' : 'PARTIAL';
+          const updatedNotes = debt.notes ? `${debt.notes}\n${paymentLog}` : paymentLog;
+
+          await thirdPartiesService.updateDebt(debt.id, {
+            paid_amount: newPaidAmount,
+            status: newStatus,
+            notes: updatedNotes,
+          });
+
+          setDebts(prev => prev.map(d => d.id === debt.id ? { ...d, paidAmount: newPaidAmount, status: newStatus, notes: updatedNotes } : d));
+        }
+      } else {
+        // Amortização distribuída
+        let remainingToDistribute = amountVal;
+        const personPendingDebts = debts
+          .filter(d => d.personName === paymentPersonName && d.status !== 'PAID')
+          .sort((a, b) => (b.totalAmount - b.paidAmount) - (a.totalAmount - a.paidAmount));
+
+        const updatedDebtIds: { id: string; paid: number; status: 'PAID' | 'PARTIAL'; notes: string }[] = [];
+
+        for (const debt of personPendingDebts) {
+          if (remainingToDistribute <= 0) break;
+          const debtRem = Math.max(0, debt.totalAmount - debt.paidAmount);
+          const applyVal = Math.min(debtRem, remainingToDistribute);
+          const newPaid = debt.paidAmount + applyVal;
+          const newStatus: 'PAID' | 'PARTIAL' = newPaid >= debt.totalAmount ? 'PAID' : 'PARTIAL';
+          const updatedNotes = debt.notes ? `${debt.notes}\n${paymentLog}` : paymentLog;
+
+          await thirdPartiesService.updateDebt(debt.id, {
+            paid_amount: newPaid,
+            status: newStatus,
+            notes: updatedNotes,
+          });
+
+          updatedDebtIds.push({ id: debt.id, paid: newPaid, status: newStatus, notes: updatedNotes });
+          remainingToDistribute -= applyVal;
+        }
+
+        if (updatedDebtIds.length > 0) {
+          setDebts(prev => prev.map(d => {
+            const found = updatedDebtIds.find(u => u.id === d.id);
+            return found ? { ...d, paidAmount: found.paid, status: found.status, notes: found.notes } : d;
+          }));
+        }
+      }
+
+      // Credita na conta bancária/carteira selecionada pelo usuário
+      if (paymentTargetAccountId) {
+        try {
+          await accountsService.updateBalance(paymentTargetAccountId, amountVal);
+          await transactionsService.createTransaction({
+            description: `Recebimento de Terceiro - ${paymentPersonName}`,
+            amount: amountVal,
+            type: 'INCOME',
+            date: paymentDate || new Date().toISOString().split('T')[0],
+            account_id: paymentTargetAccountId,
+            is_paid: true,
+            notes: `Forma: ${methodText}`,
+          });
+        } catch (accErr) {
+          console.warn('Erro ao creditar recebimento na conta:', accErr);
+        }
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('kaxxa_refresh_data'));
+      }
+
+      setPaymentToast({
+        message: `Recebimento de R$ ${amountVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} cadastrado com sucesso!`,
+        type: 'success'
+      });
+      setTimeout(() => setPaymentToast(null), 4000);
+      setIsPaymentModalOpen(false);
+    } catch (err) {
+      console.error('Erro ao registrar pagamento:', err);
+      setPaymentToast({
+        message: 'Falha ao registrar pagamento. Tente novamente.',
+        type: 'error'
+      });
+      setTimeout(() => setPaymentToast(null), 4000);
+    }
+  };
+
   return (
-    <div className="w-full max-w-7xl mx-auto pb-24 space-y-3.5">
+    <div className="w-full max-w-7xl mx-auto pb-24 space-y-4">
       
+      {/* TOAST DE FEEDBACK DE PAGAMENTO */}
+      {paymentToast && (
+        <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-medium animate-fade-in-down shadow-md ${
+          paymentToast.type === 'success' 
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/60'
+        }`}>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={16} className={paymentToast.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} />
+            <span>{paymentToast.message}</span>
+          </div>
+          <button onClick={() => setPaymentToast(null)} className="opacity-70 hover:opacity-100 p-1"><X size={14}/></button>
+        </div>
+      )}
+
       {/* ALERTA / HEADER */}
-      <div className="flex items-center justify-between gap-4 mb-4 bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl p-2.5 px-4 shadow-sm relative overflow-hidden">
+      <div className="flex items-center justify-between gap-4 mb-2 card-luxury-float rounded-xl p-3 px-4 shadow-sm relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 relative z-10 min-w-0">
-          <span className="text-rose-600 font-bold text-[11px] sm:text-xs flex items-center gap-1.5 shrink-0">
+          <span className="text-rose-600 dark:text-rose-400 font-bold text-[11px] sm:text-xs flex items-center gap-1.5 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
             Evite empréstimos a terceiros
           </span>
-          <span className="hidden sm:block text-[#E5E7EB] text-xs">|</span>
-          <div className="text-[#64748B] text-[10px] leading-tight flex flex-col gap-0.5">
+          <span className="hidden sm:block text-slate-300 dark:text-zinc-700 text-xs">|</span>
+          <div className="text-slate-500 dark:text-zinc-400 text-[10.5px] leading-tight flex flex-col gap-0.5">
             <span>Comprometer seu limite ou dinheiro pessoal reduz sua capacidade financeira e aumenta o risco de inadimplência.</span>
-            <span>O Cenário ideal é manter esta seção em <strong className="text-[#181B22] font-bold">R$ 0,00</strong>.</span>
+            <span>O Cenário ideal é manter esta seção em <strong className="text-slate-900 dark:text-white font-bold">R$ 0,00</strong>.</span>
           </div>
         </div>
-        <div className="hidden lg:flex items-center gap-2 relative z-10 shrink-0 border-l border-[#E5E7EB] pl-4 ml-2">
-          <span className="text-[9px] text-[#94A3B8]">Volume vs. passado:</span>
-          <span className="text-[10px] font-bold text-[#1A44C8] bg-[#1A44C8]/10 px-2 py-0.5 rounded border border-[#1A44C8]/20 flex items-center gap-1">
-            ↓ 50% <span className="font-semibold text-[#1A44C8]">Redução</span>
+        <div className="hidden lg:flex items-center gap-2 relative z-10 shrink-0 border-l border-slate-200 dark:border-white/[0.08] pl-4 ml-2">
+          <span className="text-[9px] text-slate-400 dark:text-zinc-500">Status da carteira:</span>
+          <span className="text-[10px] font-semibold text-[#0047FF] bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20 flex items-center gap-1">
+            Gestão Ativa
           </span>
         </div>
       </div>
 
-      {/* 1. KPIs E GRÁFICOS */}
+      {/* 1. KPIs E GRÁFICOS FLUTUANTES (LUXURY) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* Main KPI */}
-        <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-5 shadow-sm relative overflow-hidden flex flex-col justify-between group">
+        <div className="card-luxury-float rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between group">
           <div className="z-10 relative space-y-4">
             <div>
-              <h3 className="text-[#94A3B8] text-[10px] font-bold uppercase tracking-wider mb-1">Total a Receber</h3>
-              <div className="text-2xl font-extrabold text-[#181B22] tracking-tight leading-none">
-                <span className="text-[#1A44C8] text-sm mr-1">R$</span> 
+              <h3 className="text-slate-400 dark:text-zinc-500 text-[10px] font-semibold uppercase tracking-wider mb-1">Total a Receber</h3>
+              <div className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
+                <span className="text-[#0047FF] text-sm mr-1 font-bold">R$</span> 
                 {formatCurrency(totalReceivable)}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#E5E7EB] space-y-2">
+            <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] space-y-2">
               <div className="flex justify-between items-center text-[10px]">
-                <span className="text-[#64748B] font-medium flex items-center gap-1.5"><CheckCircle2 size={10} className="text-[#1A44C8]"/> Já Recebido</span>
-                <span className="text-[#181B22] font-bold">R$ {formatCurrency(totalSettled)}</span>
+                <span className="text-slate-500 dark:text-zinc-400 font-medium flex items-center gap-1.5"><CheckCircle2 size={11} className="text-emerald-500"/> Já Recebido</span>
+                <span className="text-slate-900 dark:text-white font-bold">R$ {formatCurrency(totalSettled)}</span>
               </div>
               <div className="flex justify-between items-center text-[10px]">
-                <span className="text-[#64748B] font-medium flex items-center gap-1.5"><Layers size={10} className="text-[#94A3B8]"/> Devedores Ativos</span>
-                <span className="text-[#181B22] font-bold">{peopleList.filter(p => p.totalRemaining > 0).length} pessoas</span>
+                <span className="text-slate-500 dark:text-zinc-400 font-medium flex items-center gap-1.5"><Layers size={11} className="text-slate-400 dark:text-zinc-500"/> Devedores Ativos</span>
+                <span className="text-slate-900 dark:text-white font-bold">{peopleList.filter(p => p.totalRemaining > 0).length} pessoas</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Origem da Dívida */}
-        <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-5 shadow-sm flex flex-col justify-between">
-          <h3 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5 mb-4">
-            <BarChart3 size={13} className="text-[#1A44C8]" />
-            Origem
+        <div className="card-luxury-float rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+          <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-4">
+            <BarChart3 size={13} className="text-[#0047FF]" />
+            Origem da Dívida
           </h3>
           
           <div className="space-y-4">
             {/* Cartão */}
             <div className="group">
               <div className="flex justify-between text-[10px] mb-1.5 font-medium">
-                <span className="text-[#64748B] flex items-center gap-1"><CreditCard size={10}/> Comprometido Cartão</span>
-                <span className="text-[#181B22] font-bold">R$ {formatCurrency(cardReceivable)}</span>
+                <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1"><CreditCard size={11}/> Comprometido Cartão</span>
+                <span className="text-slate-900 dark:text-white font-bold">R$ {formatCurrency(cardReceivable)}</span>
               </div>
-              <div className="w-full bg-[#F1F3F7] rounded-full h-1.5 overflow-hidden border border-[#E5E7EB]">
-                <div className="bg-[#1A44C8] h-full rounded-full transition-all duration-1000" style={{ width: `${originData.card.pct}%` }}></div>
+              <div className="w-full bg-slate-100 dark:bg-white/[0.06] rounded-full h-1.5 overflow-hidden border border-slate-200/80 dark:border-white/[0.06]">
+                <div className="bg-[#0047FF] h-full rounded-full transition-all duration-1000" style={{ width: `${originData.card.pct}%` }}></div>
               </div>
             </div>
 
             {/* PIX/Conta */}
             <div className="group">
               <div className="flex justify-between text-[10px] mb-1.5 font-medium">
-                <span className="text-[#64748B] flex items-center gap-1"><Wallet size={10}/> PIX / Conta Corrente</span>
-                <span className="text-[#181B22] font-bold">R$ {formatCurrency(accountReceivable)}</span>
+                <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1"><Wallet size={11}/> PIX / Conta Corrente</span>
+                <span className="text-slate-900 dark:text-white font-bold">R$ {formatCurrency(accountReceivable)}</span>
               </div>
-              <div className="w-full bg-[#F1F3F7] rounded-full h-1.5 overflow-hidden border border-[#E5E7EB]">
+              <div className="w-full bg-slate-100 dark:bg-white/[0.06] rounded-full h-1.5 overflow-hidden border border-slate-200/80 dark:border-white/[0.06]">
                 <div className="bg-[#00A3FF] h-full rounded-full transition-all duration-1000" style={{ width: `${originData.account.pct}%` }}></div>
               </div>
             </div>
@@ -616,30 +769,30 @@ export default function TerceirosPage() {
         </div>
 
         {/* Maiores Devedores */}
-        <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-5 shadow-sm flex flex-col gap-3">
-          <h3 className="text-xs font-bold text-[#181B22] flex items-center justify-between border-b border-[#E5E7EB] pb-2">
+        <div className="card-luxury-float rounded-2xl p-5 shadow-sm flex flex-col gap-3">
+          <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-2">
             Maiores Devedores
-            <span className="text-[9px] text-[#1A44C8] font-bold">Por saldo</span>
+            <span className="text-[9px] text-[#0047FF] font-semibold">Por saldo</span>
           </h3>
           <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar flex-1">
             {donutData.map((d, i) => (
               <div key={i} className="flex justify-between items-center text-[10.5px] group cursor-pointer" onClick={() => setSelectedPersonPopup(d.name)}>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: d.color }}></div>
-                  <span className="font-bold text-[#181B22] group-hover:text-[#1A44C8] transition-colors">{d.name}</span>
+                  <span className="font-bold text-slate-900 dark:text-white group-hover:text-[#0047FF] transition-colors">{d.name}</span>
                 </div>
-                <span className="font-extrabold text-[#181B22] group-hover:text-[#1A44C8] transition-colors">R$ {formatCurrency(d.totalRemaining)}</span>
+                <span className="font-extrabold text-slate-900 dark:text-white group-hover:text-[#0047FF] transition-colors">R$ {formatCurrency(d.totalRemaining)}</span>
               </div>
             ))}
-            {donutData.length === 0 && <span className="text-[#94A3B8] text-xs font-medium">Nenhum devedor ativo.</span>}
+            {donutData.length === 0 && <span className="text-slate-400 dark:text-zinc-500 text-xs font-medium">Nenhum devedor ativo.</span>}
           </div>
         </div>
 
         {/* Gráfico de Projeção de Quitação */}
-        <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-5 shadow-sm flex flex-col justify-between">
-          <h3 className="text-xs font-bold text-[#181B22] flex items-center justify-between mb-2 border-b border-[#E5E7EB] pb-2">
-            <span className="flex items-center gap-1.5"><Clock size={13} className="text-[#1A44C8]" /> Previsão</span>
-            <span className="text-[9px] text-[#64748B] font-medium">Fim dos empréstimos</span>
+        <div className="card-luxury-float rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+          <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between mb-2 border-b border-slate-100 dark:border-white/[0.06] pb-2">
+            <span className="flex items-center gap-1.5"><Clock size={13} className="text-[#0047FF]" /> Previsão</span>
+            <span className="text-[9px] text-slate-400 dark:text-zinc-500 font-medium">Fim dos empréstimos</span>
           </h3>
           
           <div className="flex-1 flex flex-col items-center justify-center pt-2 pb-1 relative">
@@ -651,11 +804,11 @@ export default function TerceirosPage() {
 
               return (
                 <div className="text-center relative z-10">
-                  <span className="text-[10px] text-[#94A3B8] uppercase tracking-wider mb-1 block font-bold">Zera completamente em</span>
-                  <div className={`text-2xl font-extrabold tracking-tight ${isFar ? 'text-amber-600' : 'text-[#1A44C8]'}`}>
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1 block font-bold">Zera completamente em</span>
+                  <div className={`text-2xl font-extrabold tracking-tight ${isFar ? 'text-amber-600 dark:text-amber-400' : 'text-[#0047FF]'}`}>
                     {zeroMonth.label.toUpperCase()}
                   </div>
-                  <div className="mt-2 text-[9px] text-[#64748B] px-3 py-1 bg-[#F1F3F7] rounded-full border border-[#E5E7EB] inline-block font-medium">
+                  <div className="mt-2 text-[9.5px] text-slate-500 dark:text-zinc-400 px-3 py-1 bg-slate-100 dark:bg-white/[0.05] rounded-lg border border-slate-200/80 dark:border-white/[0.08] inline-block font-medium">
                     Manter o fluxo atual de pagamentos
                   </div>
                 </div>
@@ -666,10 +819,10 @@ export default function TerceirosPage() {
       </div>
 
       {/* 2. CARDS COMPACTOS DOS DEVEDORES */}
-      <h3 className="text-xs font-bold text-[#181B22] pt-3 ml-1 flex items-center gap-1.5">
+      <h3 className="text-xs font-bold text-slate-900 dark:text-white pt-2 ml-1 flex items-center gap-1.5">
         <UsersIcon /> Visualização por Pessoa
       </h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {peopleList.map(person => {
           const isCleared = person.totalRemaining <= 0;
 
@@ -677,31 +830,47 @@ export default function TerceirosPage() {
             <div 
               key={person.name}
               onClick={() => setSelectedPersonPopup(person.name)}
-              className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group shadow-sm relative overflow-hidden bg-[#FFFFFF] ${
+              className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden card-luxury-float ${
                 isCleared 
-                  ? 'opacity-60 hover:opacity-100 border-[#E5E7EB]'
-                  : 'border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/40'
+                  ? 'opacity-60 hover:opacity-100'
+                  : 'hover:border-[#0047FF]/50'
               }`}
             >
               <div className="flex items-center gap-2.5 mb-2 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#1A44C8] to-[#00A3FF] flex items-center justify-center text-white font-bold text-[10px] shrink-0 shadow-inner">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0031B8] to-[#00A3FF] flex items-center justify-center text-white font-bold text-[10px] shrink-0 shadow-sm">
                   {person.name.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-[11px] font-bold text-[#181B22] group-hover:text-[#1A44C8] transition-colors truncate">
+                  <h4 className="text-[11px] font-bold text-slate-900 dark:text-white group-hover:text-[#0047FF] transition-colors truncate">
                     {person.name}
                   </h4>
-                  <span className="text-[9px] text-[#94A3B8] block truncate font-medium">
+                  <span className="text-[9px] text-slate-400 dark:text-zinc-500 block truncate font-medium">
                     {person.debts.length} registros
                   </span>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#E5E7EB] flex justify-between items-baseline">
-                <span className="text-[9px] text-[#94A3B8] font-bold">Saldo:</span>
-                <span className={`text-[11px] font-extrabold ${isCleared ? 'text-[#94A3B8]' : 'text-[#181B22]'}`}>
-                  {isCleared ? 'Quitado' : `R$ ${formatCurrency(person.totalRemaining)}`}
-                </span>
+              <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06] flex justify-between items-center gap-1.5">
+                <div className="min-w-0">
+                  <span className="text-[8.5px] text-slate-400 dark:text-zinc-500 font-bold block leading-none mb-0.5">Saldo:</span>
+                  <span className={`text-[11px] font-extrabold truncate block ${isCleared ? 'text-slate-400 dark:text-zinc-500' : 'text-slate-900 dark:text-white'}`}>
+                    {isCleared ? 'Quitado' : `R$ ${formatCurrency(person.totalRemaining)}`}
+                  </span>
+                </div>
+                {!isCleared && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenPayPersonModal(person);
+                    }}
+                    className="px-2 py-1 rounded-lg bg-gradient-to-r from-[#0031B8] to-[#0047FF] hover:from-[#002796] hover:to-[#003FE6] text-white text-[9.5px] font-medium transition-all shadow-xs flex items-center gap-1 active:scale-95 shrink-0"
+                    title="Registrar pagamento desta pessoa"
+                  >
+                    <Coins size={10} />
+                    Receber
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -709,36 +878,37 @@ export default function TerceirosPage() {
       </div>
 
       {/* 3. EXTRATO / LANÇAMENTOS */}
-      <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-4 shadow-sm mt-4">
+      <div className="card-luxury-float rounded-2xl p-4 sm:p-5 shadow-sm mt-4">
         
         {/* BARRA DE FILTROS */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-[#E5E7EB] mb-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3.5 border-b border-slate-100 dark:border-white/[0.06] mb-3.5">
           
           <div className="flex items-center relative">
-            <div className="flex items-center bg-[#F1F3F7] p-1 rounded-full border border-[#E5E7EB] shadow-sm">
+            <div className="flex items-center bg-slate-100/70 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/80 dark:border-white/[0.08] shadow-2xs">
               <button
+                type="button"
                 onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
                   activeFilterTab !== 'ALL'
-                    ? 'bg-[#1A44C8]/10 text-[#1A44C8] shadow-sm border border-[#1A44C8]/20'
-                    : 'bg-[#FFFFFF] text-[#181B22] shadow-sm'
+                    ? 'bg-blue-500/15 text-[#0047FF] shadow-2xs border border-blue-500/20'
+                    : 'bg-white dark:bg-[#0C1018] text-slate-800 dark:text-white shadow-2xs'
                 }`}
               >
                 <span>{getFilterTabLabel()}</span>
-                <ChevronDown size={10} className={`transition-transform ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={11} className={`transition-transform ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
             {isFilterDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setIsFilterDropdownOpen(false)}></div>
-                <div className="absolute top-full left-0 mt-1.5 w-32 bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl shadow-xl overflow-hidden z-50 py-1 flex flex-col">
+                <div className="absolute top-full left-0 mt-1.5 w-36 bg-white dark:bg-[#0C1018] border border-slate-200/90 dark:border-white/[0.08] rounded-xl shadow-xl overflow-hidden z-50 py-1 flex flex-col">
                   {(['ALL', 'CARD', 'ACCOUNT', 'PENDING', 'PAID'] as const).map(tab => (
                     <button
                       key={tab}
                       onClick={() => { setActiveFilterTab(tab); setIsFilterDropdownOpen(false); }}
-                      className={`text-left px-3 py-2 text-[10px] font-bold transition-colors ${
-                        activeFilterTab === tab ? 'bg-[#1A44C8]/10 text-[#1A44C8]' : 'text-[#181B22] hover:bg-[#F1F3F7]'
+                      className={`text-left px-3 py-2 text-[11px] font-medium transition-colors ${
+                        activeFilterTab === tab ? 'bg-blue-500/10 text-[#0047FF] font-semibold' : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/[0.05]'
                       }`}
                     >
                       {tab === 'ALL' && 'Todos'}
@@ -756,22 +926,35 @@ export default function TerceirosPage() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {/* Busca Rápida */}
             <div className="relative flex-1 sm:w-56">
-              <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
               <input 
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar responsável ou desc..."
-                className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-full pl-8 pr-3 py-1.5 text-[10px] text-[#181B22] placeholder-[#94A3B8] focus:outline-none focus:border-[#1A44C8] transition-colors font-medium"
+                className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-[#0047FF] transition-colors font-normal"
               />
             </div>
 
+            {/* Botão Registrar Pagamento */}
             <button 
-              onClick={handleOpenNewModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-[10px] transition-all shadow-md whitespace-nowrap"
+              type="button"
+              onClick={handleOpenGlobalPaymentModal}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#0031B8] via-[#0047FF] to-[#0055FF] hover:from-[#002796] hover:to-[#003FE6] text-white font-medium text-xs transition-all shadow-sm shadow-blue-600/25 active:scale-95 whitespace-nowrap"
+              title="Registrar pagamento recebido de terceiro"
             >
-              <Plus size={12} className="text-white" />
-              Novo Lançamento
+              <Coins size={13} className="text-white" />
+              <span>Registrar Pagamento</span>
+            </button>
+
+            {/* Botão Novo Lançamento */}
+            <button 
+              type="button"
+              onClick={handleOpenNewModal}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:bg-slate-50 dark:hover:bg-white/[0.06] text-slate-700 dark:text-zinc-300 font-normal text-xs transition-all shadow-2xs active:scale-95 whitespace-nowrap"
+            >
+              <Plus size={13} />
+              <span>Novo Lançamento</span>
             </button>
           </div>
         </div>
@@ -779,7 +962,7 @@ export default function TerceirosPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#E5E7EB] text-[9px] uppercase tracking-wider text-[#94A3B8] font-bold bg-[#F8FAFC]">
+              <tr className="border-b border-slate-100 dark:border-white/[0.06] text-[9.5px] uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-semibold bg-slate-50/50 dark:bg-white/[0.02]">
                 <th className="py-2.5 px-3">Responsável</th>
                 <th className="py-2.5 px-3">Descrição</th>
                 <th className="py-2.5 px-3">Origem</th>
@@ -788,59 +971,62 @@ export default function TerceirosPage() {
                 <th className="py-2.5 px-3 text-right">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E5E7EB] text-[10.5px]">
+            <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] text-xs font-light">
               {filteredDebts.length > 0 ? (
                 filteredDebts.map(item => {
                   const remaining = Math.max(0, item.totalAmount - item.paidAmount);
                   const isPaid = remaining <= 0 || item.status === 'PAID';
 
                   return (
-                    <tr key={item.id} className="hover:bg-[#F8FAFC] transition-colors group">
+                    <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition-colors group">
                       <td className="py-2.5 px-3">
                         <span 
                           onClick={() => setSelectedPersonPopup(item.personName)}
-                          className="font-bold text-[#181B22] hover:text-[#1A44C8] cursor-pointer transition-colors"
+                          className="font-medium text-slate-900 dark:text-white hover:text-[#0047FF] cursor-pointer transition-colors"
                         >
                           {item.personName}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-[#64748B] font-medium">{item.description}</td>
+                      <td className="py-2.5 px-3 text-slate-500 dark:text-zinc-400 font-normal">{item.description}</td>
                       <td className="py-2.5 px-3">
-                        <span className="flex items-center gap-1.5 text-[#181B22] font-semibold text-[10px]">
+                        <span className="flex items-center gap-1.5 text-slate-900 dark:text-white font-medium text-[11px]">
                           <BankLogo name={item.originBankOrCard} size="xs" />
                           {item.originBankOrCard}
                         </span>
                       </td>
                       <td className="py-2.5 px-3">
                         {isPaid ? (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded border border-[#1A44C8]/20 bg-[#1A44C8]/10 text-[#1A44C8] font-bold">Quitado</span>
+                          <span className="text-[9px] px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">Quitado</span>
                         ) : item.installmentsTotal > 1 ? (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded border border-amber-200 bg-amber-50 text-amber-700 font-bold">Parc. {item.currentInstallment}/{item.installmentsTotal}</span>
+                          <span className="text-[9px] px-2 py-0.5 rounded-md border border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium">Parc. {item.currentInstallment}/{item.installmentsTotal}</span>
                         ) : (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded border border-[#E5E7EB] bg-[#F1F3F7] text-[#64748B] font-bold">Pendente</span>
+                          <span className="text-[9px] px-2 py-0.5 rounded-md border border-slate-200 dark:border-white/[0.08] bg-slate-100 dark:bg-white/[0.04] text-slate-500 dark:text-zinc-400 font-medium">Pendente</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-extrabold text-[#181B22]">
+                      <td className="py-2.5 px-3 text-right font-medium text-slate-900 dark:text-white">
                         R$ {formatCurrency(remaining)}
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {isPaid ? (
-                            <span className="text-[#94A3B8] flex items-center justify-end gap-1 font-bold text-[9px]"><CheckCircle2 size={10} className="text-[#1A44C8]"/> Ok</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 flex items-center justify-end gap-1 font-medium text-[10px]"><Check size={12} className="text-emerald-500"/> Liquidado</span>
                           ) : (
                             <button 
-                              onClick={() => handleOpenSettleModal(item)}
-                              className="px-3 py-1 rounded-full bg-[#1A44C8] hover:bg-[#1538A5] text-white transition-all font-semibold text-[9px] shadow-sm"
+                              type="button"
+                              onClick={() => handleOpenPayDebtModal(item)}
+                              className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#0031B8] to-[#0047FF] hover:from-[#002796] hover:to-[#003FE6] text-white transition-all font-medium text-[9.5px] shadow-xs flex items-center gap-1 active:scale-95"
                             >
+                              <Coins size={10} />
                               Dar Baixa
                             </button>
                           )}
                           <button
+                            type="button"
                             onClick={() => handleDeleteDebt(item.id)}
-                            className="p-1 rounded text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100"
+                            className="p-1 rounded-lg text-slate-300 dark:text-zinc-600 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors opacity-0 group-hover:opacity-100"
                             title="Excluir"
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </td>
@@ -901,20 +1087,42 @@ export default function TerceirosPage() {
                         </div>
                         
                         <div>
-                          <h4 className="text-[11px] font-bold text-[#181B22] mb-2 border-b border-[#E5E7EB] pb-1">Desmembramento das Dívidas</h4>
-                          <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                          <h4 className="text-[11px] font-bold text-slate-900 dark:text-white mb-2 border-b border-slate-100 dark:border-white/[0.06] pb-1">Desmembramento das Dívidas</h4>
+                          <div className="space-y-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-1">
                             {person.debts.map(d => {
                               const rem = Math.max(0, d.totalAmount - d.paidAmount);
                               const remainingInst = d.installmentsTotal - d.currentInstallment;
                               return (
-                                <div key={d.id} className="bg-[#F8FAFC] border border-[#E5E7EB] p-2 rounded-lg flex flex-col gap-1">
-                                  <div className="flex justify-between items-start">
-                                    <span className="text-[10px] font-bold text-[#181B22]">{d.description}</span>
-                                    <span className="text-[10px] font-extrabold text-[#1A44C8]">R$ {formatCurrency(rem)}</span>
+                                <div key={d.id} className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] p-2.5 rounded-xl flex items-center justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs font-semibold text-slate-900 dark:text-white truncate">{d.description}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[9.5px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                                      <span>{d.originBankOrCard}</span>
+                                      <span>•</span>
+                                      <span>{d.installmentsTotal > 1 ? `${remainingInst} parc. restantes` : 'Saldo em aberto'}</span>
+                                    </div>
                                   </div>
-                                  <div className="flex justify-between items-center text-[8px] text-[#64748B]">
-                                    <span>{d.originBankOrCard} • {d.installmentsTotal > 1 ? `${remainingInst} parc. restantes` : 'Saldo em aberto'}</span>
-                                    {rem === 0 ? <span className="text-[#1A44C8] font-bold">Quitado</span> : <span>Total original: R$ {formatCurrency(d.totalAmount)}</span>}
+                                  <div className="flex items-center gap-2.5 shrink-0">
+                                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                      R$ {formatCurrency(rem)}
+                                    </span>
+                                    {rem > 0 ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenPayDebtModal(d)}
+                                        className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#0031B8] to-[#0047FF] hover:from-[#002796] hover:to-[#003FE6] text-white text-[9.5px] font-medium transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                                        title="Dar baixa neste lançamento"
+                                      >
+                                        <Coins size={10} />
+                                        Dar Baixa
+                                      </button>
+                                    ) : (
+                                      <span className="text-emerald-600 dark:text-emerald-400 text-[9.5px] font-medium flex items-center gap-1">
+                                        <Check size={11} /> Quitado
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -922,9 +1130,21 @@ export default function TerceirosPage() {
                           </div>
                         </div>
 
-                        <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center justify-between mt-auto">
-                          <span className="text-[10px] text-amber-700 font-bold">Quitação Antecipada (Total):</span>
-                          <span className="text-sm font-extrabold text-amber-700">R$ {formatCurrency(totalRemaining)}</span>
+                        <div className="bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 p-3 rounded-xl flex items-center justify-between mt-auto">
+                          <div>
+                            <span className="text-[10px] text-amber-800 dark:text-amber-400 font-semibold block">Quitação Total em Aberto:</span>
+                            <span className="text-sm font-extrabold text-amber-800 dark:text-amber-300">R$ {formatCurrency(totalRemaining)}</span>
+                          </div>
+                          {totalRemaining > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPayPersonModal(person)}
+                              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-medium text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                            >
+                              <Coins size={13} />
+                              Quitar Tudo
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -1227,99 +1447,200 @@ export default function TerceirosPage() {
       </PortalModal>
     )}
 
-      {/* MODAL DAR BAIXA / REGISTRAR RECEBIMENTO DE BEM OU DINHEIRO */}
-      {selectedDebtForSettle && (
+      {/* MODAL PRINCIPAL: REGISTRAR PAGAMENTO / BAIXA DE TERCEIROS */}
+      {isPaymentModalOpen && (
         <PortalModal>
           <div 
-            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
-            onClick={() => setSelectedDebtForSettle(null)}
+            className="fixed inset-0 w-screen h-screen min-h-dvh z-[99999] overflow-y-auto bg-[#0A0D14]/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 transition-all duration-300"
+            onClick={() => setIsPaymentModalOpen(false)}
           >
             <div 
               onClick={e => e.stopPropagation()} 
-              className="relative bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85dvh] sm:max-h-[88vh] m-auto animate-scale-in-center shrink-0"
+              className="relative bg-[#FFFFFF] dark:bg-[#0C1018] border border-slate-200/90 dark:border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[88dvh] m-auto animate-scale-in-center shrink-0"
             >
-              <div className="p-4 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between shrink-0">
-                <h3 className="text-sm font-bold text-[#181B22] flex items-center gap-2">
-                  <Coins size={16} className="text-[#1A44C8]" />
-                  Dar Baixa / Registrar Recebimento
-                </h3>
-                <button onClick={() => setSelectedDebtForSettle(null)} className="text-[#94A3B8] hover:text-[#181B22] transition-colors"><X size={16}/></button>
+              {/* Header */}
+              <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.02] flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-[#0047FF]">
+                    <Coins size={17} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Registrar Pagamento / Baixa
+                    </h3>
+                    <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-normal">
+                      Abata dívidas de terceiros e atualize seus saldos
+                    </span>
+                  </div>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setIsPaymentModalOpen(false)} 
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
+                >
+                  <X size={16}/>
+                </button>
               </div>
 
+              {/* Corpo do Formulário */}
               <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-                <div className="bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB] space-y-1">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#64748B] font-bold">Responsável:</span>
-                    <span className="font-bold text-[#181B22]">{selectedDebtForSettle.personName}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#64748B] font-bold">Lançamento / Bem:</span>
-                    <span className="font-extrabold text-[#1A44C8]">{selectedDebtForSettle.description} ({selectedDebtForSettle.originBankOrCard})</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs pt-1 border-t border-[#E5E7EB]">
-                    <span className="text-[#64748B] font-bold">Saldo Restante Atual:</span>
-                    <span className="font-extrabold text-rose-600">R$ {formatCurrency(selectedDebtForSettle.totalAmount - selectedDebtForSettle.paidAmount)}</span>
-                  </div>
-                </div>
-
+                
+                {/* 1. Selecionar Pessoa */}
                 <div>
-                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Valor Recebido / Abatido nesta Baixa (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    value={settleAmount}
-                    onChange={e => setSettleAmount(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2.5 text-sm text-[#181B22] font-extrabold focus:outline-none focus:border-[#1A44C8]"
-                  />
-                  <span className="text-[10px] text-[#94A3B8] mt-1 block font-medium">
-                    Você pode fazer a baixa parcial (ex: R$ 1.500) ou a quitação total do valor.
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Como o Pagamento/Abatimento foi Efetuado?</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                    Pessoa Devedora
+                  </label>
                   <select
-                    value={settleMethod}
-                    onChange={e => setSettleMethod(e.target.value as any)}
-                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
+                    value={paymentPersonName}
+                    onChange={e => handleSelectPaymentPerson(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#0047FF] transition-colors cursor-pointer"
                   >
-                    <option value="PIX">⚡ PIX / Transferência Bancária</option>
-                    <option value="CASH">💵 Dinheiro Vivo (Espécie)</option>
-                    <option value="BARTER_ASSET">🏍️ Entrega de outro Bem / Troca (Ex: Me deu uma TV/notebook)</option>
-                    <option value="CARD">💳 Cartão / Boleto / Outros</option>
+                    {availablePeopleList.map(name => {
+                      const p = peopleList.find(item => item.name === name);
+                      const rem = p ? p.totalRemaining : 0;
+                      return (
+                        <option key={name} value={name}>
+                          {name} {rem > 0 ? `(Em aberto: R$ ${rem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})` : '(Quitado)'}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
-                {settleMethod === 'BARTER_ASSET' && (
+                {/* 2. Selecionar Dívida Específica ou Quitação Geral */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                    Qual lançamento abater?
+                  </label>
+                  <select
+                    value={paymentDebtId}
+                    onChange={e => handleSelectPaymentDebt(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#0047FF] transition-colors cursor-pointer"
+                  >
+                    <option value="ALL">
+                      ⭐ Amortização / Quitação Geral (Saldo Total)
+                    </option>
+                    {selectedPersonPendingDebts.map(d => {
+                      const rem = Math.max(0, d.totalAmount - d.paidAmount);
+                      return (
+                        <option key={d.id} value={d.id}>
+                          {d.description} - {d.originBankOrCard} (Resta: R$ {rem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* 3. Valor Recebido */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                    Valor Recebido / Abatido (R$)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-zinc-500">
+                      R$
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={paymentAmount}
+                      onChange={e => setPaymentAmount(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] rounded-xl pl-10 pr-3 py-2.5 text-base font-extrabold text-slate-900 dark:text-white focus:outline-none focus:border-[#0047FF] transition-colors"
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1 block">
+                    Você pode registrar qualquer valor parcial ou a liquidação total.
+                  </span>
+                </div>
+
+                {/* 4. Forma de Pagamento e Data */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                      Forma de Recebimento
+                    </label>
+                    <select
+                      value={paymentMethod}
+                      onChange={e => setPaymentMethod(e.target.value as any)}
+                      className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#0047FF] font-medium cursor-pointer"
+                    >
+                      <option value="PIX">⚡ PIX / Transferência</option>
+                      <option value="CASH">💵 Dinheiro Vivo (Espécie)</option>
+                      <option value="BARTER_ASSET">🔄 Entrega de Bem / Troca</option>
+                      <option value="CARD">💳 Cartão / Outros</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                      Data do Pagamento
+                    </label>
+                    <input
+                      type="date"
+                      value={paymentDate}
+                      onChange={e => setPaymentDate(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#0047FF] font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Descrição do Bem (Se troca) */}
+                {paymentMethod === 'BARTER_ASSET' && (
                   <div className="animate-in fade-in duration-200">
-                    <label className="block text-[11px] font-bold text-amber-700 mb-1">Descrição do Bem Entregue no Abatimento</label>
+                    <label className="block text-[11px] font-semibold text-amber-700 dark:text-amber-400 mb-1">
+                      Descrição do Bem Entregue no Abatimento
+                    </label>
                     <input
                       type="text"
-                      placeholder="Ex: Notebook Dell i7, TV Samsung 55, Moto 125, etc."
-                      value={settleAssetNote}
-                      onChange={e => setSettleAssetNote(e.target.value)}
-                      className="w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-900 font-bold outline-none focus:border-amber-500"
+                      placeholder="Ex: Celular iPhone, Moto 125, Televisão 55..."
+                      value={paymentAssetNote}
+                      onChange={e => setPaymentAssetNote(e.target.value)}
+                      className="w-full bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/50 rounded-xl px-3 py-2 text-xs text-amber-900 dark:text-amber-200 font-medium outline-none focus:border-amber-500"
                     />
                   </div>
                 )}
+
+                {/* 5. Destino do Dinheiro (Opcional: Creditar em Conta) */}
+                <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06]">
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                    Creditar este valor na minha conta? (Opcional)
+                  </label>
+                  <select
+                    value={paymentTargetAccountId}
+                    onChange={e => setPaymentTargetAccountId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#0047FF] transition-colors cursor-pointer"
+                  >
+                    <option value="">Apenas dar baixa (Não alterar saldo de contas)</option>
+                    {userAccounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>
+                        💳 Creditar em: {acc.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 mt-1 block">
+                    Ao selecionar uma conta, o valor é somado ao saldo e lançado no seu fluxo de caixa.
+                  </span>
+                </div>
+
               </div>
 
-              <div className="p-4 border-t border-[#E5E7EB] bg-[#F8FAFC] flex gap-2 shrink-0">
+              {/* Footer */}
+              <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.02] flex gap-2.5 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setSelectedDebtForSettle(null)}
-                  className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] text-[#181B22] font-semibold text-xs hover:bg-[#F1F3F7]"
+                  onClick={() => setIsPaymentModalOpen(false)}
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200/90 dark:border-white/[0.08] text-slate-700 dark:text-zinc-300 font-medium text-xs hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-all"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
-                  onClick={handleConfirmSettle}
-                  className="flex-1 py-2 px-3 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs shadow-md flex items-center justify-center gap-1.5"
+                  onClick={handleConfirmPayment}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#0031B8] via-[#0047FF] to-[#0055FF] hover:from-[#002796] hover:to-[#003FE6] text-white font-medium text-xs shadow-md shadow-blue-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
                   <Check size={14} />
-                  <span>Confirmar Baixa</span>
+                  <span>Confirmar Recebimento</span>
                 </button>
               </div>
             </div>

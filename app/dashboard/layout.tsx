@@ -335,34 +335,42 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen h-screen w-full bg-[#F8F9FC] dark:bg-[#04060A] flex font-sans selection:bg-slate-950 dark:selection:bg-white selection:text-white dark:selection:text-slate-950 text-slate-900 dark:text-[#F1F3F7] overflow-x-hidden overflow-y-hidden relative">
+    <div className="min-h-screen h-screen w-full bg-luxury-atmosphere flex font-sans selection:bg-[#0047FF] selection:text-white text-slate-900 dark:text-[#F1F3F7] overflow-x-hidden overflow-y-hidden relative">
       
       {/* Overlay Mobile */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar Flutuante no Padrão Swiss Private Wealth */}
-      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-slate-200/90 dark:border-white/[0.08] flex flex-col bg-white dark:bg-[#080B11] shadow-[0_4px_24px_rgba(0,0,0,0.02)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.4)] transition-all duration-300 overflow-hidden ${
-        isSidebarCollapsed ? 'w-[68px]' : 'w-[206px]'
+      {/* Sidebar Flutuante no Padrão Luxury Frosted Glass Rail */}
+      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-slate-200/80 dark:border-white/[0.08] flex flex-col backdrop-blur-2xl bg-white/85 dark:bg-[#07090E]/85 shadow-[0_12px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-300 overflow-hidden relative ${
+        isSidebarCollapsed ? 'w-[68px]' : 'w-[210px]'
       } ${
         mobileMenuOpen 
           ? 'fixed inset-y-2 left-2 !w-[245px] max-h-[calc(100dvh-16px)] h-[calc(100dvh-16px)] z-50 flex flex-col shadow-2xl' 
           : 'hidden lg:flex z-0 h-[calc(100vh-16px)] sm:h-[calc(100vh-24px)]'
       }`}>
+        {/* Glow de acento superior ultra-sutil */}
+        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0047FF]/60 to-transparent pointer-events-none" />
         
-        {/* Brand Header do Card com a Nova Logo Oficial */}
-        <div className={`h-14 flex items-center border-b border-slate-100 dark:border-white/[0.06] shrink-0 ${
+        {/* Brand Header do Card com a Nova Logo Oficial e Status Live */}
+        <div className={`h-14 flex items-center border-b border-slate-100/90 dark:border-white/[0.06] shrink-0 ${
           isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3.5'
         }`}>
-          <Link href="/dashboard" className="flex items-center group min-w-0" title="Kaxxa">
+          <Link href="/dashboard" className="flex items-center gap-2 group min-w-0" title="Kaxxa">
             {isSidebarCollapsed ? (
               <KaxxaKLogo size={26} />
             ) : (
-              <KaxxaLogo size={23} />
+              <div className="flex items-center gap-2">
+                <KaxxaLogo size={22} />
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-mono font-medium text-emerald-600 dark:text-emerald-400 select-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  LIVE
+                </span>
+              </div>
             )}
           </Link>
 
@@ -381,56 +389,61 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors hidden lg:flex items-center justify-center shrink-0"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors hidden lg:flex items-center justify-center shrink-0"
             title={isSidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
           >
             {isSidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           </button>
         </div>
 
-        {/* Menus de Navegação em Formato Slim */}
+        {/* Menus de Navegação em Formato Slim com Indicador Ativo e Micro-Interação */}
         <div className="flex-1 min-h-0 px-2.5 py-3 flex flex-col justify-between overflow-y-auto custom-scrollbar">
           <div className="flex flex-col gap-3">
             {sidebarMenus.map((menu, idx) => (
               <div key={idx}>
                 {!isSidebarCollapsed ? (
-                  <h4 className="text-[8.5px] font-medium tracking-[0.2em] text-slate-400 dark:text-zinc-500 mb-1.5 px-2 uppercase">
+                  <h4 className="text-[8.5px] font-semibold tracking-[0.22em] text-slate-400 dark:text-zinc-500 mb-1.5 px-2 uppercase">
                     {menu.title}
                   </h4>
                 ) : (
                   <div className="w-5 h-[1px] bg-slate-200/80 dark:bg-white/[0.06] mx-auto my-1.5" />
                 )}
                 
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col gap-1">
                   {menu.items.map((item) => {
                     const active = isItemActive(item.href);
                     return (
                       <Link key={item.label} href={item.href}>
                         <div 
-                          className={`flex items-center rounded-xl transition-all duration-200 group ${
+                          className={`flex items-center rounded-xl transition-all duration-200 group relative overflow-hidden ${
                             isSidebarCollapsed 
-                              ? 'justify-center py-2 px-1.5' 
+                              ? 'justify-center py-2.5 px-1.5' 
                               : 'justify-between px-2.5 py-2'
                           } ${
                             active 
-                              ? 'bg-gradient-to-r from-[#0031B8] via-[#0047FF] to-[#0055FF] text-white font-medium shadow-sm shadow-blue-600/20' 
-                              : 'hover:bg-slate-100/80 dark:hover:bg-white/[0.04] text-slate-600 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-white font-light'
+                              ? 'bg-gradient-to-r from-[#002B9E] via-[#0047FF] to-[#0055FF] text-white font-medium shadow-md shadow-blue-600/30' 
+                              : 'hover:bg-slate-100/80 dark:hover:bg-white/[0.05] hover:translate-x-1 text-slate-600 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-white font-light'
                           }`}
                           title={isSidebarCollapsed ? item.label : undefined}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
+                            {!isSidebarCollapsed && active && (
+                              <span className="w-1 h-3.5 rounded-full bg-white shadow-[0_0_8px_#ffffff] shrink-0 mr-0.5 animate-pulse" />
+                            )}
                             <item.icon 
                               size={15} 
-                              strokeWidth={1.75}
-                              className={active ? 'text-white shrink-0' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-900 dark:group-hover:text-white shrink-0'} 
+                              strokeWidth={active ? 2 : 1.75}
+                              className={`shrink-0 transition-transform duration-200 ${
+                                active ? 'text-white' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
+                              }`} 
                             />
                             {!isSidebarCollapsed && (
-                              <span className="text-xs truncate">{item.label}</span>
+                              <span className="text-xs truncate tracking-tight">{item.label}</span>
                             )}
                           </div>
 
                           {!isSidebarCollapsed && item.badge && (
-                            <span className={`text-[8.5px] font-medium px-1.5 py-0.2 rounded-full ${
+                            <span className={`text-[8.5px] font-medium px-1.5 py-0.2 rounded-md ${
                               active 
                                 ? 'bg-white/20 text-white' 
                                 : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-white/[0.08]'
@@ -440,7 +453,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           )}
 
                           {isSidebarCollapsed && active && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-[#0047FF] absolute right-1.5 shadow-xs"></div>
+                            <div className="w-1.5 h-1.5 rounded-full bg-white absolute right-1 shadow-[0_0_6px_#ffffff]" />
                           )}
                         </div>
                       </Link>
@@ -452,27 +465,27 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Rodapé da Sidebar - Sair da Conta */}
-        <div className="p-3 border-t border-slate-100 dark:border-white/[0.06] shrink-0 bg-white dark:bg-[#080B11]">
+        {/* Rodapé da Sidebar - Perfil e Sair da Conta */}
+        <div className="p-2.5 border-t border-slate-100/90 dark:border-white/[0.06] shrink-0 bg-white/50 dark:bg-transparent">
           <button 
             type="button"
             onClick={async (e) => { e.preventDefault(); await performGlobalSignOut(); router.push('/login'); }} 
-            className={`flex items-center rounded-xl transition-all text-rose-600 dark:text-rose-400 bg-rose-50/60 dark:bg-rose-950/20 hover:bg-rose-100/80 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-900/30 group text-xs font-light tracking-wide shadow-xs ${
-              isSidebarCollapsed ? 'justify-center p-2.5 w-full' : 'justify-start gap-2.5 px-3 py-2.5 w-full'
+            className={`flex items-center rounded-xl transition-all text-rose-600 dark:text-rose-400 bg-rose-50/60 dark:bg-rose-950/20 hover:bg-rose-100/80 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-900/30 group text-xs font-normal tracking-tight shadow-2xs active:scale-[0.98] ${
+              isSidebarCollapsed ? 'justify-center p-2.5 w-full' : 'justify-start gap-2.5 px-3 py-2 w-full'
             }`}
             title="Sair da Conta"
           >
-            <LogOut size={15} strokeWidth={1.75} className="text-rose-600 dark:text-rose-400 shrink-0" />
+            <LogOut size={14} strokeWidth={1.75} className="text-rose-600 dark:text-rose-400 shrink-0 group-hover:-translate-x-0.5 transition-transform" />
             {!isSidebarCollapsed && <span>Sair da Conta</span>}
           </button>
         </div>
       </aside>
 
       {/* Área Principal */}
-      <div className="flex-1 flex flex-col min-h-0 relative overflow-x-hidden overflow-y-hidden bg-[#F8F9FC] dark:bg-[#04060A]">
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-x-hidden overflow-y-hidden">
         
-        {/* Topbar Flutuante no Formato Swiss Private Wealth */}
-        <header className="my-2 sm:my-3 mr-2 sm:mr-3 ml-2 sm:ml-2.5 h-14 px-3 sm:px-5 rounded-[22px] bg-white dark:bg-[#080B11] border border-slate-200/90 dark:border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.02)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.4)] flex items-center justify-between z-0 flex-shrink-0">
+        {/* Topbar Flutuante no Formato Luxury Frosted Glass Capsule */}
+        <header className="my-2 sm:my-3 mr-2 sm:mr-3 ml-2 sm:ml-2.5 h-14 px-3 sm:px-5 rounded-[22px] bg-white/85 dark:bg-[#07090E]/85 backdrop-blur-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.45)] flex items-center justify-between z-0 flex-shrink-0">
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
             <button 
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -542,10 +555,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Perfil no Topbar */}
             <Link 
               href="/dashboard/minha-conta"
-              className="flex items-center gap-2 pl-1 pr-2 sm:pr-2.5 py-1 rounded-full hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors border border-transparent hover:border-slate-200/80 dark:hover:border-white/[0.08]"
+              className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/[0.05] transition-colors border border-transparent hover:border-slate-200/80 dark:hover:border-white/[0.08]"
               title="Minha Conta"
             >
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-900 dark:bg-white text-white dark:text-slate-950 flex items-center justify-center text-[10px] font-medium shadow-xs border border-slate-200/80 dark:border-white/10 shrink-0">
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 dark:bg-white text-white dark:text-slate-950 flex items-center justify-center text-[10px] font-semibold shadow-2xs border border-slate-200/80 dark:border-white/10 shrink-0">
                 {userInfo.avatar ? (
                   <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (

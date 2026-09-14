@@ -245,7 +245,7 @@ export default function DashboardPage() {
       {/* =========================================================================
           1. HERO CARD: POSIÇÃO PATRIMONIAL AUDITADA (SWISS PRIVATE WEALTH)
       ========================================================================= */}
-      <div className="bg-white dark:bg-[#080B11] border border-slate-200/90 dark:border-white/[0.08] rounded-3xl p-5 sm:p-8 md:p-9 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden transition-all card-luxury-hover animate-luxury-fade">
+      <div className="card-luxury-float rounded-3xl p-5 sm:p-8 md:p-9 relative overflow-hidden transition-all animate-luxury-fade">
         
         {/* Hairline subtle glow */}
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-slate-300/70 dark:via-white/20 to-transparent"></div>
@@ -263,7 +263,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/50 flex items-center gap-1.5 shadow-2xs">
+              <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/50 flex items-center gap-1.5 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 Consolidado
               </span>
@@ -317,7 +317,7 @@ export default function DashboardPage() {
             {/* 01: Saldo Disponível */}
             <Link 
               href="/dashboard/transacoes" 
-              className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] hover:bg-slate-100/70 dark:hover:bg-white/[0.04] hover:border-slate-300/80 dark:hover:border-white/10 transition-all card-luxury-hover group"
+              className="p-3.5 sm:p-4 rounded-xl card-luxury-float transition-all group"
             >
               <span className="text-[9px] sm:text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                 01 / SALDO EM CONTAS
@@ -333,7 +333,7 @@ export default function DashboardPage() {
             {/* 02: Custódia Investida */}
             <Link 
               href="/dashboard/investimentos" 
-              className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] hover:bg-slate-100/70 dark:hover:bg-white/[0.04] hover:border-emerald-300/50 dark:hover:border-emerald-700/40 transition-all card-luxury-hover group"
+              className="p-3.5 sm:p-4 rounded-xl card-luxury-float hover:border-emerald-500/40 transition-all group"
             >
               <span className="text-[9px] sm:text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-emerald-600 transition-colors">
                 02 / CUSTÓDIA INVESTIDA
@@ -349,7 +349,7 @@ export default function DashboardPage() {
             {/* 03: Dívidas Ativas */}
             <Link 
               href="/dashboard/dividas" 
-              className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] hover:bg-slate-100/70 dark:hover:bg-white/[0.04] hover:border-rose-300/50 dark:hover:border-rose-700/40 transition-all card-luxury-hover group"
+              className="p-3.5 sm:p-4 rounded-xl card-luxury-float hover:border-rose-500/40 transition-all group"
             >
               <span className="text-[9px] sm:text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-rose-600 transition-colors">
                 03 / DÍVIDAS ATIVAS
@@ -365,7 +365,7 @@ export default function DashboardPage() {
             {/* 04: Cartões & Faturas */}
             <Link 
               href="/dashboard/cartoes" 
-              className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] hover:bg-slate-100/70 dark:hover:bg-white/[0.04] hover:border-slate-300/80 dark:hover:border-white/10 transition-all card-luxury-hover group"
+              className="p-3.5 sm:p-4 rounded-xl card-luxury-float transition-all group"
             >
               <span className="text-[9px] sm:text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                 04 / FATURAS CARTÃO
@@ -373,8 +373,8 @@ export default function DashboardPage() {
               <div className="text-lg sm:text-2xl font-light font-luxury-num text-slate-800 dark:text-zinc-200 mt-1">
                 R$ {formatCurrency(limiteComprometido)}
               </div>
-              <div className="text-[10px] font-light text-slate-400 dark:text-zinc-500 mt-0.5 truncate">
-                {totalLimiteCartoes > 0 ? `${pctComprometido.toFixed(0)}% do limite total` : 'Faturas em aberto'}
+              <div className="text-[10px] font-light text-slate-400 dark:text-zinc-500 mt-0.5">
+                Limite comprometido
               </div>
             </Link>
 
@@ -389,7 +389,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Gráfico Preciso de Linha Fina (Bloomberg Style) */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#080B11] border border-slate-200/90 dark:border-white/[0.08] rounded-3xl p-6 sm:p-8 space-y-6 shadow-[0_10px_35px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+        <div className="lg:col-span-2 card-luxury-float rounded-3xl p-6 sm:p-8 space-y-6 flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
               <div>
@@ -538,7 +538,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Alocação de Recursos (Barras Hairline) */}
-        <div className="bg-white dark:bg-[#080B11] border border-slate-200/90 dark:border-white/[0.08] rounded-3xl p-6 sm:p-8 space-y-6 flex flex-col justify-between shadow-[0_10px_35px_rgba(0,0,0,0.02)]">
+        <div className="card-luxury-float rounded-3xl p-6 sm:p-8 space-y-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-2">
               <div>
@@ -602,7 +602,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Card de Categorias */}
-        <div className="bg-white dark:bg-[#080B11] border border-slate-200/90 dark:border-white/[0.08] rounded-3xl p-6 sm:p-8 space-y-4 shadow-[0_10px_35px_rgba(0,0,0,0.02)]">
+        <div className="card-luxury-float rounded-3xl p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.06]">
             <div>
               <span className="text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block">
@@ -630,7 +630,7 @@ export default function DashboardPage() {
                 <div 
                   key={cat.category}
                   onClick={() => setActiveCategoryModal(cat)}
-                  className="p-3 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/20 cursor-pointer transition-all group"
+                  className="p-3 rounded-xl card-luxury-float cursor-pointer transition-all group"
                 >
                   <div className="flex justify-between items-center mb-1 text-xs">
                     <div className="flex items-center gap-2">
@@ -652,7 +652,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Card de Superávit & Balanço Líquido */}
-        <div className="bg-white dark:bg-[#080B11] border border-slate-200/90 dark:border-white/[0.08] rounded-3xl p-6 sm:p-8 space-y-6 flex flex-col justify-between shadow-[0_10px_35px_rgba(0,0,0,0.02)]">
+        <div className="card-luxury-float rounded-3xl p-6 sm:p-8 space-y-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.06]">
               <div>
