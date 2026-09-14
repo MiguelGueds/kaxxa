@@ -37,13 +37,37 @@ export const userProfileService = {
     const local = this.getLocalProfile(userId);
 
     try {
+      // 1. Tenta recuperar do Supabase Auth metadata diretamente (mais rápido e 100% garantido cross-device)
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        const metaAvatar = authData.user.user_metadata?.avatar_url;
+        const metaName = authData.user.user_metadata?.full_name;
+        const metaPhone = authData.user.user_metadata?.phone;
+
+        if (metaAvatar || metaName || metaPhone) {
+          const profileFromMeta: UserProfileData = {
+            avatar: metaAvatar ?? local?.avatar ?? null,
+            name: metaName ?? local?.name,
+            phone: metaPhone ?? local?.phone
+          };
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`${PROFILE_KEY_PREFIX}${userId}`, JSON.stringify(profileFromMeta));
+            if (profileFromMeta.avatar) {
+              localStorage.setItem(`kaxxa_user_avatar_${userId}`, profileFromMeta.avatar);
+              localStorage.setItem('kaxxa_user_avatar', profileFromMeta.avatar);
+            }
+          }
+          return profileFromMeta;
+        }
+      }
+
+      // 2. Fallback para tabela third_parties (sem coluna updated_at que causava erro)
       const targetUserIds = UNIFIED_USER_IDS.includes(userId) ? UNIFIED_USER_IDS : [userId];
       const { data, error } = await supabase
         .from('third_parties')
         .select('contact_info, user_id')
         .eq('name', PROFILE_ROW_NAME)
         .in('user_id', targetUserIds)
-        .order('updated_at', { ascending: false })
         .limit(1);
 
       if (!error && data && data.length > 0 && data[0].contact_info) {
@@ -72,19 +96,39 @@ export const userProfileService = {
   },
 
   async saveProfile(userId: string, data: UserProfileData): Promise<void> {
+    // 1. Armazena imediatamente em localStorage em múltiplas chaves para disponibilidade instantânea
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`${PROFILE_KEY_PREFIX}${userId}`, JSON.stringify(data));
-      localStorage.setItem('kaxxa_user_profile', JSON.stringify(data));
-      if (data.avatar) {
-        localStorage.setItem(`kaxxa_user_avatar_${userId}`, data.avatar);
-        localStorage.setItem('kaxxa_user_avatar', data.avatar);
-      } else if (data.avatar === null) {
-        localStorage.setItem(`kaxxa_user_avatar_${userId}`, 'none');
-        localStorage.setItem('kaxxa_user_avatar', 'none');
+      try {
+        localStorage.setItem(`${PROFILE_KEY_PREFIX}${userId}`, JSON.stringify(data));
+        localStorage.setItem('kaxxa_user_profile', JSON.stringify(data));
+        if (data.avatar) {
+          localStorage.setItem(`kaxxa_user_avatar_${userId}`, data.avatar);
+          localStorage.setItem('kaxxa_user_avatar', data.avatar);
+        } else if (data.avatar === null) {
+          localStorage.setItem(`kaxxa_user_avatar_${userId}`, 'none');
+          localStorage.setItem('kaxxa_user_avatar', 'none');
+        }
+        window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: data.avatar || null }));
+      } catch (e) {
+        console.warn('Erro ao gravar localStorage:', e);
       }
-      window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: data.avatar || null }));
     }
 
+    // 2. Atualiza os metadados do Supabase Auth (sincronização global automática)
+    try {
+      const updatePayload: Record<string, any> = {};
+      if (data.avatar !== undefined) updatePayload.avatar_url = data.avatar;
+      if (data.name !== undefined) updatePayload.full_name = data.name;
+      if (data.phone !== undefined) updatePayload.phone = data.phone;
+
+      if (Object.keys(updatePayload).length > 0) {
+        await supabase.auth.updateUser({ data: updatePayload });
+      }
+    } catch (e) {
+      console.warn('Erro ao atualizar metadata do Supabase Auth:', e);
+    }
+
+    // 3. Backup de persistência no banco Supabase (tabela third_parties)
     try {
       const targetUserIds = UNIFIED_USER_IDS.includes(userId) ? UNIFIED_USER_IDS : [userId];
 

@@ -1074,42 +1074,42 @@ export default function MinhasFaturasPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-3.5">
           {/* Coluna 1: KPIs Compactos */}
           <div className="lg:col-span-1 flex flex-col gap-3.5">
-            <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-[24px] p-4 shadow-sm flex-1 flex flex-col justify-center relative overflow-hidden">
-              <span className="text-[10px] text-[#94A3B8] uppercase tracking-wider mb-1 font-bold">
+            <div className="card-luxury-float rounded-[24px] p-4 shadow-sm flex-1 flex flex-col justify-center relative overflow-hidden">
+              <span className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1 font-bold">
                 Faturas Totais
               </span>
-              <h3 className="text-2xl font-extrabold text-[#181B22] tracking-tight leading-none mb-1.5">
+              <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none mb-1.5">
                 R$ {formatCurrency(totalInvoiceMonth)}
               </h3>
               <p className="text-[10px] font-medium">
                 {totalRemainingMonth > 0 ? (
-                  <span className="text-amber-600 font-bold">Falta R$ {formatCurrency(totalRemainingMonth)}</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold">Falta R$ {formatCurrency(totalRemainingMonth)}</span>
                 ) : (
-                  <span className="text-[#1A44C8] font-bold flex items-center gap-1"><CheckCheck size={11} /> Totalmente quitada</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1"><CheckCheck size={11} /> Totalmente quitada</span>
                 )}
               </p>
             </div>
             
             <div 
-              className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-[24px] p-4 shadow-sm flex-1 flex flex-col justify-center relative overflow-visible cursor-pointer hover:border-[#1A44C8]/30 transition-colors group"
+              className="card-luxury-float rounded-[24px] p-4 shadow-sm flex-1 flex flex-col justify-center relative overflow-visible cursor-pointer transition-all group"
               onClick={() => setIsLimitPopupOpen(!isLimitPopupOpen)}
             >
               <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] text-[#94A3B8] uppercase tracking-wider font-bold">
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-bold">
                   Limite Disponível
                 </span>
-                <ChevronDown size={11} className={`text-[#94A3B8] transition-transform ${isLimitPopupOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={11} className={`text-slate-400 transition-transform ${isLimitPopupOpen ? 'rotate-180' : ''}`} />
               </div>
-              <h3 className="text-xl font-extrabold text-[#181B22] tracking-tight leading-none mb-2 group-hover:text-[#1A44C8] transition-colors">
+              <h3 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 R$ {formatCurrency(totalLimitAvailable)}
               </h3>
-              <div className="w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-[#1A44C8] to-[#00A3FF] rounded-full" 
+                  className="h-full bg-gradient-to-r from-[#002288] via-[#0047FF] to-[#00A3FF] rounded-full" 
                   style={{ width: `${Math.min(100, limitUsagePct)}%` }}
                 ></div>
               </div>
-              <p className="text-[9px] text-[#64748B] mt-1.5 font-medium">{limitUsagePct.toFixed(1)}% em uso de R$ {formatCurrency(totalLimitGlobal)}</p>
+              <p className="text-[9px] text-slate-500 dark:text-zinc-400 mt-1.5 font-medium">{limitUsagePct.toFixed(1)}% em uso de R$ {formatCurrency(totalLimitGlobal)}</p>
 
               {isLimitPopupOpen && (
                 <PortalModal>
@@ -1129,7 +1129,7 @@ export default function MinhasFaturasPage() {
                                 <BankLogo name={c.bank || c.name} size="xs" />
                                 <span className="text-[#181B22] font-bold truncate">{c.name}</span>
                               </div>
-                              <span className="text-[#1A44C8] font-extrabold whitespace-nowrap ml-2">R$ {formatCurrency(avail)}</span>
+                              <span className="font-bold text-emerald-600">R$ {formatCurrency(avail)}</span>
                             </div>
                           );
                         })}
@@ -1142,7 +1142,7 @@ export default function MinhasFaturasPage() {
           </div>
 
           {/* Coluna 2, 3, 4: Gráfico de Projeção */}
-          <div className="lg:col-span-3 bg-[#FFFFFF] border border-[#E5E7EB] rounded-[24px] p-5 shadow-sm flex flex-col justify-between">
+          <div className="lg:col-span-3 card-luxury-float rounded-[24px] p-5 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start pb-2 border-b border-[#E5E7EB]">
               <h3 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
                 <Activity size={13} className="text-[#1A44C8]" />
@@ -1461,8 +1461,8 @@ export default function MinhasFaturasPage() {
         </div>
 
         {/* Tabela de Lançamentos */}
-        <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-[24px] p-5 shadow-sm space-y-4">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2.5 pb-3 border-b border-[#E5E7EB]">
+        <div className="card-luxury-float rounded-[24px] p-5 shadow-sm space-y-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
             <div className="flex items-center gap-1 bg-[#F1F3F7] p-1 rounded-full border border-[#E5E7EB] overflow-x-auto max-w-full">
               <button 
                 onClick={() => setSelectedCardFilter('ALL')}

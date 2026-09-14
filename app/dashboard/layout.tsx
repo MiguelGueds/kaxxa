@@ -59,18 +59,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const resolveAvatar = (userId?: string, metadataUrl?: string | null): string | null => {
       if (typeof window === 'undefined') return metadataUrl || null;
-      const local = userId 
-        ? (localStorage.getItem(`kaxxa_user_avatar_${userId}`) || localStorage.getItem('kaxxa_user_avatar'))
-        : localStorage.getItem('kaxxa_user_avatar');
-      if (local === 'none') return null;
-      if (local) return local;
+      const global = localStorage.getItem('kaxxa_user_avatar');
+      if (global && global !== 'none') return global;
+      if (userId) {
+        const byId = localStorage.getItem(`kaxxa_user_avatar_${userId}`);
+        if (byId && byId !== 'none') return byId;
+      }
+      if (global === 'none') return null;
       return metadataUrl || null;
     };
 
     const handleAvatarUpdate = (e: any) => {
-      if (e.detail !== undefined) {
-        setUserInfo(prev => ({ ...prev, avatar: e.detail }));
-      }
+      setUserInfo(prev => ({ ...prev, avatar: e.detail ?? null }));
     };
 
     const handleStorageChange = (e: StorageEvent) => {
@@ -327,12 +327,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen h-screen w-full bg-luxury-atmosphere flex flex-col font-sans selection:bg-[#0047FF] selection:text-white text-slate-900 dark:text-[#F1F3F7] overflow-x-hidden overflow-y-hidden relative">
       
       {/* =========================================================================
-          1. TOP EXECUTIVE COMMAND CAPSULE NAVIGATION (RESPONSIVO & COMPACTO)
+          AMBIENT LUXURY DRIFT (GPU-ACCELERATED, 60FPS, SILKY SMOOTH, ZERO OVERHEAD)
       ========================================================================= */}
-      <header className="mx-2 sm:mx-4 mt-2 sm:mt-2.5 mb-1.5 h-14 px-2.5 sm:px-4 rounded-[20px] bg-white/85 dark:bg-[#07090E]/85 backdrop-blur-2xl border border-slate-200/85 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_16px_45px_rgba(0,0,0,0.6)] flex items-center justify-between z-30 flex-shrink-0 relative gap-2 min-w-0">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none" aria-hidden="true">
+        <div className="absolute -top-[15%] left-[20%] w-[500px] h-[500px] rounded-full bg-blue-500/[0.08] dark:bg-[#0047FF]/[0.13] blur-[100px] animate-crystal-orb-1" />
+        <div className="absolute top-[30%] -right-[10%] w-[600px] h-[600px] rounded-full bg-indigo-500/[0.07] dark:bg-[#002288]/[0.15] blur-[120px] animate-crystal-orb-2" />
+        <div className="absolute -bottom-[10%] left-[10%] w-[550px] h-[550px] rounded-full bg-cyan-500/[0.06] dark:bg-[#0066FF]/[0.09] blur-[110px] animate-crystal-orb-3" />
+      </div>
+
+      {/* =========================================================================
+          1. TOP EXECUTIVE COMMAND CAPSULE NAVIGATION (POLIDA & EQUILIBRADA PARA NOTEBOOK)
+      ========================================================================= */}
+      <header className="mx-2 sm:mx-4 lg:mx-6 mt-2.5 mb-2 h-14 px-3 sm:px-4 lg:px-5 rounded-[22px] bg-white/90 dark:bg-[#07090E]/90 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.09] shadow-[0_8px_30px_rgba(0,35,140,0.04)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.7)] flex items-center justify-between z-30 flex-shrink-0 relative gap-2 sm:gap-4 min-w-0">
         
         {/* Glow de acento superior ultra-sutil */}
-        <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0047FF]/60 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0047FF]/70 to-transparent pointer-events-none" />
 
         {/* Lado Esquerdo: Logo Kaxxa em Azul Degradê Tech Luxury */}
         <div className="flex items-center shrink-0">
@@ -341,25 +350,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
-        {/* Centro: Deck de Navegação Segmentado Flutuante (Desktop & Tablet) */}
-        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 bg-slate-100/70 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/60 dark:border-white/[0.06] shadow-2xs overflow-x-auto no-scrollbar min-w-0">
+        {/* Centro: Deck de Navegação Segmentado Flutuante (Desktop & Notebook) */}
+        <nav className="hidden lg:flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/70 dark:border-white/[0.07] shadow-inner overflow-x-auto no-scrollbar min-w-0">
           {primaryNavItems.map((item) => {
             const active = isItemActive(item.href);
             return (
               <Link 
                 key={item.href} 
                 href={item.href}
-                className={`flex items-center gap-1 px-2.5 xl:px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-200 select-none shrink-0 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-200 select-none shrink-0 ${
                   active 
-                    ? 'nav-pill-luxury-active font-medium' 
-                    : 'nav-pill-luxury-inactive font-normal'
+                    ? 'nav-pill-luxury-active font-semibold' 
+                    : 'nav-pill-luxury-inactive font-medium'
                 }`}
                 title={item.label}
               >
-                <item.icon size={13.5} strokeWidth={active ? 2.2 : 1.75} className="shrink-0" />
+                <item.icon size={14} strokeWidth={active ? 2.2 : 1.75} className="shrink-0" />
                 <span className="tracking-tight">{item.label}</span>
                 {active && (
-                  <span className="w-1 h-1 rounded-full bg-white ml-0.5 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5 animate-pulse shadow-sm" />
                 )}
               </Link>
             );
@@ -370,14 +379,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => { setIsSettingsMenuOpen(!isSettingsMenuOpen); setIsUserMenuOpen(false); }}
-              className={`flex items-center gap-1 px-2.5 xl:px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-200 select-none ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-200 select-none ${
                 isSettingsActive 
-                  ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-medium border border-blue-500/30' 
-                  : 'nav-pill-luxury-inactive font-normal'
+                  ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold border border-blue-500/30' 
+                  : 'nav-pill-luxury-inactive font-medium'
               }`}
               title="Configurações e Mais"
             >
-              <Settings size={13.5} strokeWidth={1.75} className="shrink-0" />
+              <Settings size={14} strokeWidth={1.75} className="shrink-0" />
               <span className="tracking-tight">Mais</span>
               <ChevronRight size={11} className={`transition-transform duration-200 ${isSettingsMenuOpen ? 'rotate-90' : ''}`} />
             </button>
@@ -452,25 +461,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        {/* Lado Direito: Ações Executivas (Sem sobrecarregar telas pequenas) */}
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        {/* Lado Direito: Ações Executivas (Sem Busca, Limpo & Espaçoso) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           
-          {/* Busca Rápida / Command Palette */}
-          <button 
-            type="button"
-            onClick={() => setIsCommandPaletteOpen(true)}
-            className="flex items-center gap-1.5 bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 rounded-xl px-2 sm:px-2.5 py-1.5 transition-all text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white shadow-2xs group active:scale-95"
-            title="Buscar no Kaxxa (⌘K)"
-          >
-            <Search size={13.5} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
-            <span className="text-xs font-light hidden xl:inline truncate text-slate-400 dark:text-zinc-500">
-              Buscar...
-            </span>
-            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-200/60 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-300/60 dark:border-white/10">
-              ⌘K
-            </kbd>
-          </button>
-
           {/* Alternar Modo Noturno / Claro */}
           <button
             type="button"
@@ -501,15 +494,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {isConcealed ? <EyeOff size={14} strokeWidth={1.75} className="text-amber-600 dark:text-amber-400" /> : <Eye size={14} strokeWidth={1.75} className="text-slate-600 dark:text-zinc-300" />}
           </button>
 
-          {/* Cápsula de Perfil (Em Desktop: abre dropdown | Em Mobile: abre o Drawer Completo) */}
+          {/* Cápsula de Perfil (Desktop: dropdown executivo | Mobile: abre o Drawer Completo) */}
           <div className="relative">
-            {/* Mobile: Tocar no avatar abre o drawer com tudo */}
+            {/* Mobile: Tocar no avatar abre o drawer */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
               className="lg:hidden flex items-center p-0.5 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/[0.05] transition-all active:scale-95 shrink-0"
-              title="Menu"
-              aria-label="Menu"
+              title="Menu e Perfil"
+              aria-label="Menu e Perfil"
             >
               <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-[#002288] to-[#0055FF] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs shrink-0 border border-white/20">
                 {userInfo.avatar ? (
@@ -524,7 +517,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => { setIsUserMenuOpen(!isUserMenuOpen); setIsSettingsMenuOpen(false); }}
-              className="hidden lg:flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/[0.05] transition-all border border-transparent hover:border-slate-200/80 dark:hover:border-white/[0.08] active:scale-95 shrink-0"
+              className="hidden lg:flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/[0.05] transition-all border border-transparent hover:border-slate-200/80 dark:hover:border-white/[0.08] active:scale-95 shrink-0"
               title="Menu do Usuário"
             >
               <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-[#002288] to-[#0055FF] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs shrink-0 border border-white/20">
@@ -535,29 +528,36 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
               </div>
               <div className="flex flex-col text-left hidden xl:flex min-w-0">
-                <span className="text-xs font-normal text-slate-900 dark:text-white max-w-[90px] truncate leading-tight">{userInfo.name}</span>
-                <span className={`text-[8.5px] font-semibold tracking-wide leading-none mt-0.5 uppercase ${
+                <span className="text-xs font-semibold text-slate-900 dark:text-white max-w-[95px] truncate leading-tight">{userInfo.name}</span>
+                <span className={`text-[8.5px] font-bold tracking-wide leading-none mt-0.5 uppercase ${
                   subInfo.isRecurringPro ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'
                 }`}>
                   {subInfo.isRecurringPro ? 'PRO' : getTrialRemainingText(subInfo.periodEnd).text}
                 </span>
               </div>
-              <ChevronRight size={11} className={`text-slate-400 dark:text-zinc-500 shrink-0 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-90' : ''}`} />
+              <ChevronRight size={12} className={`text-slate-400 dark:text-zinc-500 shrink-0 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-90' : ''}`} />
             </button>
 
             {/* Dropdown do Usuário (Desktop) */}
             {isUserMenuOpen && (
               <div 
-                className="absolute top-full right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-[#0D111A]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.1] shadow-2xl p-2 z-50 animate-luxury-fade"
+                className="absolute top-full right-0 mt-2 w-60 rounded-2xl bg-white/95 dark:bg-[#0D111A]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.1] shadow-2xl p-2 z-50 animate-luxury-fade"
                 onMouseLeave={() => setIsUserMenuOpen(false)}
               >
                 <div className="px-2.5 py-2 border-b border-slate-100 dark:border-white/[0.06] mb-1">
                   <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{userInfo.name}</p>
                   <p className="text-[10px] text-slate-400 dark:text-zinc-400 truncate">{userInfo.email}</p>
-                  <div className="mt-1.5">
+                  <div className="mt-1.5 flex items-center gap-1.5">
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                       {subInfo.isRecurringPro ? 'Plano Pro' : 'Período de Testes'}
                     </span>
+                    <Link
+                      href="/dashboard/minha-conta?tab=assinatura"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="text-[9px] text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                    >
+                      Gerenciar
+                    </Link>
                   </div>
                 </div>
 
@@ -565,16 +565,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <Link
                     href="/dashboard/minha-conta"
                     onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] transition-all"
+                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] transition-all font-medium"
                   >
-                    <UserCircle2 size={14} className="text-slate-400 dark:text-zinc-500" />
+                    <UserCircle2 size={14} className="text-blue-600 dark:text-blue-400" />
                     <span>Minha Conta</span>
+                  </Link>
+
+                  <Link
+                    href="/dashboard/minha-conta?tab=assinatura"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] transition-all font-medium"
+                  >
+                    <ShieldCheck size={14} className="text-blue-600 dark:text-blue-400" />
+                    <span>Minha Assinatura</span>
                   </Link>
 
                   <Link
                     href="/dashboard/configuracoes"
                     onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] transition-all"
+                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] transition-all font-medium"
                   >
                     <Settings size={14} className="text-slate-400 dark:text-zinc-500" />
                     <span>Preferências</span>
@@ -589,7 +598,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       await performGlobalSignOut();
                       router.push('/login');
                     }}
-                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all w-full text-left"
+                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all w-full text-left font-medium"
                   >
                     <LogOut size={14} className="text-rose-600 dark:text-rose-400" />
                     <span>Sair da Conta</span>
@@ -675,20 +684,55 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
 
-              {/* Perfil no Drawer */}
-              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] mb-3">
-                <div className="w-9 h-9 rounded-lg overflow-hidden bg-gradient-to-br from-[#002288] to-[#0055FF] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {userInfo.avatar ? (
-                    <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{userInfo.name}</p>
-                  <p className="text-[10px] text-blue-600 dark:text-blue-400 font-mono font-medium">
-                    {subInfo.isRecurringPro ? 'PRO ATIVO' : 'PERÍODO TRIAL'}
-                  </p>
+              {/* Card Executivo do Usuário (Destaque Principal no Mobile) */}
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 dark:from-white/[0.05] dark:to-blue-950/20 border border-slate-200/90 dark:border-white/[0.1] mb-3.5 shadow-sm">
+                <Link 
+                  href="/dashboard/minha-conta" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 group"
+                >
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-[#002288] to-[#0055FF] text-white flex items-center justify-center text-xs font-bold shrink-0 border-2 border-white dark:border-[#0A0D14] shadow-sm group-hover:scale-105 transition-transform">
+                    {userInfo.avatar ? (
+                      <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {userInfo.name}
+                    </p>
+                    <p className="text-[10px] text-slate-400 dark:text-zinc-400 truncate">{userInfo.email}</p>
+                    <span className={`inline-flex items-center text-[8.5px] font-mono font-bold uppercase mt-0.5 px-1.5 py-0.5 rounded ${
+                      subInfo.isRecurringPro 
+                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
+                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                    }`}>
+                      {subInfo.isRecurringPro ? '★ PRO ATIVO' : 'TRIAL: ' + getTrialRemainingText(subInfo.periodEnd).text}
+                    </span>
+                  </div>
+                  <ChevronRight size={15} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+                </Link>
+
+                {/* Ações Rápidas: Minha Conta & Assinatura */}
+                <div className="grid grid-cols-2 gap-1.5 mt-3 pt-2.5 border-t border-slate-200/70 dark:border-white/[0.07]">
+                  <Link
+                    href="/dashboard/minha-conta"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-white dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:text-blue-600 dark:hover:text-blue-400 shadow-2xs transition-all active:scale-95"
+                  >
+                    <UserCircle2 size={13} className="text-blue-600 dark:text-blue-400" />
+                    <span>Minha Conta</span>
+                  </Link>
+
+                  <Link
+                    href="/dashboard/minha-conta?tab=assinatura"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold shadow-xs hover:brightness-105 transition-all active:scale-95"
+                  >
+                    <ShieldCheck size={13} />
+                    <span>Assinatura</span>
+                  </Link>
                 </div>
               </div>
 

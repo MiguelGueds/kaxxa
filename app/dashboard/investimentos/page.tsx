@@ -1473,8 +1473,8 @@ export default function InvestimentosPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
           
           {/* Gráfico 1: Macro Alocação */}
-          <div className="lg:col-span-3 bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-4 shadow-sm flex flex-col justify-between">
-            <div className="flex justify-between items-center pb-2.5 border-b border-[#E5E7EB]">
+          <div className="lg:col-span-3 card-luxury-float rounded-[24px] p-4 flex flex-col justify-between">
+            <div className="flex justify-between items-center pb-2.5 border-b border-slate-100 dark:border-white/[0.06]">
               <h3 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
                 <PieChart size={13} className="text-[#1A44C8]" />
                 Macro Alocação
@@ -1574,8 +1574,8 @@ export default function InvestimentosPage() {
           </div>
 
           {/* Gráfico 2: Alocação Detalhada por Classe */}
-          <div className="lg:col-span-3 bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-4 shadow-sm flex flex-col justify-between">
-            <div className="flex justify-between items-center pb-2.5 border-b border-[#E5E7EB]">
+          <div className="lg:col-span-3 card-luxury-float rounded-[24px] p-4 flex flex-col justify-between">
+            <div className="flex justify-between items-center pb-2.5 border-b border-slate-100 dark:border-white/[0.06]">
               <h3 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
                 <Layers size={13} className="text-[#00A3FF]" />
                 Alocação por Classe
@@ -1706,8 +1706,8 @@ export default function InvestimentosPage() {
           </div>
 
           {/* Gráfico 3: Evolução dos Aportes (12 Meses) */}
-          <div className="lg:col-span-6 bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-4 shadow-sm flex flex-col justify-between">
-            <div className="flex justify-between items-center pb-2.5 border-b border-[#E5E7EB]">
+          <div className="lg:col-span-6 card-luxury-float rounded-[24px] p-4 flex flex-col justify-between">
+            <div className="flex justify-between items-center pb-2.5 border-b border-slate-100 dark:border-white/[0.06]">
               <div>
                 <h3 className="text-xs font-bold text-[#181B22] flex items-center gap-1.5">
                   <Activity size={13} className="text-[#1A44C8]" />
@@ -1793,10 +1793,10 @@ export default function InvestimentosPage() {
         {/* =========================================================================
             3. TERMINAL DE ANÁLISE DE INVESTIMENTOS & LANÇAMENTOS
         ========================================================================= */}
-        <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-[24px] p-5 shadow-sm space-y-4">
+        <div className="card-luxury-float rounded-[24px] p-5 shadow-sm space-y-4">
           
           {/* Header com Filtros de Classe/Lançamentos e Busca */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2.5 pb-3 border-b border-[#E5E7EB]">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
             
             {/* Filtros em Pílulas Arredondadas */}
             {viewMode === 'CONSOLIDADO' ? (

@@ -515,7 +515,7 @@ function SettingsContent() {
             </button>
           </div>
           
-          <div className="bg-white border border-[#E5E7EB] rounded-2xl divide-y divide-[#F1F5F9] shadow-xs overflow-hidden">
+          <div className="card-luxury-float rounded-2xl divide-y divide-slate-100 dark:divide-white/[0.06] shadow-xs overflow-hidden">
             {accounts.length === 0 ? (
               <div className="p-8 text-center text-xs text-[#94A3B8] font-medium">
                 Nenhuma conta bancária cadastrada.
@@ -633,9 +633,9 @@ function SettingsContent() {
                 const isIncome = parent.type === 'INCOME';
 
                 return (
-                  <div key={parent.id} className="bg-white border border-[#E5E7EB] rounded-2xl shadow-xs overflow-hidden">
+                  <div key={parent.id} className="card-luxury-float rounded-2xl shadow-xs overflow-hidden">
                     {/* Linha da Categoria Principal */}
-                    <div className="p-4 sm:p-5 flex items-center justify-between gap-3 bg-white hover:bg-[#FAFBFD] transition-colors">
+                    <div className="p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-white/[0.03] transition-colors">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`w-3 h-3 rounded-full shrink-0 ${isIncome ? 'bg-[#1A44C8]' : 'bg-rose-500'}`} />
                         <div className="min-w-0">

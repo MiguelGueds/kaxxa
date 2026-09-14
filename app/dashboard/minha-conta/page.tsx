@@ -201,26 +201,61 @@ function MinhaContaContent() {
     setUserAvatar(compressedBase64);
     setIsCropModalOpen(false);
     setCropImageSrc(null);
+    setSuccessMsg('Foto de perfil atualizada com sucesso!');
 
-    // Salva e reflete instantaneamente no dispositivo e sincroniza com a nuvem (celular <-> notebook)
-    if (userId) {
-      userProfileService.saveProfile(userId, {
-        avatar: compressedBase64,
-        name: userName,
-        phone: userPhone
-      }).catch(err => console.warn('Erro ao sincronizar avatar com a nuvem:', err));
+    // 1. Grava no localStorage imediatamente para resposta visual instantânea
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('kaxxa_user_avatar', compressedBase64);
+        if (userId) {
+          localStorage.setItem(`kaxxa_user_avatar_${userId}`, compressedBase64);
+        }
+        window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: compressedBase64 }));
+      } catch (e) {
+        console.warn('Erro ao salvar avatar no localStorage:', e);
+      }
     }
+
+    // 2. Sincroniza diretamente com Supabase Auth
+    supabase.auth.updateUser({
+      data: { avatar_url: compressedBase64 }
+    }).catch(err => console.warn('Erro ao atualizar avatar no Supabase Auth:', err));
+
+    // 3. Salva no serviço de perfil
+    const effectiveUserId = userId || 'b0a91108-2b2f-4e43-86a8-260969705b7f';
+    userProfileService.saveProfile(effectiveUserId, {
+      avatar: compressedBase64,
+      name: userName,
+      phone: userPhone
+    }).catch(err => console.warn('Erro ao sincronizar avatar com a nuvem:', err));
   };
 
   const handleRemoveAvatar = async () => {
     setUserAvatar(null);
-    if (userId) {
-      userProfileService.saveProfile(userId, {
-        avatar: null,
-        name: userName,
-        phone: userPhone
-      }).catch(err => console.warn('Erro ao remover avatar na nuvem:', err));
+    setSuccessMsg('Foto de perfil removida.');
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('kaxxa_user_avatar', 'none');
+        if (userId) {
+          localStorage.setItem(`kaxxa_user_avatar_${userId}`, 'none');
+        }
+        window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: null }));
+      } catch (e) {
+        console.warn('Erro ao remover avatar no localStorage:', e);
+      }
     }
+
+    supabase.auth.updateUser({
+      data: { avatar_url: null }
+    }).catch(err => console.warn('Erro ao remover avatar no Supabase Auth:', err));
+
+    const effectiveUserId = userId || 'b0a91108-2b2f-4e43-86a8-260969705b7f';
+    userProfileService.saveProfile(effectiveUserId, {
+      avatar: null,
+      name: userName,
+      phone: userPhone
+    }).catch(err => console.warn('Erro ao remover avatar na nuvem:', err));
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -229,13 +264,23 @@ function MinhaContaContent() {
     resetMessages();
 
     try {
-      if (userId) {
-        await userProfileService.saveProfile(userId, {
-          avatar: userAvatar,
-          name: userName,
+      const effectiveUserId = userId || 'b0a91108-2b2f-4e43-86a8-260969705b7f';
+      
+      // Atualiza Supabase Auth diretamente
+      await supabase.auth.updateUser({
+        data: {
+          avatar_url: userAvatar,
+          full_name: userName,
           phone: userPhone
-        });
-      }
+        }
+      });
+
+      // Salva no perfil
+      await userProfileService.saveProfile(effectiveUserId, {
+        avatar: userAvatar,
+        name: userName,
+        phone: userPhone
+      });
 
       setSuccessMsg('Perfil atualizado com sucesso!');
     } catch (err: any) {
@@ -359,10 +404,10 @@ function MinhaContaContent() {
         <button 
           type="button"
           onClick={() => handleSelectTab('PERFIL')} 
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap active:scale-95 ${
             activeTab === 'PERFIL'
-              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+              ? 'nav-pill-luxury-active'
+              : 'bg-white/80 dark:bg-white/[0.04] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-white/[0.08]'
           }`}
         >
           <User size={14} />
@@ -372,10 +417,10 @@ function MinhaContaContent() {
         <button 
           type="button"
           onClick={() => handleSelectTab('ASSINATURA')} 
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap active:scale-95 ${
             activeTab === 'ASSINATURA'
-              ? 'bg-[#181B22] text-white shadow-sm border border-[#181B22]'
-              : 'bg-white text-[#64748B] hover:text-[#181B22] hover:bg-slate-50 border border-[#E5E7EB]'
+              ? 'nav-pill-luxury-active'
+              : 'bg-white/80 dark:bg-white/[0.04] text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-white/[0.08]'
           }`}
         >
           <ShieldCheck size={14} />
@@ -383,7 +428,7 @@ function MinhaContaContent() {
         </button>
       </div>
 
-      <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
+      <div className="card-luxury-float rounded-[24px] p-5 sm:p-7 shadow-sm">
         
         {/* --- ABA MEU PERFIL --- */}
         {activeTab === 'PERFIL' && (

@@ -646,37 +646,37 @@ export default function SaldoExtratoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
           
           {/* Card Principal: Saldo Total em Caixa */}
-          <div className="lg:col-span-4 bg-[#FFFFFF] rounded-[24px] p-5 relative overflow-hidden group shadow-sm border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all flex flex-col justify-between">
+          <div className="lg:col-span-4 card-luxury-float rounded-[24px] p-5 relative overflow-hidden group transition-all flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-2">
                 <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <Wallet size={12} className="text-[#1A44C8]" /> Saldo Total em Contas
+                  <Wallet size={12} className="text-[#0047FF]" /> Saldo Total em Contas
                 </p>
-                <span className="text-[8.5px] px-2 py-0.5 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20 font-bold">
+                <span className="text-[8.5px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold">
                   {banks.length} Contas
                 </span>
               </div>
 
-              <h2 className="text-3xl font-extrabold text-[#181B22] tracking-tight mb-1 flex items-baseline">
-                <span className="text-base text-[#94A3B8] mr-1 font-semibold">R$</span>
+              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1 flex items-baseline">
+                <span className="text-base text-slate-400 dark:text-zinc-500 mr-1 font-semibold">R$</span>
                 {formatCurrency(totalBalance)}
               </h2>
 
-              <p className="text-[10px] text-[#64748B]">
+              <p className="text-[10px] text-slate-500 dark:text-zinc-400">
                 Disponibilidade imediata em contas bancárias
               </p>
             </div>
 
-            <div className="pt-3 border-t border-[#E5E7EB] mt-3 flex justify-between items-center text-[10px]">
-              <span className="text-[#64748B]">Balanço do Mês:</span>
-              <span className={`font-bold ${netBalance >= 0 ? 'text-[#1A44C8]' : 'text-rose-500'}`}>
+            <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] mt-3 flex justify-between items-center text-[10px]">
+              <span className="text-slate-500 dark:text-zinc-400">Balanço do Mês:</span>
+              <span className={`font-bold ${netBalance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-500'}`}>
                 {netBalance >= 0 ? '+' : ''}R$ {formatCurrency(netBalance)}
               </span>
             </div>
           </div>
 
           {/* Carrossel de Bancos */}
-          <div className="lg:col-span-8 bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-5 shadow-sm flex flex-col justify-between relative group">
+          <div className="lg:col-span-8 card-luxury-float rounded-[24px] p-5 transition-all flex flex-col justify-between relative group">
             
             <div className="flex justify-between items-center mb-3 px-0.5">
               <div className="flex items-center gap-2">
@@ -882,12 +882,12 @@ export default function SaldoExtratoPage() {
         </div>
 
         {/* =========================================================================
-            3. EXTRATO DE ENTRADAS & SAÍDAS (#FFFFFF)
+            3. EXTRATO DE ENTRADAS & SAÍDAS (LUXURY TECH CARD)
         ========================================================================= */}
-        <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-[24px] p-5 shadow-sm space-y-3.5">
+        <div className="card-luxury-float rounded-[24px] p-5 shadow-sm space-y-3.5">
           
           {/* Header com Filtros e Ações */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2.5 pb-3 border-b border-[#E5E7EB]">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
             
             {/* Abas com Pílulas Arredondadas */}
             <div className="flex items-center gap-1 bg-[#F1F3F7] p-1 rounded-full border border-[#E5E7EB] overflow-x-auto max-w-full">

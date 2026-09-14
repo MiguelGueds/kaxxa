@@ -585,125 +585,126 @@ export default function DividasPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           
           {/* Card 1: Passivo Restante */}
-          <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:border-[#1A44C8]/30 hover:shadow-md transition-all duration-300 rounded-2xl p-4 sm:p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-between group min-w-0">
+          <div className="card-luxury-float rounded-2xl p-4 sm:p-5 flex flex-col justify-between group min-w-0">
             <div>
               <div className="flex justify-between items-center mb-2.5">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shadow-sm shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/40 flex items-center justify-center text-rose-500 shadow-sm shrink-0">
                     <AlertTriangle size={15} />
                   </div>
-                  <span className="text-xs text-[#64748B] font-bold uppercase tracking-wider truncate">
+                  <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider truncate">
                     Passivo Restante
                   </span>
                 </div>
-                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 shrink-0">
+                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60 shrink-0">
                   Saldo Devedor
                 </span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-[#181B22] my-2 tracking-tight truncate flex items-baseline" title={`R$ ${formatCurrency(totalActiveDebt)}`}>
-                <span className="text-xs text-[#94A3B8] font-bold mr-1">R$</span>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white my-2 tracking-tight truncate flex items-baseline" title={`R$ ${formatCurrency(totalActiveDebt)}`}>
+                <span className="text-xs text-slate-400 dark:text-zinc-500 font-bold mr-1">R$</span>
                 {formatCurrency(totalActiveDebt)}
               </h3>
             </div>
-            <div className="pt-2.5 border-t border-[#F1F3F7] space-y-1 text-xs">
-              <p className="text-[#64748B] flex justify-between gap-2">
+            <div className="pt-2.5 border-t border-slate-100 dark:border-white/[0.06] space-y-1 text-xs">
+              <p className="text-slate-500 dark:text-zinc-400 flex justify-between gap-2">
                 <span className="truncate text-[11px]">Meu Passivo Direto:</span>
-                <span className="text-[#181B22] font-bold shrink-0 text-[11px]">R$ {formatCurrency(totalMyOwnDebt)}</span>
+                <span className="text-slate-900 dark:text-white font-bold shrink-0 text-[11px]">R$ {formatCurrency(totalMyOwnDebt)}</span>
               </p>
               {totalThirdPartyDebt > 0 && (
-                <p className="text-[#64748B] flex justify-between gap-2">
+                <p className="text-slate-500 dark:text-zinc-400 flex justify-between gap-2">
                   <span className="truncate text-[11px]">De Terceiros:</span>
-                  <span className="text-amber-600 font-bold shrink-0 text-[11px]">R$ {formatCurrency(totalThirdPartyDebt)}</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold shrink-0 text-[11px]">R$ {formatCurrency(totalThirdPartyDebt)}</span>
                 </p>
               )}
             </div>
           </div>
 
           {/* Card 2: Total Já Quitado */}
-          <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:border-[#1A44C8]/30 hover:shadow-md transition-all duration-300 rounded-2xl p-4 sm:p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-between group min-w-0">
+          <div className="card-luxury-float rounded-2xl p-4 sm:p-5 flex flex-col justify-between group min-w-0">
             <div>
               <div className="flex justify-between items-center mb-2.5">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-[#1A44C8]/10 border border-[#1A44C8]/20 flex items-center justify-center text-[#1A44C8] shadow-sm shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
                     <CheckCircle2 size={15} />
                   </div>
-                  <span className="text-xs text-[#64748B] font-bold uppercase tracking-wider truncate">
+                  <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider truncate">
                     Total Já Quitado
                   </span>
                 </div>
-                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20 shrink-0">
+                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
                   {overallProgressPct.toFixed(0)}% Pago
                 </span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-[#1A44C8] my-2 tracking-tight truncate flex items-baseline" title={`+R$ ${formatCurrency(totalPaidSum)}`}>
+              <h3 className="text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400 my-2 tracking-tight truncate flex items-baseline" title={`+R$ ${formatCurrency(totalPaidSum)}`}>
                 <span className="text-xs opacity-75 font-bold mr-1">+R$</span>
                 {formatCurrency(totalPaidSum)}
               </h3>
             </div>
-            <div className="pt-2.5 border-t border-[#F1F3F7] text-xs text-[#64748B] flex justify-between gap-2">
+            <div className="pt-2.5 border-t border-slate-100 dark:border-white/[0.06] text-xs text-slate-500 dark:text-zinc-400 flex justify-between gap-2">
               <span className="truncate text-[11px]">Original acumulado:</span>
-              <span className="text-[#181B22] font-bold shrink-0 text-[11px]">R$ {formatCurrency(totalOriginal)}</span>
+              <span className="text-slate-900 dark:text-white font-bold shrink-0 text-[11px]">R$ {formatCurrency(totalOriginal)}</span>
             </div>
           </div>
 
           {/* Card 3: Descontos Obtidos */}
-          <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:border-[#1A44C8]/30 hover:shadow-md transition-all duration-300 rounded-2xl p-4 sm:p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-between group min-w-0">
+          <div className="card-luxury-float rounded-2xl p-4 sm:p-5 flex flex-col justify-between group min-w-0">
             <div>
               <div className="flex justify-between items-center mb-2.5">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-[#00A3FF]/10 border border-[#00A3FF]/20 flex items-center justify-center text-[#00A3FF] shadow-sm shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shadow-sm shrink-0">
                     <Sparkles size={15} />
                   </div>
-                  <span className="text-xs text-[#64748B] font-bold uppercase tracking-wider truncate">
+                  <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider truncate">
                     Descontos Obtidos
                   </span>
                 </div>
-                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[#00A3FF]/10 text-[#00A3FF] border border-[#00A3FF]/20 shrink-0">
+                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 shrink-0">
                   Juros Poupados
                 </span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-[#00A3FF] my-2 tracking-tight truncate flex items-baseline" title={`R$ ${formatCurrency(totalDiscountsSum)}`}>
+              <h3 className="text-xl sm:text-2xl font-black text-cyan-600 dark:text-cyan-400 my-2 tracking-tight truncate flex items-baseline" title={`R$ ${formatCurrency(totalDiscountsSum)}`}>
                 <span className="text-xs opacity-75 font-bold mr-1">R$</span>
                 {formatCurrency(totalDiscountsSum)}
               </h3>
             </div>
-            <div className="pt-2.5 border-t border-[#F1F3F7] text-[11px] text-[#64748B] truncate">
+            <div className="pt-2.5 border-t border-slate-100 dark:border-white/[0.06] text-[11px] text-slate-500 dark:text-zinc-400 truncate">
               <span>Economia em pagamentos antecipados</span>
             </div>
           </div>
 
           {/* Card 4: Parcelas no Mês */}
-          <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:border-[#1A44C8]/30 hover:shadow-md transition-all duration-300 rounded-2xl p-4 sm:p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-between group min-w-0">
+          <div className="card-luxury-float rounded-2xl p-4 sm:p-5 flex flex-col justify-between group min-w-0">
             <div>
               <div className="flex justify-between items-center mb-2.5">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-700 dark:text-zinc-300 shadow-sm shrink-0">
                     <Clock size={15} />
                   </div>
-                  <span className="text-xs text-[#64748B] font-bold uppercase tracking-wider truncate">
+                  <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider truncate">
                     Parcelas no Mês
                   </span>
                 </div>
-                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[#F1F3F7] text-[#181B22] border border-[#E5E7EB] shrink-0">
-                  Fixo Mensal
+                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-white/10 shrink-0">
+                  Mês Atual
                 </span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-[#181B22] my-2 tracking-tight truncate flex items-baseline" title={`R$ ${formatCurrency(totalMonthlyCommitment)}`}>
-                <span className="text-xs text-[#94A3B8] font-bold mr-1">R$</span>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white my-2 tracking-tight truncate flex items-baseline" title={`R$ ${formatCurrency(totalMonthlyCommitment)}`}>
+                <span className="text-xs text-slate-400 dark:text-zinc-500 font-bold mr-1">R$</span>
                 {formatCurrency(totalMonthlyCommitment)}
               </h3>
             </div>
-            <div className="pt-2.5 border-t border-[#F1F3F7] text-xs text-[#64748B] flex justify-between gap-2">
+            <div className="pt-2.5 border-t border-slate-100 dark:border-white/[0.06] text-xs text-slate-500 dark:text-zinc-400 flex justify-between gap-2">
               <span className="truncate text-[11px]">Contratos ativos:</span>
-              <span className="text-[#181B22] font-bold shrink-0 text-[11px]">{debts.filter(d => d.status === 'ACTIVE').length} em aberto</span>
+              <span className="text-slate-900 dark:text-white font-bold shrink-0 text-[11px]">{debts.filter(d => d.status === 'ACTIVE').length} em aberto</span>
             </div>
           </div>
+
         </div>
 
         {/* =========================================================================
             2. TRAJETÓRIA DE QUEDA DO PASSIVO (COMPACTA & ELEGANTE)
         ========================================================================= */}
-        <div className="w-full bg-[#FFFFFF] border border-[#E5E7EB] hover:border-[#1A44C8]/30 transition-all duration-300 rounded-2xl p-3.5 sm:p-4 shadow-sm">
+        <div className="w-full card-luxury-float rounded-2xl p-3.5 sm:p-4 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-[#F1F3F7] gap-2">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center shrink-0">
