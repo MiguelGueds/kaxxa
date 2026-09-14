@@ -1268,13 +1268,16 @@ export default function InvestimentosPage() {
   };
 
   const handleDeleteInvestment = async (id: string) => {
+    // 1. Atualização Otimista Imediata na UI (0ms)
+    setInvestments(prev => prev.filter(i => i.id !== id));
+    setDeleteCandidate(null);
+
+    // 2. Exclusão no Supabase e Servidor com Fallback
     try {
       await investmentsService.deleteInvestment(id);
     } catch (e) {
-      console.error('Erro ao excluir investimento do Supabase:', e);
+      console.error('Erro ao excluir investimento:', e);
     }
-    setInvestments(prev => prev.filter(i => i.id !== id));
-    setDeleteCandidate(null);
   };
 
   return (

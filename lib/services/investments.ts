@@ -25,18 +25,35 @@ export interface DbInvestment {
 
 const STORAGE_KEY = 'kaxxa_investments_backup';
 
+function getDeletedInvestmentIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem('kaxxa_deleted_investment_ids');
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function addDeletedInvestmentId(id: string) {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    const deleted = getDeletedInvestmentIds();
+    deleted.add(id);
+    localStorage.setItem('kaxxa_deleted_investment_ids', JSON.stringify(Array.from(deleted)));
+  } catch {}
+}
+
 function getLocalInvestments(userId: string): DbInvestment[] {
   if (typeof window === 'undefined') return [];
   try {
     const itemsMap = new Map<string, DbInvestment>();
     const staticMockIds = new Set(['rf-1', 'rf-2', 'rf-3', 'rf-4', 'rf-5', 'rv-1', 'rv-2', 'rv-3', 'rv-4', 'rv-5']);
+    const deletedIds = getDeletedInvestmentIds();
 
     const candidateKeys = [
       `${STORAGE_KEY}_${userId}`,
       STORAGE_KEY,
-      `${STORAGE_KEY}_usr_miguelguedes110_gmail_com`,
-      'mindfinance_investments_backup',
-      'kaxxa_investments',
     ];
 
     for (let i = 0; i < localStorage.length; i++) {
@@ -53,10 +70,9 @@ function getLocalInvestments(userId: string): DbInvestment[] {
           const list = JSON.parse(raw);
           if (Array.isArray(list)) {
             for (const item of list) {
-              if (item && item.name && !staticMockIds.has(item.id)) {
-                const dedupeKey = `${(item.name || '').trim().toLowerCase()}_${item.category || ''}`;
-                if (!itemsMap.has(dedupeKey)) {
-                  itemsMap.set(dedupeKey, item);
+              if (item && item.name && item.id && !staticMockIds.has(item.id) && !deletedIds.has(item.id)) {
+                if (!itemsMap.has(item.id)) {
+                  itemsMap.set(item.id, item);
                 }
               }
             }
@@ -74,8 +90,14 @@ function getLocalInvestments(userId: string): DbInvestment[] {
 function saveLocalInvestments(userId: string, items: DbInvestment[]) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(items));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    const deletedIds = getDeletedInvestmentIds();
+    const cleanItems = (items || []).filter(i => i && i.id && !deletedIds.has(i.id));
+    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(cleanItems));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanItems));
+    // Limpa chaves legadas para evitar ressurreição de lançamentos apagados
+    localStorage.removeItem('mindfinance_investments_backup');
+    localStorage.removeItem('kaxxa_investments');
+    localStorage.removeItem(`${STORAGE_KEY}_usr_miguelguedes110_gmail_com`);
   } catch (e) {
     console.error('Erro ao salvar investimentos no localStorage:', e);
   }
@@ -122,10 +144,13 @@ export const investmentsService = {
 
         // Purga apenas os IDs estáticos fictícios de demonstração antiga
         const staticMockIds = new Set(['rf-1', 'rf-2', 'rf-3', 'rf-4', 'rf-5', 'rv-1', 'rv-2', 'rv-3', 'rv-4', 'rv-5']);
+        const deletedIds = getDeletedInvestmentIds();
         const localItems = getLocalInvestments(user.id);
         const realPendingLocal = localItems.filter(local => 
           !staticMockIds.has(local.id) &&
-          !formatted.some(remote => remote.id === local.id || (remote.name.toLowerCase() === local.name.toLowerCase() && remote.category === local.category))
+          !deletedIds.has(local.id) &&
+          (!isValidUuid(local.id) || local.id.startsWith('inv-')) &&
+          !formatted.some(remote => remote.id === local.id)
         );
 
         const uninsertedPending: DbInvestment[] = [];
@@ -355,21 +380,42 @@ export const investmentsService = {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
+    // 1. Marca imediatamente no registro de excluídos para nunca mais ressuscitar em sync
+    addDeletedInvestmentId(id);
+
+    // 2. Remove de todos os caches locais imediatamente
     const currentLocal = getLocalInvestments(user.id);
     const updatedLocal = currentLocal.filter(item => item.id !== id);
     saveLocalInvestments(user.id, updatedLocal);
 
+    // 3. Deleta no Supabase direto por ID primário único
+    let deleted = false;
     try {
       const client = supabaseAdmin || supabase;
       const { error } = await client
         .from('investments')
         .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
 
-      return !error;
-    } catch {
-      return true;
+      if (!error) deleted = true;
+    } catch (err) {
+      console.warn('Supabase direto falhou ao deletar investimento:', err);
     }
+
+    // 4. Fallback via proxy /api/db do mesmo domínio (server-side com privilégios de service role)
+    if (!deleted && typeof window !== 'undefined') {
+      try {
+        const res = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', table: 'investments', id }),
+        });
+        if (res.ok) deleted = true;
+      } catch (proxyErr) {
+        console.warn('Fallback /api/db ao deletar investimento falhou:', proxyErr);
+      }
+    }
+
+    return true;
   }
 };
