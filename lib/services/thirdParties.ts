@@ -231,7 +231,8 @@ export const thirdPartiesService = {
     if (typeof window === 'undefined') return [];
     try {
       const raw = localStorage.getItem('kaxxa_third_parties_backup');
-      return raw ? JSON.parse(raw) : [];
+      const list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list.filter((p: any) => p && p.name && !p.name.startsWith('__')) : [];
     } catch {
       return [];
     }
@@ -251,10 +252,11 @@ export const thirdPartiesService = {
         .order('name', { ascending: true });
 
       if (!error && data && data.length > 0) {
+        const cleanData = (data as { id: string; name: string }[]).filter(p => !p.name.startsWith('__'));
         if (typeof window !== 'undefined') {
-          localStorage.setItem('kaxxa_third_parties_backup', JSON.stringify(data));
+          localStorage.setItem('kaxxa_third_parties_backup', JSON.stringify(cleanData));
         }
-        return data as { id: string; name: string }[];
+        return cleanData;
       }
     } catch (err) {
       console.warn('Supabase direto falhou para terceiros, tentando /api/db:', err);
@@ -271,7 +273,9 @@ export const thirdPartiesService = {
         if (res.ok) {
           const json = await res.json();
           if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-            const cleanList = json.data.map((p: any) => ({ id: p.id, name: p.name }));
+            const cleanList = json.data
+              .map((p: any) => ({ id: p.id, name: p.name }))
+              .filter((p: any) => !p.name.startsWith('__'));
             localStorage.setItem('kaxxa_third_parties_backup', JSON.stringify(cleanList));
             return cleanList;
           }

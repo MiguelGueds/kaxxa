@@ -31,6 +31,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, performGlobalSignOut } from '@/lib/supabase';
 import { subscriptionService, DbSubscription, getTrialRemainingText } from '@/lib/services/subscription';
+import { userProfileService } from '@/lib/services/userProfile';
 import { isAdminEmail } from '@/lib/admin';
 
 function MinhaContaContent() {
@@ -118,11 +119,23 @@ function MinhaContaContent() {
     setUserEmail(u.email || '');
     setUserName(u.user_metadata?.full_name || u.email?.split('@')[0] || '');
     setUserPhone(u.user_metadata?.phone || '');
-    const localAvatar = typeof window !== 'undefined' 
-      ? (localStorage.getItem(`kaxxa_user_avatar_${u.id}`) || localStorage.getItem('kaxxa_user_avatar')) 
-      : null;
-    const finalAvatar = localAvatar === 'none' ? null : (localAvatar || u.user_metadata?.avatar_url || null);
-    setUserAvatar(finalAvatar);
+
+    // Carrega avatar local primeiro
+    const localProfile = userProfileService.getLocalProfile(u.id);
+    if (localProfile?.avatar !== undefined) {
+      setUserAvatar(localProfile.avatar);
+    } else {
+      setUserAvatar(u.user_metadata?.avatar_url || null);
+    }
+
+    // Busca perfil na nuvem para sincronização cross-device (celular <-> notebook)
+    userProfileService.getProfile(u.id).then(cloudProfile => {
+      if (cloudProfile) {
+        if (cloudProfile.avatar !== undefined) setUserAvatar(cloudProfile.avatar);
+        if (cloudProfile.name) setUserName(cloudProfile.name);
+        if (cloudProfile.phone) setUserPhone(cloudProfile.phone);
+      }
+    });
 
     // Assinatura
     try {
@@ -189,35 +202,24 @@ function MinhaContaContent() {
     setIsCropModalOpen(false);
     setCropImageSrc(null);
 
-    // Salva e reflete instantaneamente no header do sistema e no localStorage
-    if (typeof window !== 'undefined') {
-      if (userId) {
-        localStorage.setItem(`kaxxa_user_avatar_${userId}`, compressedBase64);
-      }
-      localStorage.setItem('kaxxa_user_avatar', compressedBase64);
-      window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: compressedBase64 }));
+    // Salva e reflete instantaneamente no dispositivo e sincroniza com a nuvem (celular <-> notebook)
+    if (userId) {
+      userProfileService.saveProfile(userId, {
+        avatar: compressedBase64,
+        name: userName,
+        phone: userPhone
+      }).catch(err => console.warn('Erro ao sincronizar avatar com a nuvem:', err));
     }
-
-    supabase.auth.updateUser({
-      data: { avatar_url: compressedBase64 }
-    }).catch(err => console.warn('Sync avatar supabase:', err));
   };
 
   const handleRemoveAvatar = async () => {
     setUserAvatar(null);
-    if (typeof window !== 'undefined') {
-      if (userId) {
-        localStorage.setItem(`kaxxa_user_avatar_${userId}`, 'none');
-      }
-      localStorage.setItem('kaxxa_user_avatar', 'none');
-      window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: null }));
-    }
-    try {
-      await supabase.auth.updateUser({
-        data: { avatar_url: null }
-      });
-    } catch (err) {
-      console.warn('Erro ao remover avatar no Supabase:', err);
+    if (userId) {
+      userProfileService.saveProfile(userId, {
+        avatar: null,
+        name: userName,
+        phone: userPhone
+      }).catch(err => console.warn('Erro ao remover avatar na nuvem:', err));
     }
   };
 
@@ -227,33 +229,17 @@ function MinhaContaContent() {
     resetMessages();
 
     try {
-      if (typeof window !== 'undefined') {
-        if (userAvatar) {
-          if (userId) localStorage.setItem(`kaxxa_user_avatar_${userId}`, userAvatar);
-          localStorage.setItem('kaxxa_user_avatar', userAvatar);
-        } else {
-          if (userId) localStorage.setItem(`kaxxa_user_avatar_${userId}`, 'none');
-          localStorage.setItem('kaxxa_user_avatar', 'none');
-        }
-        window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: userAvatar || null }));
+      if (userId) {
+        await userProfileService.saveProfile(userId, {
+          avatar: userAvatar,
+          name: userName,
+          phone: userPhone
+        });
       }
 
-      const updatePayload: any = {
-        full_name: userName,
-        phone: userPhone,
-        avatar_url: userAvatar || null
-      };
-
-      const { error } = await supabase.auth.updateUser({
-        data: updatePayload
-      });
-
-      if (error) {
-        console.warn('Sincronização de metadados remotos:', error);
-      }
       setSuccessMsg('Perfil atualizado com sucesso!');
     } catch (err: any) {
-      console.warn('Erro ao atualizar perfil no servidor, salvo localmente:', err);
+      console.warn('Erro ao atualizar perfil:', err);
       setSuccessMsg('Perfil atualizado com sucesso!');
     } finally {
       setIsSubmitting(false);

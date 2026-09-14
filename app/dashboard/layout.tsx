@@ -35,6 +35,7 @@ import {
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { KaxxaLogo, KaxxaKLogo } from '@/app/components/KaxxaLogo';
 import { subscriptionService, getTrialRemainingText } from '@/lib/services/subscription';
+import { userProfileService } from '@/lib/services/userProfile';
 import { isAdminEmail } from '@/lib/admin';
 import { CommandPalette } from '@/app/components/CommandPalette';
 
@@ -86,22 +87,45 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        const avatar = resolveAvatar(session.user.id, session.user.user_metadata?.avatar_url);
+        const initialAvatar = resolveAvatar(session.user.id, session.user.user_metadata?.avatar_url);
         setUserInfo({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
           email: session.user.email || '',
-          avatar
+          avatar: initialAvatar
+        });
+
+        // Sincroniza da nuvem para o dispositivo atual (cross-device sync)
+        userProfileService.getProfile(session.user.id).then(profile => {
+          if (profile) {
+            if (profile.avatar !== undefined) {
+              setUserInfo(prev => ({ ...prev, avatar: profile.avatar || null }));
+            }
+            if (profile.name) {
+              setUserInfo(prev => ({ ...prev, name: profile.name! }));
+            }
+          }
         });
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        const avatar = resolveAvatar(session.user.id, session.user.user_metadata?.avatar_url);
+        const initialAvatar = resolveAvatar(session.user.id, session.user.user_metadata?.avatar_url);
         setUserInfo({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
           email: session.user.email || '',
-          avatar
+          avatar: initialAvatar
+        });
+
+        userProfileService.getProfile(session.user.id).then(profile => {
+          if (profile) {
+            if (profile.avatar !== undefined) {
+              setUserInfo(prev => ({ ...prev, avatar: profile.avatar || null }));
+            }
+            if (profile.name) {
+              setUserInfo(prev => ({ ...prev, name: profile.name! }));
+            }
+          }
         });
       }
     });
