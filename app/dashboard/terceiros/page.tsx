@@ -135,10 +135,31 @@ export default function TerceirosPage() {
   const [settleMethod, setSettleMethod] = useState<'PIX' | 'CASH' | 'BARTER_ASSET' | 'CARD'>('PIX');
   const [settleAssetNote, setSettleAssetNote] = useState('');
 
-  // Contas, Cartões e Pessoas registradas do usuário
-  const [userAccounts, setUserAccounts] = useState<{ id: string; name: string }[]>([]);
-  const [userCards, setUserCards] = useState<{ id: string; name: string }[]>([]);
-  const [registeredPeople, setRegisteredPeople] = useState<string[]>([]);
+  // Contas, Cartões e Pessoas registradas do usuário (Carregamento instantâneo via cache)
+  const [userAccounts, setUserAccounts] = useState<{ id: string; name: string }[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return accountsService.getCachedAccounts().map(a => ({ id: a.id, name: a.name }));
+    } catch {
+      return [];
+    }
+  });
+  const [userCards, setUserCards] = useState<{ id: string; name: string }[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return cardsService.getCachedCards().map(c => ({ id: c.id, name: c.name }));
+    } catch {
+      return [];
+    }
+  });
+  const [registeredPeople, setRegisteredPeople] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return thirdPartiesService.getCachedPeople().map(p => p.name);
+    } catch {
+      return [];
+    }
+  });
   const [isCustomPersonName, setIsCustomPersonName] = useState(false);
 
   useEffect(() => {

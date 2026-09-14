@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { cardsService } from '@/lib/services/cards';
 import { categoriesService } from '@/lib/services/categories';
+import { thirdPartiesService } from '@/lib/services/thirdParties';
 import { 
   CreditCard, 
   Plus, 
@@ -216,7 +217,14 @@ export default function MinhasFaturasPage() {
   const [newCardClosingDay, setNewCardClosingDay] = useState('15');
   const [newCardDueDay, setNewCardDueDay] = useState('22');
 
-  const [registeredThirdParties, setRegisteredThirdParties] = useState<string[]>([]);
+  const [registeredThirdParties, setRegisteredThirdParties] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      return thirdPartiesService.getCachedPeople().map(p => p.name);
+    } catch {
+      return [];
+    }
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [uploadFileName, setUploadFileName] = useState('');
