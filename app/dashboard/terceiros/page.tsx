@@ -221,7 +221,7 @@ export default function TerceirosPage() {
     }
     setFormDesc('');
     setFormTotalAmount('');
-    setFormInstallments('1');
+    setFormInstallments('');
     setFormDueDate('');
     setFormNotes('');
     if (userCards.length > 0) {
@@ -239,7 +239,7 @@ export default function TerceirosPage() {
 
   const handleSaveDebt = async () => {
     const parsedAmount = parseFloat(formTotalAmount.replace(',', '.')) || 0;
-    const installments = parseInt(formInstallments, 10) || 1;
+    const installments = parseInt(formInstallments, 10) > 0 ? parseInt(formInstallments, 10) : 1;
     const trimmedPersonName = formPersonName.trim();
     if (!trimmedPersonName || !formDesc.trim() || parsedAmount <= 0) return;
 
@@ -252,7 +252,7 @@ export default function TerceirosPage() {
 
     let createdId = 'tp-' + Date.now();
     const finalOriginBank = formOriginType === 'ASSET_SALE' 
-      ? (formBankOrCard.trim() || 'Venda de Bem')
+      ? 'Venda de Bem'
       : (formBankOrCard.trim() || 'Conta/Cartão');
 
     try {
@@ -295,7 +295,7 @@ export default function TerceirosPage() {
     setFormPersonName('');
     setFormDesc('');
     setFormTotalAmount('');
-    setFormInstallments('1');
+    setFormInstallments('');
     setFormDueDate('');
     setFormNotes('');
   };
@@ -913,7 +913,7 @@ export default function TerceirosPage() {
                                     <span className="text-[10px] font-extrabold text-[#1A44C8]">R$ {formatCurrency(rem)}</span>
                                   </div>
                                   <div className="flex justify-between items-center text-[8px] text-[#64748B]">
-                                    <span>{d.originBankOrCard} • {d.installmentsTotal > 1 ? `${remainingInst} parc. restantes` : 'À vista'}</span>
+                                    <span>{d.originBankOrCard} • {d.installmentsTotal > 1 ? `${remainingInst} parc. restantes` : 'Saldo em aberto'}</span>
                                     {rem === 0 ? <span className="text-[#1A44C8] font-bold">Quitado</span> : <span>Total original: R$ {formatCurrency(d.totalAmount)}</span>}
                                   </div>
                                 </div>
@@ -1064,7 +1064,7 @@ export default function TerceirosPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {formOriginType === 'ASSET_SALE' ? (
                 <div>
                   <label className="block text-[11px] font-bold text-[#64748B] mb-1">Tipo / Origem da Negociação</label>
                   <select
@@ -1074,71 +1074,84 @@ export default function TerceirosPage() {
                       setFormOriginType(val);
                       if (val === 'CARD' && userCards.length > 0) setFormBankOrCard(userCards[0].name);
                       else if (val === 'ACCOUNT' && userAccounts.length > 0) setFormBankOrCard(userAccounts[0].name);
-                      else if (val === 'ASSET_SALE') setFormBankOrCard('');
+                      else if (val === 'ASSET_SALE') setFormBankOrCard('Venda de Bem');
                     }}
-                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold cursor-pointer"
                   >
                     <option value="CARD">💳 Cartão de Crédito</option>
                     <option value="ACCOUNT">🏦 Conta Bancária / PIX</option>
-                    <option value="ASSET_SALE">🏍️ Venda de bem</option>
+                    <option value="ASSET_SALE">🏍️ Venda de Bem</option>
                   </select>
                 </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#64748B] mb-1">Tipo / Origem da Negociação</label>
+                    <select
+                      value={formOriginType}
+                      onChange={e => {
+                        const val = e.target.value as 'CARD' | 'ACCOUNT' | 'ASSET_SALE';
+                        setFormOriginType(val);
+                        if (val === 'CARD' && userCards.length > 0) setFormBankOrCard(userCards[0].name);
+                        else if (val === 'ACCOUNT' && userAccounts.length > 0) setFormBankOrCard(userAccounts[0].name);
+                        else if (val === 'ASSET_SALE') setFormBankOrCard('Venda de Bem');
+                      }}
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold cursor-pointer"
+                    >
+                      <option value="CARD">💳 Cartão de Crédito</option>
+                      <option value="ACCOUNT">🏦 Conta Bancária / PIX</option>
+                      <option value="ASSET_SALE">🏍️ Venda de Bem</option>
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">
-                    {formOriginType === 'ASSET_SALE' ? 'Bem Vendido / Negociado' : 'Conta ou Cartão Usado'}
-                  </label>
-                  {formOriginType === 'ASSET_SALE' ? (
-                    <input
-                      type="text"
-                      placeholder="Ex: Moto Honda Fan 160, Carro Gol, iPhone"
-                      value={formBankOrCard}
-                      onChange={e => setFormBankOrCard(e.target.value)}
-                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-bold"
-                    />
-                  ) : formOriginType === 'CARD' ? (
-                    userCards.length > 0 ? (
-                      <select
-                        value={formBankOrCard}
-                        onChange={e => setFormBankOrCard(e.target.value)}
-                        className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
-                      >
-                        {userCards.map(c => (
-                          <option key={c.id} value={c.name}>{c.name}</option>
-                        ))}
-                      </select>
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#64748B] mb-1">
+                      {formOriginType === 'CARD' ? 'Cartão Usado' : 'Conta Usada'}
+                    </label>
+                    {formOriginType === 'CARD' ? (
+                      userCards.length > 0 ? (
+                        <select
+                          value={formBankOrCard}
+                          onChange={e => setFormBankOrCard(e.target.value)}
+                          className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium cursor-pointer"
+                        >
+                          {userCards.map(c => (
+                            <option key={c.id} value={c.name}>{c.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          placeholder="Nenhum cartão cadastrado"
+                          value={formBankOrCard}
+                          onChange={e => setFormBankOrCard(e.target.value)}
+                          className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                        />
+                      )
                     ) : (
-                      <input
-                        type="text"
-                        placeholder="Nenhum cartão cadastrado"
-                        value={formBankOrCard}
-                        onChange={e => setFormBankOrCard(e.target.value)}
-                        className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
-                      />
-                    )
-                  ) : (
-                    userAccounts.length > 0 ? (
-                      <select
-                        value={formBankOrCard}
-                        onChange={e => setFormBankOrCard(e.target.value)}
-                        className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium"
-                      >
-                        {userAccounts.map(a => (
-                          <option key={a.id} value={a.name}>{a.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        placeholder="Nenhuma conta cadastrada"
-                        value={formBankOrCard}
-                        onChange={e => setFormBankOrCard(e.target.value)}
-                        className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
-                      />
-                    )
-                  )}
+                      userAccounts.length > 0 ? (
+                        <select
+                          value={formBankOrCard}
+                          onChange={e => setFormBankOrCard(e.target.value)}
+                          className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] font-medium cursor-pointer"
+                        >
+                          {userAccounts.map(a => (
+                            <option key={a.id} value={a.name}>{a.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          placeholder="Nenhuma conta cadastrada"
+                          value={formBankOrCard}
+                          onChange={e => setFormBankOrCard(e.target.value)}
+                          className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                        />
+                      )
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1149,15 +1162,18 @@ export default function TerceirosPage() {
                     placeholder="0,00"
                     value={formTotalAmount}
                     onChange={e => setFormTotalAmount(e.target.value)}
-                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] font-bold focus:outline-none focus:border-[#1A44C8]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">Qtd. Parcelas</label>
+                  <label className="block text-[11px] font-bold text-[#64748B] mb-1">
+                    Qtd. Parcelas <span className="text-[#94A3B8] font-normal text-[9px]">(opcional)</span>
+                  </label>
                   <input
                     type="number"
                     min="1"
+                    placeholder="Sem parcelas (valor aberto)"
                     value={formInstallments}
                     onChange={e => setFormInstallments(e.target.value)}
                     className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
@@ -1166,10 +1182,12 @@ export default function TerceirosPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#64748B] mb-1">Vencimento / Prazo</label>
+                <label className="block text-[11px] font-bold text-[#64748B] mb-1">
+                  Vencimento / Prazo <span className="text-[#94A3B8] font-normal text-[9px]">(opcional)</span>
+                </label>
                 <input
                   type="text"
-                  placeholder="Ex: Todo dia 10, 25/08/2026"
+                  placeholder="Ex: Todo dia 10, 25/08/2026 (ou deixe vazio se a combinar)"
                   value={formDueDate}
                   onChange={e => setFormDueDate(e.target.value)}
                   className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl px-3 py-2 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8]"
