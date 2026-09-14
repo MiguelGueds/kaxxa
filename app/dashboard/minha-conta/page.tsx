@@ -118,8 +118,11 @@ function MinhaContaContent() {
     setUserEmail(u.email || '');
     setUserName(u.user_metadata?.full_name || u.email?.split('@')[0] || '');
     setUserPhone(u.user_metadata?.phone || '');
-    const localAvatar = typeof window !== 'undefined' ? localStorage.getItem(`kaxxa_user_avatar_${u.id}`) : null;
-    setUserAvatar(localAvatar || u.user_metadata?.avatar_url || null);
+    const localAvatar = typeof window !== 'undefined' 
+      ? (localStorage.getItem(`kaxxa_user_avatar_${u.id}`) || localStorage.getItem('kaxxa_user_avatar')) 
+      : null;
+    const finalAvatar = localAvatar === 'none' ? null : (localAvatar || u.user_metadata?.avatar_url || null);
+    setUserAvatar(finalAvatar);
 
     // Assinatura
     try {
@@ -185,6 +188,37 @@ function MinhaContaContent() {
     setUserAvatar(compressedBase64);
     setIsCropModalOpen(false);
     setCropImageSrc(null);
+
+    // Salva e reflete instantaneamente no header do sistema e no localStorage
+    if (typeof window !== 'undefined') {
+      if (userId) {
+        localStorage.setItem(`kaxxa_user_avatar_${userId}`, compressedBase64);
+      }
+      localStorage.setItem('kaxxa_user_avatar', compressedBase64);
+      window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: compressedBase64 }));
+    }
+
+    supabase.auth.updateUser({
+      data: { avatar_url: compressedBase64 }
+    }).catch(err => console.warn('Sync avatar supabase:', err));
+  };
+
+  const handleRemoveAvatar = async () => {
+    setUserAvatar(null);
+    if (typeof window !== 'undefined') {
+      if (userId) {
+        localStorage.setItem(`kaxxa_user_avatar_${userId}`, 'none');
+      }
+      localStorage.setItem('kaxxa_user_avatar', 'none');
+      window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: null }));
+    }
+    try {
+      await supabase.auth.updateUser({
+        data: { avatar_url: null }
+      });
+    } catch (err) {
+      console.warn('Erro ao remover avatar no Supabase:', err);
+    }
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -193,11 +227,13 @@ function MinhaContaContent() {
     resetMessages();
 
     try {
-      if (typeof window !== 'undefined' && userId) {
+      if (typeof window !== 'undefined') {
         if (userAvatar) {
-          localStorage.setItem(`kaxxa_user_avatar_${userId}`, userAvatar);
+          if (userId) localStorage.setItem(`kaxxa_user_avatar_${userId}`, userAvatar);
+          localStorage.setItem('kaxxa_user_avatar', userAvatar);
         } else {
-          localStorage.removeItem(`kaxxa_user_avatar_${userId}`);
+          if (userId) localStorage.setItem(`kaxxa_user_avatar_${userId}`, 'none');
+          localStorage.setItem('kaxxa_user_avatar', 'none');
         }
         window.dispatchEvent(new CustomEvent('kaxxa_avatar_updated', { detail: userAvatar || null }));
       }
@@ -421,7 +457,7 @@ function MinhaContaContent() {
                     {userAvatar && (
                       <button
                         type="button"
-                        onClick={() => setUserAvatar(null)}
+                        onClick={handleRemoveAvatar}
                         className="text-xs font-medium text-rose-600 hover:underline px-2"
                       >
                         Remover

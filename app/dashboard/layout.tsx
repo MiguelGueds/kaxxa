@@ -56,34 +56,52 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
+    const resolveAvatar = (userId?: string, metadataUrl?: string | null): string | null => {
+      if (typeof window === 'undefined') return metadataUrl || null;
+      const local = userId 
+        ? (localStorage.getItem(`kaxxa_user_avatar_${userId}`) || localStorage.getItem('kaxxa_user_avatar'))
+        : localStorage.getItem('kaxxa_user_avatar');
+      if (local === 'none') return null;
+      if (local) return local;
+      return metadataUrl || null;
+    };
+
     const handleAvatarUpdate = (e: any) => {
       if (e.detail !== undefined) {
         setUserInfo(prev => ({ ...prev, avatar: e.detail }));
       }
     };
 
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith('kaxxa_user_avatar')) {
+        const val = e.newValue;
+        setUserInfo(prev => ({ ...prev, avatar: (!val || val === 'none') ? null : val }));
+      }
+    };
+
     if (typeof window !== 'undefined') {
       window.addEventListener('kaxxa_avatar_updated', handleAvatarUpdate);
+      window.addEventListener('storage', handleStorageChange);
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        const localAvatar = typeof window !== 'undefined' ? localStorage.getItem(`kaxxa_user_avatar_${session.user.id}`) : null;
+        const avatar = resolveAvatar(session.user.id, session.user.user_metadata?.avatar_url);
         setUserInfo({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
           email: session.user.email || '',
-          avatar: session.user.user_metadata?.avatar_url || localAvatar || null
+          avatar
         });
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        const localAvatar = typeof window !== 'undefined' ? localStorage.getItem(`kaxxa_user_avatar_${session.user.id}`) : null;
+        const avatar = resolveAvatar(session.user.id, session.user.user_metadata?.avatar_url);
         setUserInfo({
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Minha Conta',
           email: session.user.email || '',
-          avatar: session.user.user_metadata?.avatar_url || localAvatar || null
+          avatar
         });
       }
     });
@@ -91,6 +109,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('kaxxa_avatar_updated', handleAvatarUpdate);
+        window.removeEventListener('storage', handleStorageChange);
       }
       subscription?.unsubscribe();
     };
