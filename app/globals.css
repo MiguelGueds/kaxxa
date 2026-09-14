@@ -348,3 +348,9 @@ html, body {
   background: #1A44C8;
 }
 
+/* Tipografia Financeira de Alta Precisão (Swiss Luxury) */
+.font-luxury-num {
+  font-feature-settings: 'tnum' 1, 'cv02' 1, 'zero' 1;
+  letter-spacing: -0.035em;
+}
+

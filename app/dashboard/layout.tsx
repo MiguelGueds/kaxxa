@@ -320,7 +320,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen h-screen w-full bg-[#F5F6F9] flex font-sans selection:bg-[#1A44C8] selection:text-white text-[#181B22] overflow-x-hidden overflow-y-hidden relative">
+    <div className="min-h-screen h-screen w-full bg-[#F8F9FC] dark:bg-[#04060A] flex font-sans selection:bg-slate-950 dark:selection:bg-white selection:text-white dark:selection:text-slate-950 text-slate-900 dark:text-[#F1F3F7] overflow-x-hidden overflow-y-hidden relative">
       
       {/* Overlay Mobile */}
       {mobileMenuOpen && (
@@ -330,22 +330,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Sidebar Flutuante em Formato de Card Sofisticado (#FFFFFF) */}
-      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-[#E5E7EB] flex flex-col bg-[#FFFFFF] shadow-[0_8px_28px_rgba(0,0,0,0.03)] transition-all duration-300 overflow-hidden ${
-        isSidebarCollapsed ? 'w-[68px]' : 'w-[220px]'
+      {/* Sidebar Flutuante no Padrão Swiss Private Wealth */}
+      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-slate-200/90 dark:border-white/[0.08] flex flex-col bg-white dark:bg-[#080B11] shadow-[0_4px_24px_rgba(0,0,0,0.02)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.4)] transition-all duration-300 overflow-hidden ${
+        isSidebarCollapsed ? 'w-[68px]' : 'w-[224px]'
       } ${
         mobileMenuOpen 
-          ? 'fixed inset-y-2 left-2 !w-[250px] max-h-[calc(100dvh-16px)] h-[calc(100dvh-16px)] z-50 flex flex-col shadow-2xl' 
+          ? 'fixed inset-y-2 left-2 !w-[254px] max-h-[calc(100dvh-16px)] h-[calc(100dvh-16px)] z-50 flex flex-col shadow-2xl' 
           : 'hidden lg:flex z-0 h-[calc(100vh-16px)] sm:h-[calc(100vh-24px)]'
       }`}>
         
-        {/* Brand Header do Card */}
-        <div className={`h-14 flex items-center border-b border-[#F1F3F7] shrink-0 ${
+        {/* Brand Header do Card com a Nova Logo Oficial */}
+        <div className={`h-14 flex items-center border-b border-slate-100 dark:border-white/[0.06] shrink-0 ${
           isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'
         }`}>
-          <Link href="/dashboard" className="flex items-center group min-w-0" title="Ir para o Dashboard">
+          <Link href="/dashboard" className="flex items-center group min-w-0" title="Kaxxa">
             {isSidebarCollapsed ? (
-              <KaxxaKLogo size={24} className="text-[#1A44C8]" />
+              <KaxxaKLogo size={26} />
             ) : (
               <KaxxaLogo size={24} />
             )}
@@ -356,7 +356,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(false)}
-              className="lg:hidden p-1.5 rounded-xl text-[#64748B] hover:text-[#181B22] hover:bg-[#F1F3F7] transition-colors shrink-0"
+              className="lg:hidden p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors shrink-0"
               title="Fechar menu"
               aria-label="Fechar menu"
             >
@@ -366,7 +366,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="p-1 rounded-lg text-[#94A3B8] hover:text-[#181B22] hover:bg-[#F1F3F7] transition-colors hidden lg:flex items-center justify-center shrink-0"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors hidden lg:flex items-center justify-center shrink-0"
             title={isSidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
           >
             {isSidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
@@ -374,16 +374,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Menus de Navegação em Formato Slim */}
-        <div className="flex-1 min-h-0 px-2 py-3.5 flex flex-col justify-between overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 px-2.5 py-3.5 flex flex-col justify-between overflow-y-auto custom-scrollbar">
           <div className="flex flex-col gap-3.5">
             {sidebarMenus.map((menu, idx) => (
               <div key={idx}>
                 {!isSidebarCollapsed ? (
-                  <h4 className="text-[8.5px] font-bold tracking-wider text-[#94A3B8] mb-1 px-2 uppercase">
+                  <h4 className="text-[8.5px] font-medium tracking-[0.2em] text-slate-400 dark:text-zinc-500 mb-1.5 px-2.5 uppercase">
                     {menu.title}
                   </h4>
                 ) : (
-                  <div className="w-5 h-[1px] bg-[#E5E7EB]/80 mx-auto my-1.5" />
+                  <div className="w-5 h-[1px] bg-slate-200/80 dark:bg-white/[0.06] mx-auto my-1.5" />
                 )}
                 
                 <div className="flex flex-col gap-0.5">
@@ -398,33 +398,34 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                               : 'justify-between px-2.5 py-2'
                           } ${
                             active 
-                              ? 'bg-[#1A44C8] text-white font-semibold shadow-sm shadow-[#1A44C8]/25' 
-                              : 'hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#181B22]'
+                              ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-normal shadow-xs' 
+                              : 'hover:bg-slate-100/70 dark:hover:bg-white/[0.04] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white font-light'
                           }`}
                           title={isSidebarCollapsed ? item.label : undefined}
                         >
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex items-center gap-2.5 min-w-0">
                             <item.icon 
                               size={15} 
-                              className={active ? 'text-white shrink-0' : 'text-[#94A3B8] group-hover:text-[#181B22] shrink-0'} 
+                              strokeWidth={1.75}
+                              className={active ? 'text-white dark:text-slate-950 shrink-0' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-900 dark:group-hover:text-white shrink-0'} 
                             />
                             {!isSidebarCollapsed && (
-                              <span className="text-xs truncate font-medium">{item.label}</span>
+                              <span className="text-xs truncate">{item.label}</span>
                             )}
                           </div>
 
                           {!isSidebarCollapsed && item.badge && (
-                            <span className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded-full ${
+                            <span className={`text-[8.5px] font-medium px-1.5 py-0.2 rounded-full ${
                               active 
-                                ? 'bg-white/20 text-white' 
-                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                ? 'bg-white/20 dark:bg-slate-900/10 text-white dark:text-slate-950' 
+                                : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-white/[0.08]'
                             }`}>
                               {item.badge}
                             </span>
                           )}
 
                           {isSidebarCollapsed && active && (
-                            <div className="w-1 h-1 rounded-full bg-[#1A44C8] absolute right-1"></div>
+                            <div className="w-1 h-1 rounded-full bg-slate-950 dark:bg-white absolute right-1"></div>
                           )}
                         </div>
                       </Link>
@@ -436,38 +437,38 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Rodapé da Sidebar - Sair da Conta (Fixo no fundo visível no celular e desktop) */}
-        <div className="p-3 border-t border-[#F1F3F7] shrink-0 bg-white">
+        {/* Rodapé da Sidebar - Sair da Conta */}
+        <div className="p-3 border-t border-slate-100 dark:border-white/[0.06] shrink-0 bg-white dark:bg-[#080B11]">
           <button 
             type="button"
             onClick={async (e) => { e.preventDefault(); await performGlobalSignOut(); router.push('/login'); }} 
-            className={`flex items-center rounded-xl transition-all text-rose-600 bg-rose-50/70 hover:bg-rose-100/80 border border-rose-100 group text-xs font-semibold shadow-xs ${
+            className={`flex items-center rounded-xl transition-all text-rose-600 dark:text-rose-400 bg-rose-50/60 dark:bg-rose-950/20 hover:bg-rose-100/80 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-900/30 group text-xs font-light tracking-wide shadow-xs ${
               isSidebarCollapsed ? 'justify-center p-2.5 w-full' : 'justify-start gap-2.5 px-3 py-2.5 w-full'
             }`}
             title="Sair da Conta"
           >
-            <LogOut size={15} className="text-rose-600 shrink-0" />
+            <LogOut size={15} strokeWidth={1.75} className="text-rose-600 dark:text-rose-400 shrink-0" />
             {!isSidebarCollapsed && <span>Sair da Conta</span>}
           </button>
         </div>
       </aside>
 
       {/* Área Principal */}
-      <div className="flex-1 flex flex-col min-h-0 relative overflow-x-hidden overflow-y-hidden bg-[#F5F6F9]">
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-x-hidden overflow-y-hidden bg-[#F8F9FC] dark:bg-[#04060A]">
         
-        {/* Topbar Flutuante no Formato de Card Sofisticado */}
-        <header className="my-2 sm:my-3 mr-2 sm:mr-3 ml-2 sm:ml-2.5 h-14 px-3 sm:px-5 rounded-[22px] bg-[#FFFFFF] border border-[#E5E7EB] shadow-[0_8px_28px_rgba(0,0,0,0.03)] flex items-center justify-between z-0 flex-shrink-0">
+        {/* Topbar Flutuante no Formato Swiss Private Wealth */}
+        <header className="my-2 sm:my-3 mr-2 sm:mr-3 ml-2 sm:ml-2.5 h-14 px-3 sm:px-5 rounded-[22px] bg-white dark:bg-[#080B11] border border-slate-200/90 dark:border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.02)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.4)] flex items-center justify-between z-0 flex-shrink-0">
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
             <button 
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden text-[#64748B] hover:text-[#181B22] p-1.5 rounded-xl hover:bg-[#F1F3F7] transition-colors shrink-0"
+              className="lg:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors shrink-0"
             >
-              <Menu size={18} />
+              <Menu size={18} strokeWidth={1.75} />
             </button>
             <div className="flex items-center gap-1.5 text-xs truncate">
-              <span className="text-[#94A3B8] font-medium hidden sm:inline">Kaxxa</span>
-              <ChevronRight size={11} className="text-[#CBD5E1] hidden sm:inline" />
-              <span className="text-[#181B22] font-bold truncate max-w-[110px] sm:max-w-none">{pageTitle}</span>
+              <span className="text-slate-400 dark:text-zinc-500 font-light hidden sm:inline">Kaxxa</span>
+              <ChevronRight size={11} className="text-slate-300 dark:text-zinc-600 hidden sm:inline" />
+              <span className="text-slate-900 dark:text-white font-normal truncate max-w-[110px] sm:max-w-none">{pageTitle}</span>
             </div>
           </div>
 
@@ -475,14 +476,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Campo de Busca Rápida (Abre Command Palette) */}
             <div 
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="hidden md:flex items-center gap-2 bg-[#F8FAFC] border border-[#E5E7EB] hover:border-[#1A44C8]/40 rounded-xl px-3 py-1.5 transition-all cursor-pointer shadow-inner group"
+              className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 rounded-xl px-3 py-1.5 transition-all cursor-pointer group"
               title="Buscar no Kaxxa"
             >
-              <Search size={13} className="text-[#94A3B8] group-hover:text-[#1A44C8] transition-colors" />
-              <span className="text-xs text-[#94A3B8] group-hover:text-[#64748B] w-36 font-sans select-none truncate">
+              <Search size={13} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-900 dark:group-hover:text-white transition-colors" />
+              <span className="text-xs text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 w-36 font-sans select-none truncate font-light">
                 Buscar no Kaxxa...
               </span>
-              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-mono text-[#94A3B8] bg-white border border-[#E5E7EB] rounded-md shadow-2xs font-bold">
+              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-mono text-slate-400 dark:text-zinc-500 bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-md shadow-2xs font-medium">
                 ⌘K
               </kbd>
             </div>
@@ -490,24 +491,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Ícone de Busca em Telas Menores */}
             <button
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="md:hidden h-8 w-8 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] hover:bg-[#F1F3F7] text-[#64748B] hover:text-[#181B22] flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
+              className="md:hidden h-8 w-8 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
               title="Buscar"
             >
-              <Search size={14} />
+              <Search size={14} strokeWidth={1.75} />
             </button>
             
             {/* Botão de Alternância de Modo Noturno / Claro */}
             <button
               type="button"
               onClick={toggleTheme}
-              className="h-8 w-8 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] hover:bg-[#F1F3F7] text-[#64748B] hover:text-[#181B22] flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
+              className="h-8 w-8 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
               title={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
               aria-label={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
             >
               {theme === 'dark' ? (
-                <Sun size={14} className="text-amber-400" />
+                <Sun size={14} strokeWidth={1.75} className="text-amber-400" />
               ) : (
-                <Moon size={14} className="text-[#64748B]" />
+                <Moon size={14} strokeWidth={1.75} className="text-slate-500" />
               )}
             </button>
 
@@ -517,22 +518,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               onClick={togglePrivacy}
               className={`h-8 w-8 rounded-xl border flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0 ${
                 isConcealed 
-                  ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                  : 'bg-[#F8FAFC] hover:bg-[#F1F3F7] text-[#64748B] hover:text-[#181B22] border-[#E5E7EB]'
+                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/80' 
+                  : 'bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white border-slate-200/80 dark:border-white/[0.08]'
               }`}
               title={isConcealed ? "Revelar valores monetários" : "Ocultar valores monetários (Modo Privacidade)"}
               aria-label={isConcealed ? "Revelar valores monetários" : "Ocultar valores monetários (Modo Privacidade)"}
             >
-              {isConcealed ? <EyeOff size={14} className="text-amber-600" /> : <Eye size={14} className="text-[#1A44C8]" />}
+              {isConcealed ? <EyeOff size={14} strokeWidth={1.75} className="text-amber-600 dark:text-amber-400" /> : <Eye size={14} strokeWidth={1.75} className="text-slate-600 dark:text-zinc-300" />}
             </button>
 
-            {/* Perfil no Topbar (Avatar Redondo + Acesso Pro / Dias Restantes) */}
+            {/* Perfil no Topbar */}
             <Link 
               href="/dashboard/minha-conta"
-              className="flex items-center gap-2 pl-1 pr-2 sm:pr-2.5 py-1 rounded-full hover:bg-[#F1F3F7] transition-colors border border-transparent hover:border-[#E5E7EB]"
+              className="flex items-center gap-2 pl-1 pr-2 sm:pr-2.5 py-1 rounded-full hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors border border-transparent hover:border-slate-200/80 dark:hover:border-white/[0.08]"
               title="Minha Conta"
             >
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-tr from-[#1A44C8] to-[#00A3FF] text-white flex items-center justify-center text-[10px] font-bold shadow-xs border border-white/60 shrink-0">
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-900 dark:bg-white text-white dark:text-slate-950 flex items-center justify-center text-[10px] font-medium shadow-xs border border-slate-200/80 dark:border-white/10 shrink-0">
                 {userInfo.avatar ? (
                   <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -540,17 +541,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
               </div>
               <div className="flex flex-col text-left hidden sm:flex min-w-0">
-                <span className="text-xs font-bold text-[#181B22] max-w-[110px] truncate leading-tight">{userInfo.name}</span>
-                <span className={`text-[9.5px] font-extrabold tracking-tight leading-none mt-0.5 ${
-                  subInfo.isRecurringPro ? 'text-emerald-600' : 'text-amber-600'
+                <span className="text-xs font-normal text-slate-900 dark:text-white max-w-[110px] truncate leading-tight">{userInfo.name}</span>
+                <span className={`text-[9px] font-medium tracking-wide leading-none mt-0.5 uppercase ${
+                  subInfo.isRecurringPro ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
                 }`}>
                   {subInfo.isRecurringPro 
-                    ? 'Plano Pro Ativado' 
+                    ? 'PRO' 
                     : getTrialRemainingText(subInfo.periodEnd).text
                   }
                 </span>
               </div>
-              <ChevronRight size={11} className="text-[#94A3B8] hidden sm:block shrink-0 ml-0.5" />
+              <ChevronRight size={11} className="text-slate-400 dark:text-zinc-500 hidden sm:block shrink-0 ml-0.5" />
             </Link>
           </div>
         </header>
