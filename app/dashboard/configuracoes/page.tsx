@@ -46,6 +46,23 @@ type Account = { id: string; name: string; type: string; balance: number; };
 type Card = { id: string; name: string; limit: number; due_day: number; };
 type ThirdParty = { id: string; name: string; type?: string; phone?: string; avatar_url?: string; };
 
+function getCachedCategories(): Category[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('kaxxa_categories_cache');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCachedCategories(cats: Category[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('kaxxa_categories_cache', JSON.stringify(cats));
+  } catch {}
+}
+
 function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -56,7 +73,7 @@ function SettingsContent() {
   const [successMsg, setSuccessMsg] = useState('');
 
   // Categorias
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>(getCachedCategories);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'MAIN' | 'SUB'>('MAIN');
   const [categoryName, setCategoryName] = useState('');
@@ -133,6 +150,39 @@ function SettingsContent() {
   } | null>(null);
 
   useEffect(() => {
+    // 1. Carregamento instantâneo por cache local em 0ms
+    const cachedCats = getCachedCategories();
+    if (cachedCats.length > 0) setCategories(cachedCats);
+
+    const cachedAccs = accountsService.getCachedAccounts();
+    if (cachedAccs.length > 0) {
+      setAccounts(cachedAccs.map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        type: a.type,
+        balance: Number(a.balance ?? a.initial_balance ?? 0)
+      })));
+    }
+
+    const cachedCards = cardsService.getCachedCards();
+    if (cachedCards.length > 0) {
+      setCards(cachedCards.map(c => ({
+        id: c.id,
+        name: c.name,
+        limit: Number(c.credit_limit ?? 0),
+        due_day: c.due_day
+      })));
+    }
+
+    const cachedPeople = thirdPartiesService.getCachedPeople();
+    if (cachedPeople.length > 0) {
+      setThirdParties(cachedPeople.map((p: any) => ({
+        id: p.id,
+        name: p.name
+      })));
+    }
+
+    // 2. Busca e sincroniza dados em paralelo
     fetchData();
   }, []);
 
@@ -157,15 +207,41 @@ function SettingsContent() {
   const fetchData = async () => {
     try {
       const user = await getAuthenticatedUser();
+      const userIds = user?.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com'
+        ? ['b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd']
+        : [user?.id].filter(Boolean);
+
       const [catRes, accList, cardList, thirdList] = await Promise.all([
-        supabase.from('categories').select('*').eq('user_id', user?.id).order('name').then(r => r, () => ({ data: null })),
+        supabase.from('categories').select('*').in('user_id', userIds).order('name').then(r => r, () => ({ data: null })),
         accountsService.fetchAccounts(),
         cardsService.fetchCards(),
         thirdPartiesService.fetchPeople()
       ]);
         
-      if (catRes && (catRes as any).data) setCategories((catRes as any).data);
-      if (accList) {
+      let cats = (catRes as any)?.data;
+      if (!cats || cats.length === 0) {
+        if (typeof window !== 'undefined' && user?.id) {
+          try {
+            const res = await fetch('/api/db', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'select', table: 'categories', filters: { user_id: user.id } })
+            });
+            if (res.ok) {
+              const json = await res.json();
+              if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+                cats = json.data;
+              }
+            }
+          } catch {}
+        }
+      }
+
+      if (cats && cats.length > 0) {
+        setCategories(cats);
+        saveCachedCategories(cats);
+      }
+      if (accList && accList.length > 0) {
         setAccounts(accList.map((a: any) => ({
           id: a.id,
           name: a.name,
@@ -173,7 +249,7 @@ function SettingsContent() {
           balance: Number(a.balance ?? a.initial_balance ?? 0)
         })));
       }
-      if (cardList) {
+      if (cardList && cardList.length > 0) {
         setCards(cardList.map(c => ({
           id: c.id,
           name: c.name,
@@ -189,8 +265,10 @@ function SettingsContent() {
       }
     } catch (e) {
       console.warn('Erro ao carregar dados:', e);
+      const cachedCats = getCachedCategories();
+      if (cachedCats.length > 0) setCategories(cachedCats);
       const localAccs = accountsService.getCachedAccounts();
-      if (localAccs) {
+      if (localAccs && localAccs.length > 0) {
         setAccounts(localAccs.map((a: any) => ({
           id: a.id,
           name: a.name,
@@ -199,7 +277,7 @@ function SettingsContent() {
         })));
       }
       const localCards = cardsService.getCachedCards();
-      if (localCards) {
+      if (localCards && localCards.length > 0) {
         setCards(localCards.map(c => ({
           id: c.id,
           name: c.name,
@@ -263,6 +341,19 @@ function SettingsContent() {
       setSuccessMsg('Salvo!');
       setCategoryName('');
       setIsCategoryModalOpen(false);
+
+      const newCat: Category = {
+        id: newId,
+        name: payload.name,
+        type: payload.type,
+        parent_id: payload.parent_id
+      };
+      setCategories(prev => {
+        const next = [...prev, newCat];
+        saveCachedCategories(next);
+        return next;
+      });
+
       fetchData();
     } catch (err: any) {
       setErrorMsg(err?.message || 'Erro ao salvar categoria');
@@ -278,12 +369,28 @@ function SettingsContent() {
     resetMessages();
     try {
       if (deleteTarget.type === 'CATEGORY') {
+        try {
+          if (typeof window !== 'undefined') {
+            await fetch('/api/db', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'delete', table: 'categories', id: deleteTarget.id }),
+            });
+          }
+        } catch {}
         await supabase.from('categories').delete().eq('parent_id', deleteTarget.id);
         await supabase.from('categories').delete().eq('id', deleteTarget.id);
+        setCategories(prev => {
+          const next = prev.filter(c => c.id !== deleteTarget.id && c.parent_id !== deleteTarget.id);
+          saveCachedCategories(next);
+          return next;
+        });
       } else if (deleteTarget.type === 'ACCOUNT') {
         await accountsService.deleteAccount(deleteTarget.id);
+        setAccounts(prev => prev.filter(a => a.id !== deleteTarget.id));
       } else if (deleteTarget.type === 'CARD') {
         await cardsService.deleteCard(deleteTarget.id);
+        setCards(prev => prev.filter(c => c.id !== deleteTarget.id));
       } else if (deleteTarget.type === 'THIRD_PARTY') {
         await thirdPartiesService.deletePerson(deleteTarget.id);
         setThirdParties(prev => prev.filter(t => t.id !== deleteTarget.id));
