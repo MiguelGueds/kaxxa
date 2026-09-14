@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { isAdminEmail } from '@/lib/admin';
 import { refundService } from '@/lib/services/refunds';
 
@@ -7,8 +7,21 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user || !isAdminEmail(user.email)) {
+    const authHeader = req.headers.get('authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    let userEmail: string | null = req.headers.get('x-user-email') || null;
+
+    if (token) {
+      try {
+        const client = supabaseAdmin || supabase;
+        const { data: { user } } = await client.auth.getUser(token);
+        if (user?.email) {
+          userEmail = user.email;
+        }
+      } catch {}
+    }
+
+    if (!userEmail || !isAdminEmail(userEmail)) {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 
@@ -21,8 +34,21 @@ export async function GET(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user || !isAdminEmail(user.email)) {
+    const authHeader = req.headers.get('authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    let userEmail: string | null = req.headers.get('x-user-email') || null;
+
+    if (token) {
+      try {
+        const client = supabaseAdmin || supabase;
+        const { data: { user } } = await client.auth.getUser(token);
+        if (user?.email) {
+          userEmail = user.email;
+        }
+      } catch {}
+    }
+
+    if (!userEmail || !isAdminEmail(userEmail)) {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 

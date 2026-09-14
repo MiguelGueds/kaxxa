@@ -92,7 +92,16 @@ export default function AdminDashboardPage() {
 
   const loadSubscribers = async () => {
     try {
-      const res = await fetch('/api/admin/subscribers');
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const email = session?.user?.email || currentUserEmail;
+
+      const res = await fetch('/api/admin/subscribers', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(email ? { 'x-user-email': email } : {}),
+        }
+      });
       const data = await res.json();
       if (data.users) {
         setUsers(data.users);
@@ -107,7 +116,16 @@ export default function AdminDashboardPage() {
 
   const loadRefunds = async () => {
     try {
-      const res = await fetch('/api/admin/refunds');
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const email = session?.user?.email || currentUserEmail;
+
+      const res = await fetch('/api/admin/refunds', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(email ? { 'x-user-email': email } : {}),
+        }
+      });
       const data = await res.json();
       if (data.refunds) {
         setRefunds(data.refunds);
@@ -120,9 +138,17 @@ export default function AdminDashboardPage() {
   const handleMarkRefunded = async (id: string) => {
     setProcessingRefundId(id);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const email = session?.user?.email || currentUserEmail;
+
       const res = await fetch('/api/admin/refunds', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(email ? { 'x-user-email': email } : {}),
+        },
         body: JSON.stringify({ id })
       });
       if (res.ok) {
