@@ -48,12 +48,34 @@ export function getCachedUser(): { id: string; email?: string } | null {
   }
 }
 
+export function clearUserLocalStorage() {
+  if (typeof window === 'undefined') return;
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && (k.startsWith('kaxxa_') || k.includes('mindfinance_') || k.includes('_backup'))) {
+      // Preserva tokens de autenticação do supabase para não deslogar
+      if (!k.startsWith('sb-') && !k.includes('auth-token')) {
+        keysToRemove.push(k);
+      }
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+}
+
 export async function getAuthenticatedUser() {
   if (!isSupabaseConfigured()) return getCachedUser() as any;
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       const user = session.user;
+      
+      // Se trocou de usuário no mesmo navegador, limpa o cache anterior para isolamento total
+      const prev = getCachedUser();
+      if (prev && prev.email && user.email && prev.email.toLowerCase().trim() !== user.email.toLowerCase().trim()) {
+        clearUserLocalStorage();
+      }
+
       if (user.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
         (user as any).id = 'b0a91108-2b2f-4e43-86a8-260969705b7f';
       }
@@ -64,6 +86,11 @@ export async function getAuthenticatedUser() {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      const prev = getCachedUser();
+      if (prev && prev.email && user.email && prev.email.toLowerCase().trim() !== user.email.toLowerCase().trim()) {
+        clearUserLocalStorage();
+      }
+
       if (user.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com') {
         (user as any).id = 'b0a91108-2b2f-4e43-86a8-260969705b7f';
       }

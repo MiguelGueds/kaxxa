@@ -241,15 +241,13 @@ export const thirdPartiesService = {
     const user = await getAuthenticatedUser();
     if (!user) return this.getCachedPeople();
 
-    const targetUserIds = Array.from(new Set([user.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
-
     // 1. Tenta Supabase direto
     try {
       const client = supabaseAdmin || supabase;
       const { data, error } = await client
         .from('third_parties')
         .select('id, name')
-        .in('user_id', targetUserIds)
+        .eq('user_id', user.id)
         .order('name', { ascending: true });
 
       if (!error && data && data.length > 0) {
@@ -345,25 +343,20 @@ export const thirdPartiesService = {
       localStorage.setItem('kaxxa_third_parties_backup', JSON.stringify(current.filter(p => p.id !== id)));
     }
 
-    let deleted = false;
     try {
-      const client = supabaseAdmin || supabase;
-      const { error } = await client
-        .from('third_parties')
-        .delete()
-        .eq('id', id);
-      if (!error) deleted = true;
-    } catch {}
-
-    if (!deleted && typeof window !== 'undefined') {
-      try {
+      if (typeof window !== 'undefined') {
         await fetch('/api/db', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'delete', table: 'third_parties', id }),
         });
-      } catch {}
-    }
+      }
+      const client = supabaseAdmin || supabase;
+      await client
+        .from('third_parties')
+        .delete()
+        .eq('id', id);
+    } catch {}
 
     return true;
   }

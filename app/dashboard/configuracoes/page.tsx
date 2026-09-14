@@ -157,10 +157,8 @@ function SettingsContent() {
   const fetchData = async () => {
     try {
       const user = await getAuthenticatedUser();
-      const targetUserIds = Array.from(new Set([user?.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
-
       const [catRes, accList, cardList, thirdList] = await Promise.all([
-        supabase.from('categories').select('*').in('user_id', targetUserIds).order('name').then(r => r, () => ({ data: null })),
+        supabase.from('categories').select('*').eq('user_id', user?.id).order('name').then(r => r, () => ({ data: null })),
         accountsService.fetchAccounts(),
         cardsService.fetchCards(),
         thirdPartiesService.fetchPeople()

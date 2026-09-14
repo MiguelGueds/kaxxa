@@ -92,11 +92,10 @@ export const accountsService = {
 
     try {
       const client = supabaseAdmin || supabase;
-      const targetUserIds = Array.from(new Set([user.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
       const { data, error } = await client
         .from('accounts')
         .select('*')
-        .in('user_id', targetUserIds)
+        .eq('user_id', user.id)
         .order('name', { ascending: true });
 
       if (!error && data !== null) {
@@ -307,25 +306,20 @@ export const accountsService = {
     const currentLocal = getLocalAccounts(user.id);
     saveLocalAccounts(user.id, currentLocal.filter(a => a.id !== id));
 
-    let deleted = false;
     try {
-      const client = supabaseAdmin || supabase;
-      const { error } = await client
-        .from('accounts')
-        .delete()
-        .eq('id', id);
-      if (!error) deleted = true;
-    } catch {}
-
-    if (!deleted && typeof window !== 'undefined') {
-      try {
+      if (typeof window !== 'undefined') {
         await fetch('/api/db', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'delete', table: 'accounts', id }),
         });
-      } catch {}
-    }
+      }
+      const client = supabaseAdmin || supabase;
+      await client
+        .from('accounts')
+        .delete()
+        .eq('id', id);
+    } catch {}
 
     return true;
   },

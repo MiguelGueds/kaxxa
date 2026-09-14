@@ -107,9 +107,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
-    // Fast path: se for admin ou tiver usuário em cache / acesso concedido, exibe a interface imediatamente (0ms)
-    if (isAdminEmail(userInfo.email) || (typeof window !== 'undefined' && (localStorage.getItem('kaxxa_user_cache') || localStorage.getItem('kaxxa_access_granted')))) {
+    // Fast path: apenas administradores têm acesso instantâneo liberado (0ms)
+    if (isAdminEmail(userInfo.email)) {
       setAccessGranted(true);
+      return;
+    }
+
+    // Verificação síncrona instantânea de expiração no cache local antes de renderizar qualquer UI
+    if (typeof window !== 'undefined') {
+      try {
+        const localTrial = localStorage.getItem('kaxxa_trial_active');
+        if (localTrial) {
+          const parsed = JSON.parse(localTrial);
+          const endsAt = parsed.endsAt || parsed.subscription?.current_period_end;
+          if (endsAt && new Date(endsAt).getTime() <= Date.now()) {
+            localStorage.removeItem('kaxxa_trial_active');
+            localStorage.removeItem('kaxxa_access_granted');
+            setAccessGranted(false);
+            router.replace('/planos?expired=trial');
+            return;
+          }
+        }
+      } catch {}
     }
 
     async function checkSubscription() {
@@ -117,6 +136,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         const { granted, subscription, expiredReason } = await subscriptionService.isAccessGranted();
         if (!granted && !isAdminEmail(userInfo.email)) {
           if (isMounted) setAccessGranted(false);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('kaxxa_access_granted');
+          }
           if (expiredReason === 'TRIAL_EXPIRED') {
             router.replace('/planos?expired=trial');
           } else {

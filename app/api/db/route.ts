@@ -70,10 +70,10 @@ export async function POST(req: Request) {
     if (action === 'select') {
       let query = client.from(table).select('*');
       if (filters?.user_id) {
-        const queryUserIds = UNIFIED_USER_IDS.includes(filters.user_id)
-          ? UNIFIED_USER_IDS
-          : [filters.user_id];
-        query = query.in('user_id', queryUserIds);
+        const targetId = filters.user_id === 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'
+          ? 'b0a91108-2b2f-4e43-86a8-260969705b7f'
+          : filters.user_id;
+        query = query.eq('user_id', targetId);
       }
       const { data, error } = await query;
       if (error) {

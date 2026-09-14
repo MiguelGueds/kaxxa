@@ -122,11 +122,10 @@ export const investmentsService = {
 
     try {
       const client = supabaseAdmin || supabase;
-      const targetUserIds = Array.from(new Set([user.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
       const { data, error } = await client
         .from('investments')
         .select('*')
-        .in('user_id', targetUserIds)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (!error && data !== null) {
@@ -388,32 +387,39 @@ export const investmentsService = {
     const updatedLocal = currentLocal.filter(item => item.id !== id);
     saveLocalInvestments(user.id, updatedLocal);
 
-    // 3. Deleta no Supabase direto por ID primário único
-    let deleted = false;
-    try {
-      const client = supabaseAdmin || supabase;
-      const { error } = await client
-        .from('investments')
-        .delete()
-        .eq('id', id);
-
-      if (!error) deleted = true;
-    } catch (err) {
-      console.warn('Supabase direto falhou ao deletar investimento:', err);
+    if (typeof window !== 'undefined') {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (k.startsWith('kaxxa_investments') || k.includes('investments_backup') || k.includes('investimento'))) {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              const arr = JSON.parse(raw);
+              if (Array.isArray(arr)) {
+                localStorage.setItem(k, JSON.stringify(arr.filter((x: any) => x && x.id !== id)));
+              }
+            }
+          }
+        }
+      } catch {}
     }
 
-    // 4. Fallback via proxy /api/db do mesmo domínio (server-side com privilégios de service role)
-    if (!deleted && typeof window !== 'undefined') {
-      try {
-        const res = await fetch('/api/db', {
+    // 3. Deleta no Supabase via proxy com Service Role Key (garante deleção física) e direto
+    try {
+      if (typeof window !== 'undefined') {
+        await fetch('/api/db', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'delete', table: 'investments', id }),
         });
-        if (res.ok) deleted = true;
-      } catch (proxyErr) {
-        console.warn('Fallback /api/db ao deletar investimento falhou:', proxyErr);
       }
+      const client = supabaseAdmin || supabase;
+      await client
+        .from('investments')
+        .delete()
+        .eq('id', id);
+    } catch (err) {
+      console.warn('Erro ao deletar investimento:', err);
     }
 
     return true;

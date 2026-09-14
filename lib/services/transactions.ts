@@ -96,11 +96,10 @@ export const transactionsService = {
 
     try {
       const client = supabaseAdmin || supabase;
-      const targetUserIds = Array.from(new Set([user.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
       const { data, error } = await client
         .from('transactions')
         .select('*')
-        .in('user_id', targetUserIds)
+        .eq('user_id', user.id)
         .order('date', { ascending: false })
         .limit(limit);
 
@@ -266,12 +265,21 @@ export const transactionsService = {
     const currentLocal = getLocalTransactions(user.id);
     saveLocalTransactions(user.id, currentLocal.filter(t => t.id !== id));
 
-    const { error } = await client
-      .from('transactions')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
+    try {
+      if (typeof window !== 'undefined') {
+        await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', table: 'transactions', id }),
+        });
+      }
+      await client
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+    } catch {}
 
-    return !error;
+    return true;
   }
 };

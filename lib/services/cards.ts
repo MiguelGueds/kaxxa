@@ -131,11 +131,10 @@ export const cardsService = {
 
     try {
       const client = supabaseAdmin || supabase;
-      const targetUserIds = Array.from(new Set([user.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
       const { data, error } = await client
         .from('credit_cards')
         .select('*')
-        .in('user_id', targetUserIds)
+        .eq('user_id', user.id)
         .order('name', { ascending: true });
 
       if (!error && data !== null) {
@@ -296,14 +295,23 @@ export const cardsService = {
     const currentLocal = getLocalCards(user.id);
     saveLocalCards(user.id, currentLocal.filter(c => c.id !== id));
 
-    const client = supabaseAdmin || supabase;
-    const { error } = await client
-      .from('credit_cards')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
+    try {
+      if (typeof window !== 'undefined') {
+        await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', table: 'credit_cards', id }),
+        });
+      }
+      const client = supabaseAdmin || supabase;
+      await client
+        .from('credit_cards')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+    } catch {}
 
-    return !error;
+    return true;
   },
 
   async fetchCardExpenses(cardId?: string): Promise<DbCardExpense[] | null> {
@@ -469,13 +477,22 @@ export const cardsService = {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
-    const client = supabaseAdmin || supabase;
-    const { error } = await client
-      .from('transactions')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
+    try {
+      if (typeof window !== 'undefined') {
+        await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', table: 'transactions', id }),
+        });
+      }
+      const client = supabaseAdmin || supabase;
+      await client
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+    } catch {}
 
-    return !error;
+    return true;
   }
 };

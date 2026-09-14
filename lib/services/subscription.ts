@@ -174,11 +174,10 @@ export const subscriptionService = {
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
-        const targetUserIds = Array.from(new Set([user.id, 'b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd'].filter(Boolean)));
         const { data, error } = await client
           .from('subscriptions')
           .select('*')
-          .in('user_id', targetUserIds)
+          .eq('user_id', user.id)
           .order('updated_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
           .limit(1)
