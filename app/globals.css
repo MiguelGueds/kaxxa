@@ -354,3 +354,27 @@ html, body {
   letter-spacing: -0.035em;
 }
 
+/* Animações Ultra-Leves (Hardware Accelerated CSS) */
+@keyframes luxuryFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-luxury-fade {
+  animation: luxuryFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.card-luxury-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.card-luxury-hover:hover {
+  transform: translateY(-2px);
+}
+

@@ -139,7 +139,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const [accessGranted, setAccessGranted] = useState<boolean | null>(null);
+  const [accessGranted, setAccessGranted] = useState<boolean | null>(() => {
+    if (typeof window !== 'undefined') {
+      if (localStorage.getItem('kaxxa_access_granted') === 'true') return true;
+    }
+    return null;
+  });
   const [isTrialUser, setIsTrialUser] = useState<boolean>(false);
   const [subInfo, setSubInfo] = useState<{ isRecurringPro: boolean; daysRemaining: number; periodEnd?: string }>({
     isRecurringPro: false,
@@ -205,14 +210,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             });
           }
         }
-        if (isMounted) setAccessGranted(true);
+        if (isMounted) {
+          setAccessGranted(true);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('kaxxa_access_granted', 'true');
+          }
+        }
       } catch (err) {
         console.error('Erro ao verificar permissão:', err);
         if (!isAdminEmail(userInfo.email)) {
           if (isMounted) setAccessGranted(false);
           router.replace('/planos');
         } else {
-          if (isMounted) setAccessGranted(true);
+          if (isMounted) {
+            setAccessGranted(true);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('kaxxa_access_granted', 'true');
+            }
+          }
         }
       }
     }
@@ -332,22 +347,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar Flutuante no Padrão Swiss Private Wealth */}
       <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-slate-200/90 dark:border-white/[0.08] flex flex-col bg-white dark:bg-[#080B11] shadow-[0_4px_24px_rgba(0,0,0,0.02)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.4)] transition-all duration-300 overflow-hidden ${
-        isSidebarCollapsed ? 'w-[68px]' : 'w-[224px]'
+        isSidebarCollapsed ? 'w-[68px]' : 'w-[206px]'
       } ${
         mobileMenuOpen 
-          ? 'fixed inset-y-2 left-2 !w-[254px] max-h-[calc(100dvh-16px)] h-[calc(100dvh-16px)] z-50 flex flex-col shadow-2xl' 
+          ? 'fixed inset-y-2 left-2 !w-[245px] max-h-[calc(100dvh-16px)] h-[calc(100dvh-16px)] z-50 flex flex-col shadow-2xl' 
           : 'hidden lg:flex z-0 h-[calc(100vh-16px)] sm:h-[calc(100vh-24px)]'
       }`}>
         
         {/* Brand Header do Card com a Nova Logo Oficial */}
         <div className={`h-14 flex items-center border-b border-slate-100 dark:border-white/[0.06] shrink-0 ${
-          isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'
+          isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3.5'
         }`}>
           <Link href="/dashboard" className="flex items-center group min-w-0" title="Kaxxa">
             {isSidebarCollapsed ? (
               <KaxxaKLogo size={26} />
             ) : (
-              <KaxxaLogo size={24} />
+              <KaxxaLogo size={23} />
             )}
           </Link>
 
@@ -374,12 +389,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Menus de Navegação em Formato Slim */}
-        <div className="flex-1 min-h-0 px-2.5 py-3.5 flex flex-col justify-between overflow-y-auto custom-scrollbar">
-          <div className="flex flex-col gap-3.5">
+        <div className="flex-1 min-h-0 px-2.5 py-3 flex flex-col justify-between overflow-y-auto custom-scrollbar">
+          <div className="flex flex-col gap-3">
             {sidebarMenus.map((menu, idx) => (
               <div key={idx}>
                 {!isSidebarCollapsed ? (
-                  <h4 className="text-[8.5px] font-medium tracking-[0.2em] text-slate-400 dark:text-zinc-500 mb-1.5 px-2.5 uppercase">
+                  <h4 className="text-[8.5px] font-medium tracking-[0.2em] text-slate-400 dark:text-zinc-500 mb-1.5 px-2 uppercase">
                     {menu.title}
                   </h4>
                 ) : (
@@ -398,8 +413,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                               : 'justify-between px-2.5 py-2'
                           } ${
                             active 
-                              ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-normal shadow-xs' 
-                              : 'hover:bg-slate-100/70 dark:hover:bg-white/[0.04] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white font-light'
+                              ? 'bg-gradient-to-r from-[#0031B8] via-[#0047FF] to-[#0055FF] text-white font-medium shadow-sm shadow-blue-600/20' 
+                              : 'hover:bg-slate-100/80 dark:hover:bg-white/[0.04] text-slate-600 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-white font-light'
                           }`}
                           title={isSidebarCollapsed ? item.label : undefined}
                         >
@@ -407,7 +422,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <item.icon 
                               size={15} 
                               strokeWidth={1.75}
-                              className={active ? 'text-white dark:text-slate-950 shrink-0' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-900 dark:group-hover:text-white shrink-0'} 
+                              className={active ? 'text-white shrink-0' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-900 dark:group-hover:text-white shrink-0'} 
                             />
                             {!isSidebarCollapsed && (
                               <span className="text-xs truncate">{item.label}</span>
@@ -417,7 +432,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           {!isSidebarCollapsed && item.badge && (
                             <span className={`text-[8.5px] font-medium px-1.5 py-0.2 rounded-full ${
                               active 
-                                ? 'bg-white/20 dark:bg-slate-900/10 text-white dark:text-slate-950' 
+                                ? 'bg-white/20 text-white' 
                                 : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-white/[0.08]'
                             }`}>
                               {item.badge}
@@ -425,7 +440,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           )}
 
                           {isSidebarCollapsed && active && (
-                            <div className="w-1 h-1 rounded-full bg-slate-950 dark:bg-white absolute right-1"></div>
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#0047FF] absolute right-1.5 shadow-xs"></div>
                           )}
                         </div>
                       </Link>
@@ -483,9 +498,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <span className="text-xs text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 w-36 font-sans select-none truncate font-light">
                 Buscar no Kaxxa...
               </span>
-              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-mono text-slate-400 dark:text-zinc-500 bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-md shadow-2xs font-medium">
-                ⌘K
-              </kbd>
             </div>
 
             {/* Ícone de Busca em Telas Menores */}

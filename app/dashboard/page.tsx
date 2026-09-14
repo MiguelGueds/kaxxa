@@ -245,13 +245,13 @@ export default function DashboardPage() {
       {/* =========================================================================
           1. HERO CARD: POSIÇÃO PATRIMONIAL AUDITADA (SWISS PRIVATE WEALTH)
       ========================================================================= */}
-      <div className="bg-white dark:bg-[#080B11] border border-slate-200/90 dark:border-white/[0.08] rounded-3xl p-6 sm:p-9 md:p-10 shadow-[0_10px_35px_rgba(0,0,0,0.02)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden transition-colors">
+      <div className="bg-white dark:bg-[#080B11] border border-slate-200/90 dark:border-white/[0.08] rounded-3xl p-5 sm:p-8 md:p-9 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative overflow-hidden transition-all card-luxury-hover animate-luxury-fade">
         
         {/* Hairline subtle glow */}
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-slate-300/70 dark:via-white/20 to-transparent"></div>
         <div className="absolute -top-36 right-0 w-96 h-96 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="relative z-10 space-y-8">
+        <div className="relative z-10 space-y-6 sm:space-y-8">
           
           {/* Top Metadata Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -263,98 +263,118 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[10.5px] font-medium px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-1.5">
+              <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/50 flex items-center gap-1.5 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Consolidado em Tempo Real
+                Consolidado
               </span>
             </div>
           </div>
 
-          {/* Grand Headline Value (Thin letters, classic Swiss luxury) */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-xs font-light tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500">BRL</span>
-                <h1 className="text-4xl sm:text-6xl md:text-7xl font-extralight tracking-tight text-slate-950 dark:text-white font-luxury-num flex items-baseline">
-                  R$ {formatCurrency(patrimonioLiquidoTotal)}
-                </h1>
+          {/* Grand Headline Value (Refinado, responsivo e estiloso no celular) */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 sm:gap-6">
+            <div className="space-y-2 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.06] border border-slate-200/90 dark:border-white/[0.08] text-[9.5px] sm:text-[10px] font-mono font-medium tracking-widest text-slate-600 dark:text-zinc-300 shadow-2xs">
+                  BRL
+                </span>
+                <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-zinc-500 font-light tracking-wide uppercase">
+                  Posição líquida consolidada
+                </span>
               </div>
-              <p className="text-xs font-light text-slate-500 dark:text-zinc-400 max-w-xl leading-relaxed">
+
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-extralight tracking-tight text-slate-950 dark:text-white font-luxury-num flex items-baseline gap-1.5 leading-none mt-1 break-words">
+                <span className="text-xl sm:text-2xl md:text-3xl font-light text-slate-400 dark:text-zinc-500">R$</span>
+                {formatCurrency(patrimonioLiquidoTotal)}
+              </h1>
+              
+              <p className="text-xs font-light text-slate-500 dark:text-zinc-400 max-w-xl leading-relaxed pt-0.5">
                 Disponível em contas correntes + custódia de renda fixa e variável, deduzidos passivos e dívidas ativas.
               </p>
             </div>
 
-            {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2.5 shrink-0">
+            {/* Quick Action Buttons (Gradiente Azul nobre da marca) */}
+            <div className="flex items-center gap-2.5 shrink-0 pt-1 sm:pt-0">
               <Link
                 href="/dashboard/transacoes"
-                className="px-5 py-2.5 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs font-normal tracking-wide hover:opacity-90 active:scale-95 transition-all shadow-xs flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0031B8] via-[#0047FF] to-[#0055FF] hover:from-[#002796] hover:to-[#0042E0] text-white text-xs font-medium tracking-wide shadow-md shadow-blue-600/25 active:scale-95 transition-all flex items-center gap-2"
               >
-                <Plus size={14} strokeWidth={2} />
+                <Plus size={14} strokeWidth={2.5} />
                 <span>Nova Operação</span>
               </Link>
               <Link
                 href="/dashboard/cartoes"
-                className="px-4 py-2.5 rounded-xl border border-slate-200/90 dark:border-white/[0.08] bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-700 dark:text-zinc-300 text-xs font-light transition-all flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:bg-slate-50 dark:hover:bg-white/[0.06] text-slate-700 dark:text-zinc-300 text-xs font-normal transition-all flex items-center gap-1.5 shadow-2xs active:scale-95"
               >
-                <CreditCard size={14} strokeWidth={1.75} />
+                <CreditCard size={14} strokeWidth={1.75} className="text-slate-500 dark:text-zinc-400" />
                 <span>Minhas Faturas</span>
               </Link>
             </div>
           </div>
 
-          {/* 4 Hairline Columns Divider */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-slate-200/80 dark:border-white/[0.08]">
+          {/* 4 Colunas no Padrão Micro-Cards Executivos (Perfeito no celular e desktop) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-6 sm:pt-8 border-t border-slate-200/80 dark:border-white/[0.08]">
             
             {/* 01: Saldo Disponível */}
-            <Link href="/dashboard/transacoes" className="space-y-1 group">
-              <span className="text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+            <Link 
+              href="/dashboard/transacoes" 
+              className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] hover:bg-slate-100/70 dark:hover:bg-white/[0.04] hover:border-slate-300/80 dark:hover:border-white/10 transition-all card-luxury-hover group"
+            >
+              <span className="text-[9px] sm:text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                 01 / SALDO EM CONTAS
               </span>
-              <div className="text-xl sm:text-2xl font-light font-luxury-num text-slate-900 dark:text-white">
+              <div className="text-lg sm:text-2xl font-light font-luxury-num text-slate-900 dark:text-white mt-1">
                 R$ {formatCurrency(saldoEmContas)}
               </div>
-              <div className="text-[10px] font-light text-slate-400 dark:text-zinc-500">
+              <div className="text-[10px] font-light text-slate-400 dark:text-zinc-500 mt-0.5">
                 Liquidez imediata
               </div>
             </Link>
 
             {/* 02: Custódia Investida */}
-            <Link href="/dashboard/investimentos" className="space-y-1 pl-0 sm:pl-4 sm:border-l border-slate-200/80 dark:border-white/[0.08] group">
-              <span className="text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-emerald-600 transition-colors">
+            <Link 
+              href="/dashboard/investimentos" 
+              className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] hover:bg-slate-100/70 dark:hover:bg-white/[0.04] hover:border-emerald-300/50 dark:hover:border-emerald-700/40 transition-all card-luxury-hover group"
+            >
+              <span className="text-[9px] sm:text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-emerald-600 transition-colors">
                 02 / CUSTÓDIA INVESTIDA
               </span>
-              <div className="text-xl sm:text-2xl font-light font-luxury-num text-emerald-600 dark:text-emerald-400">
+              <div className="text-lg sm:text-2xl font-light font-luxury-num text-emerald-600 dark:text-emerald-400 mt-1">
                 R$ {formatCurrency(patrimonio)}
               </div>
-              <div className="text-[10px] font-light text-emerald-600 dark:text-emerald-400">
-                Ativos de renda fixa e bolsa
+              <div className="text-[10px] font-light text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">
+                Renda fixa e bolsa
               </div>
             </Link>
 
             {/* 03: Dívidas Ativas */}
-            <Link href="/dashboard/dividas" className="space-y-1 pl-0 sm:pl-4 sm:border-l border-slate-200/80 dark:border-white/[0.08] group">
-              <span className="text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-rose-600 transition-colors">
+            <Link 
+              href="/dashboard/dividas" 
+              className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] hover:bg-slate-100/70 dark:hover:bg-white/[0.04] hover:border-rose-300/50 dark:hover:border-rose-700/40 transition-all card-luxury-hover group"
+            >
+              <span className="text-[9px] sm:text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-rose-600 transition-colors">
                 03 / DÍVIDAS ATIVAS
               </span>
-              <div className="text-xl sm:text-2xl font-light font-luxury-num text-slate-800 dark:text-zinc-200">
+              <div className="text-lg sm:text-2xl font-light font-luxury-num text-slate-800 dark:text-zinc-200 mt-1">
                 R$ {formatCurrency(dividasAtivas)}
               </div>
-              <div className="text-[10px] font-light text-slate-400 dark:text-zinc-500">
-                Passivos sob amortização
+              <div className="text-[10px] font-light text-slate-400 dark:text-zinc-500 mt-0.5">
+                Passivos em amortização
               </div>
             </Link>
 
             {/* 04: Cartões & Faturas */}
-            <Link href="/dashboard/cartoes" className="space-y-1 pl-0 sm:pl-4 sm:border-l border-slate-200/80 dark:border-white/[0.08] group">
-              <span className="text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                04 / FATURAS DE CARTÃO
+            <Link 
+              href="/dashboard/cartoes" 
+              className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] hover:bg-slate-100/70 dark:hover:bg-white/[0.04] hover:border-slate-300/80 dark:hover:border-white/10 transition-all card-luxury-hover group"
+            >
+              <span className="text-[9px] sm:text-[9.5px] font-medium tracking-[0.2em] uppercase text-slate-400 dark:text-zinc-500 block group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                04 / FATURAS CARTÃO
               </span>
-              <div className="text-xl sm:text-2xl font-light font-luxury-num text-slate-800 dark:text-zinc-200">
+              <div className="text-lg sm:text-2xl font-light font-luxury-num text-slate-800 dark:text-zinc-200 mt-1">
                 R$ {formatCurrency(limiteComprometido)}
               </div>
-              <div className="text-[10px] font-light text-slate-400 dark:text-zinc-500">
-                {totalLimiteCartoes > 0 ? `${pctComprometido.toFixed(0)}% do teto operacional` : 'Faturas em aberto'}
+              <div className="text-[10px] font-light text-slate-400 dark:text-zinc-500 mt-0.5 truncate">
+                {totalLimiteCartoes > 0 ? `${pctComprometido.toFixed(0)}% do limite total` : 'Faturas em aberto'}
               </div>
             </Link>
 
@@ -730,7 +750,7 @@ export default function DashboardPage() {
                 <button 
                   type="button" 
                   onClick={() => setActiveCategoryModal(null)}
-                  className="px-5 py-2 rounded-xl text-xs font-normal bg-slate-950 dark:bg-white text-white dark:text-slate-950 shadow-xs hover:opacity-90 active:scale-95 transition-all"
+                  className="px-5 py-2 rounded-xl text-xs font-medium bg-gradient-to-r from-[#0031B8] via-[#0047FF] to-[#0055FF] hover:from-[#002796] hover:to-[#0042E0] text-white shadow-md shadow-blue-600/25 active:scale-95 transition-all"
                 >
                   Fechar
                 </button>
