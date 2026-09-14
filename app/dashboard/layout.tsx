@@ -255,12 +255,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const isAdmin = isAdminEmail(userInfo.email);
 
-  // Navegação Principal de Alto Nível
+  // Navegação Principal de Alto Nível (Labels concisos para telas de qualquer tamanho)
   const primaryNavItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Visão Geral' },
-    { href: '/dashboard/transacoes', icon: Wallet, label: 'Saldo e Extrato' },
+    { href: '/dashboard/transacoes', icon: Wallet, label: 'Extrato' },
     { href: '/dashboard/investimentos', icon: TrendingUp, label: 'Investimentos' },
-    { href: '/dashboard/cartoes', icon: CreditCard, label: 'Minhas Faturas' },
+    { href: '/dashboard/cartoes', icon: CreditCard, label: 'Faturas' },
     { href: '/dashboard/terceiros', icon: Users, label: 'Terceiros' },
     { href: '/dashboard/dividas', icon: Landmark, label: 'Dívidas' },
   ];
@@ -327,34 +327,29 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen h-screen w-full bg-luxury-atmosphere flex flex-col font-sans selection:bg-[#0047FF] selection:text-white text-slate-900 dark:text-[#F1F3F7] overflow-x-hidden overflow-y-hidden relative">
       
       {/* =========================================================================
-          1. TOP EXECUTIVE COMMAND CAPSULE NAVIGATION (NOVA ARQUITETURA LUXURY)
+          1. TOP EXECUTIVE COMMAND CAPSULE NAVIGATION (RESPONSIVO & COMPACTO)
       ========================================================================= */}
-      <header className="mx-2 sm:mx-4 mt-2 sm:mt-2.5 mb-1.5 h-14 px-3 sm:px-4 rounded-[20px] bg-white/85 dark:bg-[#07090E]/85 backdrop-blur-2xl border border-slate-200/85 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_16px_45px_rgba(0,0,0,0.6)] flex items-center justify-between z-30 flex-shrink-0 relative">
+      <header className="mx-2 sm:mx-4 mt-2 sm:mt-2.5 mb-1.5 h-14 px-2.5 sm:px-4 rounded-[20px] bg-white/85 dark:bg-[#07090E]/85 backdrop-blur-2xl border border-slate-200/85 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_16px_45px_rgba(0,0,0,0.6)] flex items-center justify-between z-30 flex-shrink-0 relative gap-2 min-w-0">
         
         {/* Glow de acento superior ultra-sutil */}
         <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0047FF]/60 to-transparent pointer-events-none" />
 
-        {/* Lado Esquerdo: Logo Kaxxa em Azul Degradê Tech Luxury (SEM tag LIVE) */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        {/* Lado Esquerdo: Logo Kaxxa em Azul Degradê Tech Luxury */}
+        <div className="flex items-center shrink-0">
           <Link href="/dashboard" className="flex items-center group transition-transform active:scale-95" title="Kaxxa">
-            <KaxxaLogo size={23} />
+            <KaxxaLogo size={22} />
           </Link>
-
-          {/* Breadcrumb da página em mobile */}
-          <div className="flex items-center gap-1.5 text-xs lg:hidden pl-1 border-l border-slate-200/80 dark:border-white/[0.08]">
-            <span className="text-slate-900 dark:text-white font-medium truncate max-w-[120px] sm:max-w-none">{pageTitle}</span>
-          </div>
         </div>
 
-        {/* Centro: Deck de Navegação Segmentado Flutuante (Desktop & Tablet Grande) */}
-        <nav className="hidden lg:flex items-center gap-1 bg-slate-100/70 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/60 dark:border-white/[0.06] shadow-2xs">
+        {/* Centro: Deck de Navegação Segmentado Flutuante (Desktop & Tablet) */}
+        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 bg-slate-100/70 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/60 dark:border-white/[0.06] shadow-2xs overflow-x-auto no-scrollbar min-w-0">
           {primaryNavItems.map((item) => {
             const active = isItemActive(item.href);
             return (
               <Link 
                 key={item.href} 
                 href={item.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 select-none ${
+                className={`flex items-center gap-1 px-2.5 xl:px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-200 select-none shrink-0 ${
                   active 
                     ? 'nav-pill-luxury-active font-medium' 
                     : 'nav-pill-luxury-inactive font-normal'
@@ -371,11 +366,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           })}
 
           {/* Menu Dropdown de Configurações & Ajustes */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               type="button"
               onClick={() => { setIsSettingsMenuOpen(!isSettingsMenuOpen); setIsUserMenuOpen(false); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 select-none ${
+              className={`flex items-center gap-1 px-2.5 xl:px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-200 select-none ${
                 isSettingsActive 
                   ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-medium border border-blue-500/30' 
                   : 'nav-pill-luxury-inactive font-normal'
@@ -457,21 +452,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        {/* Lado Direito: Ações Executivas (Busca, Privacidade, Tema, Perfil) */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Lado Direito: Ações Executivas (Sem sobrecarregar telas pequenas) */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           
           {/* Busca Rápida / Command Palette */}
           <button 
             type="button"
             onClick={() => setIsCommandPaletteOpen(true)}
-            className="flex items-center gap-2 bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 rounded-xl px-2.5 sm:px-3 py-1.5 transition-all text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white shadow-2xs group active:scale-95"
+            className="flex items-center gap-1.5 bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 rounded-xl px-2 sm:px-2.5 py-1.5 transition-all text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white shadow-2xs group active:scale-95"
             title="Buscar no Kaxxa (⌘K)"
           >
             <Search size={13.5} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
-            <span className="text-xs font-light hidden md:inline truncate text-slate-400 dark:text-zinc-500">
+            <span className="text-xs font-light hidden xl:inline truncate text-slate-400 dark:text-zinc-500">
               Buscar...
             </span>
-            <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-200/60 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-300/60 dark:border-white/10">
+            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-200/60 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-300/60 dark:border-white/10">
               ⌘K
             </kbd>
           </button>
@@ -506,12 +501,30 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {isConcealed ? <EyeOff size={14} strokeWidth={1.75} className="text-amber-600 dark:text-amber-400" /> : <Eye size={14} strokeWidth={1.75} className="text-slate-600 dark:text-zinc-300" />}
           </button>
 
-          {/* Cápsula de Perfil & Menu do Usuário */}
+          {/* Cápsula de Perfil (Em Desktop: abre dropdown | Em Mobile: abre o Drawer Completo) */}
           <div className="relative">
+            {/* Mobile: Tocar no avatar abre o drawer com tudo */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden flex items-center p-0.5 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/[0.05] transition-all active:scale-95 shrink-0"
+              title="Menu"
+              aria-label="Menu"
+            >
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-[#002288] to-[#0055FF] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs shrink-0 border border-white/20">
+                {userInfo.avatar ? (
+                  <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
+                )}
+              </div>
+            </button>
+
+            {/* Desktop: Cápsula com Nome e Dropdown */}
             <button
               type="button"
               onClick={() => { setIsUserMenuOpen(!isUserMenuOpen); setIsSettingsMenuOpen(false); }}
-              className="flex items-center gap-1.5 sm:gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/[0.05] transition-all border border-transparent hover:border-slate-200/80 dark:hover:border-white/[0.08] active:scale-95"
+              className="hidden lg:flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/[0.05] transition-all border border-transparent hover:border-slate-200/80 dark:hover:border-white/[0.08] active:scale-95 shrink-0"
               title="Menu do Usuário"
             >
               <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-[#002288] to-[#0055FF] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs shrink-0 border border-white/20">
@@ -521,18 +534,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
                 )}
               </div>
-              <div className="flex flex-col text-left hidden sm:flex min-w-0">
-                <span className="text-xs font-normal text-slate-900 dark:text-white max-w-[100px] truncate leading-tight">{userInfo.name}</span>
+              <div className="flex flex-col text-left hidden xl:flex min-w-0">
+                <span className="text-xs font-normal text-slate-900 dark:text-white max-w-[90px] truncate leading-tight">{userInfo.name}</span>
                 <span className={`text-[8.5px] font-semibold tracking-wide leading-none mt-0.5 uppercase ${
                   subInfo.isRecurringPro ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'
                 }`}>
                   {subInfo.isRecurringPro ? 'PRO' : getTrialRemainingText(subInfo.periodEnd).text}
                 </span>
               </div>
-              <ChevronRight size={11} className={`text-slate-400 dark:text-zinc-500 hidden sm:block shrink-0 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-90' : ''}`} />
+              <ChevronRight size={11} className={`text-slate-400 dark:text-zinc-500 shrink-0 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-90' : ''}`} />
             </button>
 
-            {/* Dropdown do Usuário */}
+            {/* Dropdown do Usuário (Desktop) */}
             {isUserMenuOpen && (
               <div 
                 className="absolute top-full right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-[#0D111A]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.1] shadow-2xl p-2 z-50 animate-luxury-fade"
@@ -585,17 +598,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
             )}
           </div>
-
-          {/* Botão Hambúrguer Mobile */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            className="lg:hidden p-1.5 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors shrink-0"
-            title="Abrir Menu Completo"
-            aria-label="Menu"
-          >
-            <Menu size={18} strokeWidth={1.75} />
-          </button>
 
         </div>
       </header>

@@ -474,4 +474,13 @@ html.dark .nav-pill-luxury-inactive:hover {
   background: rgba(255, 255, 255, 0.07);
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 
