@@ -117,11 +117,9 @@ function SettingsContent() {
   });
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [cardName, setCardName] = useState('');
-  const [cardBank, setCardBank] = useState('Nubank');
-  const [cardBrand, setCardBrand] = useState('Mastercard Black');
-  const [cardLastDigits, setCardLastDigits] = useState('');
   const [cardLimit, setCardLimit] = useState('');
   const [cardDueDay, setCardDueDay] = useState('10');
+  const [cardClosingDay, setCardClosingDay] = useState('5');
 
   // Terceiros / Contatos
   const [thirdParties, setThirdParties] = useState<ThirdParty[]>(() => {
@@ -436,7 +434,12 @@ function SettingsContent() {
 
   // --- CARTÕES ---
   const handleOpenCardModal = () => {
-    setCardName(''); setCardBank('Nubank'); setCardBrand('Mastercard Black'); setCardLastDigits(''); setCardLimit(''); setCardDueDay('10'); resetMessages(); setIsCardModalOpen(true);
+    setCardName(''); 
+    setCardLimit(''); 
+    setCardClosingDay('5'); 
+    setCardDueDay('12'); 
+    resetMessages(); 
+    setIsCardModalOpen(true);
   };
   const handleSaveCard = async (e: React.FormEvent) => {
     e.preventDefault(); 
@@ -445,12 +448,12 @@ function SettingsContent() {
     try {
       const created = await cardsService.createCard({
         name: cardName.trim(),
-        bank: cardBank,
-        brand: cardBrand,
-        last_digits: cardLastDigits || '0000',
+        bank: '',
+        brand: '',
+        last_digits: '0000',
         credit_limit: parseFloat(cardLimit || '0'),
-        closing_day: Math.max(1, parseInt(cardDueDay, 10) - 7),
-        due_day: parseInt(cardDueDay, 10) || 10,
+        closing_day: parseInt(cardClosingDay, 10) || 5,
+        due_day: parseInt(cardDueDay, 10) || 12,
         color: '#1A44C8'
       });
       if (created) {
@@ -911,55 +914,13 @@ function SettingsContent() {
               <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
                 <form onSubmit={handleSaveCard} className="space-y-4">
                   <Alerts error={errorMsg} success={successMsg} />
-                  <Input label="Nome do Cartão" value={cardName} onChange={setCardName} placeholder="Ex: Itaú Pão de Açúcar" />
+                  <Input label="Cartão (Nome do Cartão)" value={cardName} onChange={setCardName} placeholder="Ex: Nubank Ultravioleta, Itaú Black..." />
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[9px] text-[#94A3B8] uppercase tracking-widest mb-1.5 pl-1 font-bold">Banco / Instituição</label>
-                      <select 
-                        value={cardBank} 
-                        onChange={e => setCardBank(e.target.value)} 
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2.5 text-xs text-[#181B22] font-semibold focus:outline-none focus:border-[#1A44C8] cursor-pointer"
-                      >
-                        <option value="Nubank">Nubank</option>
-                        <option value="Itaú">Itaú</option>
-                        <option value="Banco Inter">Banco Inter</option>
-                        <option value="C6 Bank">C6 Bank</option>
-                        <option value="Bradesco">Bradesco</option>
-                        <option value="Santander">Santander</option>
-                        <option value="XP Investimentos">XP Investimentos</option>
-                        <option value="BTG Pactual">BTG Pactual</option>
-                        <option value="Caixa">Caixa</option>
-                        <option value="Banco do Brasil">Banco do Brasil</option>
-                        <option value="Outros">Outros</option>
-                      </select>
-                    </div>
+                  <Input label="Limite (R$)" value={cardLimit} onChange={setCardLimit} placeholder="Ex: 5000" type="number" step="0.01" />
 
-                    <div>
-                      <label className="block text-[9px] text-[#94A3B8] uppercase tracking-widest mb-1.5 pl-1 font-bold">Bandeira</label>
-                      <select 
-                        value={cardBrand} 
-                        onChange={e => setCardBrand(e.target.value)} 
-                        className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl px-3 py-2.5 text-xs text-[#181B22] font-semibold focus:outline-none focus:border-[#1A44C8] cursor-pointer"
-                      >
-                        <option value="Mastercard Black">Mastercard Black</option>
-                        <option value="Mastercard Platinum">Mastercard Platinum</option>
-                        <option value="Mastercard Gold">Mastercard Gold</option>
-                        <option value="Visa Infinite">Visa Infinite</option>
-                        <option value="Visa Signature">Visa Signature</option>
-                        <option value="Visa Platinum">Visa Platinum</option>
-                        <option value="Elo Nanquim">Elo Nanquim</option>
-                        <option value="Elo Grafite">Elo Grafite</option>
-                        <option value="Amex Platinum">Amex Platinum</option>
-                        <option value="Outros">Outros</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <Input label="Limite (R$)" value={cardLimit} onChange={setCardLimit} placeholder="Ex: 5000" type="number" step="0.01" />
-                    <Input label="Dia Vencimento" value={cardDueDay} onChange={setCardDueDay} placeholder="Ex: 10" type="number" />
-                    <Input label="Últimos Dígitos" value={cardLastDigits} onChange={setCardLastDigits} placeholder="Ex: 4321" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input label="Dia de Fechamento" value={cardClosingDay} onChange={setCardClosingDay} placeholder="Ex: 5" type="number" min="1" max="31" />
+                    <Input label="Dia de Vencimento" value={cardDueDay} onChange={setCardDueDay} placeholder="Ex: 12" type="number" min="1" max="31" />
                   </div>
 
                   <SubmitButton label="Salvar Cartão" loading={isSubmitting} />

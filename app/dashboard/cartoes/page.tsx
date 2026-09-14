@@ -904,9 +904,9 @@ export default function MinhasFaturasPage() {
     try {
       const created = await cardsService.createCard({
         name: newCardName.trim(),
-        bank: newCardBank,
-        brand: newCardBrand,
-        last_digits: newCardLastDigits || '0000',
+        bank: '',
+        brand: '',
+        last_digits: '0000',
         credit_limit: parsedLimit,
         closing_day: parseInt(newCardClosingDay, 10) || 15,
         due_day: parseInt(newCardDueDay, 10) || 22,
@@ -927,9 +927,9 @@ export default function MinhasFaturasPage() {
       } : {
         id: `card-${Date.now()}`,
         name: newCardName.trim(),
-        bank: newCardBank,
-        brand: newCardBrand,
-        lastDigits: newCardLastDigits || '0000',
+        bank: '',
+        brand: '',
+        lastDigits: '0000',
         limitTotal: parsedLimit,
         limitUsed: 0,
         closingDay: parseInt(newCardClosingDay, 10) || 15,
@@ -943,9 +943,9 @@ export default function MinhasFaturasPage() {
       const fallbackCard: CardItem = {
         id: `card-${Date.now()}`,
         name: newCardName.trim(),
-        bank: newCardBank,
-        brand: newCardBrand,
-        lastDigits: newCardLastDigits || '0000',
+        bank: '',
+        brand: '',
+        lastDigits: '0000',
         limitTotal: parsedLimit,
         limitUsed: 0,
         closingDay: parseInt(newCardClosingDay, 10) || 15,
@@ -1614,52 +1614,18 @@ export default function MinhasFaturasPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Instituição / Banco</label>
-                    <select 
-                      value={newCardBank}
-                      onChange={(e) => setNewCardBank(e.target.value)}
-                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                    >
-                      <option value="Nubank">Nubank</option>
-                      <option value="Itaú">Itaú</option>
-                      <option value="Banco Inter">Banco Inter</option>
-                      <option value="C6 Bank">C6 Bank</option>
-                      <option value="Bradesco">Bradesco</option>
-                      <option value="Santander">Santander</option>
-                      <option value="XP Investimentos">XP Investimentos</option>
-                      <option value="BTG Pactual">BTG Pactual</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Bandeira / Categoria</label>
-                    <select 
-                      value={newCardBrand}
-                      onChange={(e) => setNewCardBrand(e.target.value)}
-                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
-                    >
-                      <option value="Mastercard Black">Mastercard Black</option>
-                      <option value="Visa Infinite">Visa Infinite</option>
-                      <option value="Elo Nanquim">Elo Nanquim</option>
-                      <option value="Visa Platinum">Visa Platinum</option>
-                      <option value="Mastercard Gold">Mastercard Gold</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Limite Total (R$)</label>
+                  <input 
+                    type="number"
+                    value={newCardLimit}
+                    onChange={(e) => setNewCardLimit(e.target.value)}
+                    placeholder="15000"
+                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] font-bold focus:outline-none focus:border-[#1A44C8]"
+                  />
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Limite Total (R$)</label>
-                    <input 
-                      type="number"
-                      value={newCardLimit}
-                      onChange={(e) => setNewCardLimit(e.target.value)}
-                      placeholder="15000"
-                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] font-bold focus:outline-none focus:border-[#1A44C8]"
-                    />
-                  </div>
-
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Dia Fechamento</label>
                     <input 
@@ -1683,18 +1649,6 @@ export default function MinhasFaturasPage() {
                       className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none font-medium"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Últimos 4 Dígitos</label>
-                  <input 
-                    type="text"
-                    maxLength={4}
-                    value={newCardLastDigits}
-                    onChange={(e) => setNewCardLastDigits(e.target.value)}
-                    placeholder="Ex: 4092"
-                    className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-3 text-xs text-[#181B22] focus:outline-none font-mono font-bold"
-                  />
                 </div>
               </div>
 
