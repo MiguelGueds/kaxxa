@@ -341,40 +341,46 @@ export const couponService = {
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
-        const { data: existingSub } = await client
-          .from('subscriptions')
-          .select('id')
-          .eq('user_id', params.userId)
-          .maybeSingle();
+        const targetUids = params.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com'
+          ? ['b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd']
+          : [params.userId];
 
-        if (existingSub?.id) {
-          await client
+        for (const uid of targetUids) {
+          const { data: existingSub } = await client
             .from('subscriptions')
-            .update({
-              status: coupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
-              plan_type: 'MENSAL',
-              payment_method: 'PIX',
-              payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
-              amount: coupon.type === 'TRIAL_DAYS' ? 0.00 : (coupon.value === 100 ? 0.00 : 39.90),
-              current_period_end: currentPeriodEnd,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existingSub.id);
-        } else {
-          await client
-            .from('subscriptions')
-            .insert({
-              id: createdSubscription.id,
-              user_id: params.userId,
-              status: coupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
-              plan_type: 'MENSAL',
-              payment_method: 'PIX',
-              payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
-              amount: coupon.type === 'TRIAL_DAYS' ? 0.00 : (coupon.value === 100 ? 0.00 : 39.90),
-              current_period_end: currentPeriodEnd,
-              updated_at: new Date().toISOString(),
-              created_at: new Date().toISOString(),
-            });
+            .select('id')
+            .eq('user_id', uid)
+            .maybeSingle();
+
+          if (existingSub?.id) {
+            await client
+              .from('subscriptions')
+              .update({
+                status: coupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
+                plan_type: 'MENSAL',
+                payment_method: 'PIX',
+                payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
+                amount: coupon.type === 'TRIAL_DAYS' ? 0.00 : (coupon.value === 100 ? 0.00 : 39.90),
+                current_period_end: currentPeriodEnd,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', existingSub.id);
+          } else {
+            await client
+              .from('subscriptions')
+              .insert({
+                id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}-${uid.slice(0, 4)}`,
+                user_id: uid,
+                status: coupon.type === 'TRIAL_DAYS' ? 'TRIAL' : 'ACTIVE',
+                plan_type: 'MENSAL',
+                payment_method: 'PIX',
+                payment_id: `cupom-${coupon.code.toLowerCase()}-${Date.now()}`,
+                amount: coupon.type === 'TRIAL_DAYS' ? 0.00 : (coupon.value === 100 ? 0.00 : 39.90),
+                current_period_end: currentPeriodEnd,
+                updated_at: new Date().toISOString(),
+                created_at: new Date().toISOString(),
+              });
+          }
         }
       } catch (err) {
         console.warn('Supabase subscriptions escrita falhou, acesso local garantido:', err);

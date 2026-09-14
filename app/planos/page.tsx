@@ -28,7 +28,7 @@ import { KaxxaLogo } from '@/app/components/KaxxaLogo';
 import { usePrivacy } from '@/app/contexts/PrivacyContext';
 import { PortalModal } from '@/app/components/PortalModal';
 import { PixIcon, PixBadge } from '@/app/components/PixLogo';
-import { supabase } from '@/lib/supabase';
+import { supabase, getAuthenticatedUser } from '@/lib/supabase';
 import { subscriptionService } from '@/lib/services/subscription';
 
 export default function PlanosCheckoutPage() {
@@ -101,11 +101,11 @@ export default function PlanosCheckoutPage() {
           if (isMounted) setExpirationReason(reasonParam);
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user && isMounted) {
-          setUser(session.user);
-          setUserEmail(session.user.email || '');
-          setUserName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
+        const authUser = await getAuthenticatedUser();
+        if (authUser && isMounted) {
+          setUser(authUser);
+          setUserEmail(authUser.email || '');
+          setUserName(authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || '');
         }
 
         // Se já possui acesso liberado e NÃO está trocando método, redireciona direto
@@ -279,16 +279,16 @@ export default function PlanosCheckoutPage() {
 
   // Resgatar Cupom de Degustação (100% Grátis)
   const handleRedeemTrialCoupon = async (currentUser?: any) => {
-    let activeUser = currentUser || user;
+    let activeUser = currentUser || user || (await getAuthenticatedUser());
 
     if (!activeUser) {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          activeUser = session.user;
-          setUser(session.user);
-          setUserEmail(session.user.email || '');
-          setUserName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
+        const authUser = await getAuthenticatedUser();
+        if (authUser) {
+          activeUser = authUser;
+          setUser(authUser);
+          setUserEmail(authUser.email || '');
+          setUserName(authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || '');
         }
       } catch {}
     }

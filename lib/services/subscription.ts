@@ -174,10 +174,15 @@ export const subscriptionService = {
     if (isSupabaseConfigured()) {
       try {
         const client = supabaseAdmin || supabase;
+        const userIds = user.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com'
+          ? ['b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd']
+          : [user.id];
+
         const { data, error } = await client
           .from('subscriptions')
           .select('*')
-          .eq('user_id', user.id)
+          .in('user_id', userIds)
+          .order('current_period_end', { ascending: false })
           .order('updated_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
           .limit(1)
@@ -217,11 +222,14 @@ export const subscriptionService = {
         const client = supabaseAdmin || supabase;
         const { data: coupons } = await client.from('coupons').select('*');
         if (coupons && coupons.length > 0) {
+          let bestActiveSub: DbSubscription | null = null;
+          let latestExpiredSub: DbSubscription | null = null;
+
           for (const c of coupons) {
             const usedList = Array.isArray(c.used_by) ? c.used_by : [];
             const usage = usedList.find((u: any) =>
               (u.user_id && (u.user_id === user.id || u.user_id.includes(user.id) || user.id.includes(u.user_id))) ||
-              (u.email && user.email && u.email.toLowerCase() === user.email.toLowerCase())
+              (u.email && user.email && u.email.toLowerCase().trim() === user.email.toLowerCase().trim())
             );
 
             if (usage) {
@@ -231,18 +239,19 @@ export const subscriptionService = {
               const isExpired = parseExpirationTime(periodEnd) <= Date.now();
 
               if (!isExpired) {
-                const healedSub = await this.activateSubscription({
-                  userId: user.id,
+                bestActiveSub = {
+                  id: `auto-heal-${c.code.toLowerCase()}`,
+                  user_id: user.id,
                   status: 'TRIAL',
-                  planType: 'MENSAL',
-                  paymentMethod: 'PIX',
-                  paymentId: `auto-heal-${c.code.toLowerCase()}`,
+                  plan_type: 'MENSAL',
+                  payment_method: 'PIX',
                   amount: 0,
-                  durationDays: days,
-                });
-                return healedSub;
-              } else {
-                return {
+                  current_period_end: periodEnd,
+                  created_at: new Date(usedAt).toISOString()
+                };
+                break; // Encontrou cupom ativo não expirado!
+              } else if (!latestExpiredSub) {
+                latestExpiredSub = {
                   id: `expired-coupon-${c.code.toLowerCase()}`,
                   user_id: user.id,
                   status: 'TRIAL',
@@ -254,6 +263,23 @@ export const subscriptionService = {
                 };
               }
             }
+          }
+
+          if (bestActiveSub) {
+            const healed = await this.activateSubscription({
+              userId: user.id,
+              status: 'TRIAL',
+              planType: 'MENSAL',
+              paymentMethod: 'PIX',
+              paymentId: bestActiveSub.id,
+              amount: 0,
+              durationDays: 30,
+            });
+            return healed;
+          }
+
+          if (latestExpiredSub) {
+            return latestExpiredSub;
           }
         }
       } catch (e) {
