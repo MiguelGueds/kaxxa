@@ -114,6 +114,64 @@ export interface InvestmentItem {
   createdAt?: string;
 }
 
+// Helper de Projeção Financeira e Cálculo de CDI para Renda Fixa
+function calculateFixedIncomeYield(
+  amount: number, 
+  rateOrYield: string = '100% do CDI', 
+  createdAt?: string
+) {
+  const CDI_BENCHMARK = 10.65; // CDI de mercado atualizado ~10.65% a.a.
+  const raw = (rateOrYield || '').trim().toUpperCase();
+  let annualRate = CDI_BENCHMARK;
+
+  const cdiMatch = raw.match(/(\d+(?:[.,]\d+)?)\s*%\s*(?:DO\s*)?CDI/i);
+  if (cdiMatch) {
+    const pctOfCdi = parseFloat(cdiMatch[1].replace(',', '.'));
+    annualRate = (pctOfCdi / 100) * CDI_BENCHMARK;
+  } else {
+    const ipcaMatch = raw.match(/IPCA\s*\+\s*(\d+(?:[.,]\d+)?)\s*%/i);
+    if (ipcaMatch) {
+      const spread = parseFloat(ipcaMatch[1].replace(',', '.'));
+      annualRate = 4.0 + spread;
+    } else {
+      const genericMatch = raw.match(/(\d+(?:[.,]\d+)?)\s*%/i);
+      if (genericMatch) {
+        annualRate = parseFloat(genericMatch[1].replace(',', '.'));
+      }
+    }
+  }
+
+  // Taxa mensal equivalente: (1 + i)^(1/12) - 1
+  const monthlyRate = Math.pow(1 + annualRate / 100, 1 / 12) - 1;
+  const dailyRate = Math.pow(1 + annualRate / 100, 1 / 252) - 1;
+
+  const monthlyGain = amount * monthlyRate;
+  const yearlyGain = amount * (annualRate / 100);
+  const dailyGain = amount * dailyRate;
+
+  let accruedGain = 0;
+  let daysElapsed = 0;
+  if (createdAt) {
+    const createdTime = new Date(createdAt).getTime();
+    if (!isNaN(createdTime) && createdTime <= Date.now()) {
+      daysElapsed = Math.max(0, Math.floor((Date.now() - createdTime) / (1000 * 60 * 60 * 24)));
+      if (daysElapsed > 0) {
+        accruedGain = amount * (Math.pow(1 + annualRate / 100, daysElapsed / 365) - 1);
+      }
+    }
+  }
+
+  return {
+    annualRate,
+    monthlyRatePct: monthlyRate * 100,
+    monthlyGain,
+    yearlyGain,
+    dailyGain,
+    accruedGain,
+    daysElapsed
+  };
+}
+
 const INITIAL_INVESTMENTS: InvestmentItem[] = [
   // ==================== RENDA FIXA ====================
   {
@@ -1280,104 +1338,128 @@ export default function InvestimentosPage() {
     }
   };
 
+  // Projeções de Rendimento da Renda Fixa (CDI / Selic / IPCA)
+  const fixedIncomeYieldStats = useMemo(() => {
+    let monthly = 0;
+    let yearly = 0;
+    let daily = 0;
+    investments.filter(i => i.macroType === 'FIXA').forEach(inv => {
+      const sim = calculateFixedIncomeYield(inv.currentBalance || inv.totalInvested, inv.rateOrYield, inv.createdAt);
+      monthly += sim.monthlyGain;
+      yearly += sim.yearlyGain;
+      daily += sim.dailyGain;
+    });
+    return { monthly, yearly, daily };
+  }, [investments]);
+
   return (
     <>
       <div className="w-full max-w-7xl mx-auto pb-12 space-y-3.5">
 
         {/* =========================================================================
-            1. BENTO GRID KPIS (COMPACTOS & PADRÃO VISÃO GERAL #FFFFFF)
+            1. BENTO GRID KPIS (CARTOES LUXURY COM DEGRADÊ SATIN TECH)
         ========================================================================= */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           
           {/* Card 1: Patrimônio Total */}
-          <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-4 shadow-sm flex flex-col justify-between">
+          <div className="card-luxury-float rounded-[24px] p-4 flex flex-col justify-between">
             <div>
-              <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <Briefcase size={11} className="text-[#1A44C8]" /> Patrimônio Total
+              <p className="text-[10px] text-[#94A3B8] dark:text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+                <Briefcase size={11} className="text-[#0047FF]" /> Patrimônio Total
               </p>
-              <h3 className="text-xl font-extrabold text-[#181B22] mb-0.5 flex items-baseline">
+              <h3 className="text-xl font-extrabold text-[#181B22] dark:text-white mb-0.5 flex items-baseline">
                 <span className="text-sm text-[#94A3B8] mr-1 font-semibold">R$</span>
                 {formatCurrency(currentBalanceGlobal)}
               </h3>
-              <p className="text-[9.5px] text-[#64748B]">
-                Aportado: <span className="text-[#181B22] font-semibold">R$ {formatCurrency(totalInvestedGlobal)}</span>
+              <p className="text-[9.5px] text-[#64748B] dark:text-zinc-400">
+                Aportado: <span className="text-[#181B22] dark:text-zinc-200 font-semibold">R$ {formatCurrency(totalInvestedGlobal)}</span>
               </p>
             </div>
           </div>
 
           {/* Card 2: Lucro Total */}
-          <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-4 shadow-sm flex flex-col justify-between">
+          <div className="card-luxury-float rounded-[24px] p-4 flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-1">
-                <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <TrendingUp size={11} className="text-[#1A44C8]" /> Lucro Total
+                <p className="text-[10px] text-[#94A3B8] dark:text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <TrendingUp size={11} className="text-[#0047FF]" /> Lucro Total
                 </p>
                 <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full border ${
                   totalProfitConsolidated >= 0 
-                    ? 'text-[#1A44C8] bg-[#1A44C8]/10 border-[#1A44C8]/20' 
+                    ? 'text-blue-600 bg-blue-500/10 border-blue-500/20' 
                     : 'text-rose-600 bg-rose-50 border-rose-200'
                 }`}>
                   {profitPctTotal >= 0 ? '+' : ''}{profitPctTotal.toFixed(1)}%
                 </span>
               </div>
               <h3 className={`text-xl font-extrabold mb-1 flex items-baseline ${
-                totalProfitConsolidated >= 0 ? 'text-[#1A44C8]' : 'text-rose-600'
+                totalProfitConsolidated >= 0 ? 'text-[#0047FF] dark:text-[#38BDF8]' : 'text-rose-600'
               }`}>
                 <span className="text-sm opacity-80 mr-1 font-semibold">
                   {totalProfitConsolidated >= 0 ? '+R$' : '-R$'}
                 </span>
                 {formatCurrency(Math.abs(totalProfitConsolidated))}
               </h3>
-              <div className="space-y-0.5 text-[9.5px] pt-1 border-t border-[#E5E7EB]">
-                <p className="text-[#64748B] flex justify-between">
+              <div className="space-y-0.5 text-[9.5px] pt-1 border-t border-slate-100 dark:border-white/[0.06]">
+                <p className="text-[#64748B] dark:text-zinc-400 flex justify-between">
                   <span>Ganho de Capital:</span>
-                  <span className="text-[#181B22] font-semibold">{capitalGainTotal >= 0 ? '+' : ''}R$ {formatCurrency(capitalGainTotal)}</span>
+                  <span className="text-[#181B22] dark:text-zinc-200 font-semibold">{capitalGainTotal >= 0 ? '+' : ''}R$ {formatCurrency(capitalGainTotal)}</span>
                 </p>
-                <p className="text-[#64748B] flex justify-between">
+                <p className="text-[#64748B] dark:text-zinc-400 flex justify-between">
                   <span>Proventos:</span>
-                  <span className="text-[#1A44C8] font-bold">+R$ {formatCurrency(dividendsReceivedTotal)}</span>
+                  <span className="text-[#0047FF] dark:text-[#38BDF8] font-bold">+R$ {formatCurrency(dividendsReceivedTotal)}</span>
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Card 3: Renda Fixa */}
-          <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-4 shadow-sm flex flex-col justify-between">
+          {/* Card 3: Renda Fixa com Projeção Ativa CDI */}
+          <div className="card-luxury-float rounded-[24px] p-4 flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-1">
-                <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <Shield size={11} className="text-[#00A3FF]" /> Renda Fixa
+                <p className="text-[10px] text-[#94A3B8] dark:text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Shield size={11} className="text-[#0047FF]" /> Renda Fixa
                 </p>
-                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-[#F1F3F7] text-[#181B22] font-bold border border-[#E5E7EB]">
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-[#0047FF] dark:text-[#38BDF8] font-bold border border-blue-500/20">
                   {pctFixed.toFixed(0)}%
                 </span>
               </div>
-              <h3 className="text-xl font-extrabold text-[#181B22] mb-0.5 flex items-baseline">
+              <h3 className="text-xl font-extrabold text-[#181B22] dark:text-white mb-0.5 flex items-baseline">
                 <span className="text-sm text-[#94A3B8] mr-1 font-semibold">R$</span>
                 {formatCurrency(totalFixed)}
               </h3>
-              <p className="text-[9.5px] text-[#64748B]">
+              <p className="text-[9.5px] text-[#64748B] dark:text-zinc-400">
                 Tesouro Direto, CDBs e Caixinhas
               </p>
+            </div>
+            
+            {/* Projeção de Ganho Estimado em Renda Fixa */}
+            <div className="mt-2 pt-1.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+              <span className="text-[9px] text-[#64748B] dark:text-zinc-400 font-medium flex items-center gap-1">
+                <Sparkles size={10} className="text-[#0047FF]" /> Projeção:
+              </span>
+              <span className="text-[10px] font-bold text-[#0047FF] dark:text-[#38BDF8] font-mono">
+                +R$ {formatCurrency(fixedIncomeYieldStats.monthly)}/mês
+              </span>
             </div>
           </div>
 
           {/* Card 4: Renda Variável */}
-          <div className="bg-[#FFFFFF] border border-[#E5E7EB] hover:shadow-md hover:border-[#1A44C8]/30 transition-all rounded-[24px] p-4 shadow-sm flex flex-col justify-between">
+          <div className="card-luxury-float rounded-[24px] p-4 flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-1">
-                <p className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity size={11} className="text-[#1A44C8]" /> Renda Variável
+                <p className="text-[10px] text-[#94A3B8] dark:text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Activity size={11} className="text-[#0047FF]" /> Renda Variável
                 </p>
-                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-[#F1F3F7] text-[#181B22] font-bold border border-[#E5E7EB]">
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-[#181B22] dark:text-white font-bold border border-slate-200 dark:border-white/[0.08]">
                   {pctVariable.toFixed(0)}%
                 </span>
               </div>
-              <h3 className="text-xl font-extrabold text-[#181B22] mb-0.5 flex items-baseline">
+              <h3 className="text-xl font-extrabold text-[#181B22] dark:text-white mb-0.5 flex items-baseline">
                 <span className="text-sm text-[#94A3B8] mr-1 font-semibold">R$</span>
                 {formatCurrency(totalVariable)}
               </h3>
-              <p className="text-[9.5px] text-[#64748B]">
+              <p className="text-[9.5px] text-[#64748B] dark:text-zinc-400">
                 Ações, FIIs, BDRs
               </p>
             </div>
@@ -1966,53 +2048,84 @@ export default function InvestimentosPage() {
                                     </div>
                                   </td>
 
-                                  {/* Colunas específicas Fixa vs Variável */}
-                                  {isFixedIncome ? (
-                                    <>
-                                      <td className="py-2.5 px-2">
-                                        <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-[#1A44C8]/10 text-[#1A44C8] border border-[#1A44C8]/20 font-bold">
-                                          {asset.rateOrYield || '100% CDI'}
-                                        </span>
-                                      </td>
-                                      <td className="py-2.5 px-2 text-[#64748B] text-[10px] font-medium">
-                                        {asset.dueDate || 'Imediata (D+0)'}
-                                      </td>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <td className="py-2.5 px-2 text-right font-bold text-[#181B22]">
-                                        {asset.totalQuantity}
-                                      </td>
-                                      <td className="py-2.5 px-2 text-right text-[#64748B] font-mono">
-                                        R$ {formatCurrency(asset.averagePrice)}
-                                      </td>
-                                      <td className="py-2.5 px-2 text-right text-[#181B22] font-bold font-mono">
-                                        R$ {formatCurrency(asset.latestPrice || asset.averagePrice)}
-                                      </td>
-                                    </>
-                                  )}
+                                   {/* Colunas específicas Fixa vs Variável */}
+                                   {isFixedIncome ? (
+                                     <>
+                                       <td className="py-2.5 px-2">
+                                         <div className="flex flex-col items-start gap-0.5">
+                                           <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-[#0047FF]/10 text-[#0047FF] border border-[#0047FF]/20 font-bold">
+                                             {asset.rateOrYield || '100% CDI'}
+                                           </span>
+                                           {(() => {
+                                             const sim = calculateFixedIncomeYield(asset.currentBalance, asset.rateOrYield);
+                                             return (
+                                               <span className="text-[8px] text-[#64748B] font-mono">
+                                                 ~{sim.annualRate.toFixed(2)}% a.a.
+                                               </span>
+                                             );
+                                           })()}
+                                         </div>
+                                       </td>
+                                       <td className="py-2.5 px-2 text-[#64748B] text-[10px] font-medium">
+                                         {asset.dueDate || 'Imediata (D+0)'}
+                                       </td>
+                                     </>
+                                   ) : (
+                                     <>
+                                       <td className="py-2.5 px-2 text-right font-bold text-[#181B22]">
+                                         {asset.totalQuantity}
+                                       </td>
+                                       <td className="py-2.5 px-2 text-right text-[#64748B] font-mono">
+                                         R$ {formatCurrency(asset.averagePrice)}
+                                       </td>
+                                       <td className="py-2.5 px-2 text-right text-[#181B22] font-bold font-mono">
+                                         R$ {formatCurrency(asset.latestPrice || asset.averagePrice)}
+                                       </td>
+                                     </>
+                                   )}
 
-                                  {/* Total Aportado */}
-                                  <td className="py-2.5 px-2 text-right text-[#64748B] font-mono">
-                                    R$ {formatCurrency(asset.totalInvested)}
-                                  </td>
+                                   {/* Total Aportado */}
+                                   <td className="py-2.5 px-2 text-right text-[#64748B] font-mono">
+                                     R$ {formatCurrency(asset.totalInvested)}
+                                   </td>
 
-                                  {/* Saldo Atual */}
-                                  <td className="py-2.5 px-2 text-right font-extrabold text-[#181B22] font-mono">
-                                    R$ {formatCurrency(asset.currentBalance)}
-                                  </td>
+                                   {/* Saldo Atual */}
+                                   <td className="py-2.5 px-2 text-right font-extrabold text-[#181B22] font-mono">
+                                     R$ {formatCurrency(asset.currentBalance)}
+                                   </td>
 
-                                  {/* Proventos */}
-                                  <td className="py-2.5 px-2 text-right font-bold text-[#1A44C8] font-mono">
-                                    +R$ {formatCurrency(asset.totalDividends)}
-                                  </td>
+                                   {/* Proventos */}
+                                   <td className="py-2.5 px-2 text-right font-bold text-[#1A44C8] font-mono">
+                                     +R$ {formatCurrency(asset.totalDividends)}
+                                   </td>
 
-                                  {/* Resultado (Lucro/Prejuízo) */}
-                                  <td className="py-2.5 px-2 text-right font-bold font-mono">
-                                    <span className={isPositive ? 'text-[#1A44C8]' : 'text-rose-600'}>
-                                      {isPositive ? '+' : ''}R$ {formatCurrency(asset.profit)} ({isPositive ? '+' : ''}{asset.profitPct.toFixed(1)}%)
-                                    </span>
-                                  </td>
+                                   {/* Resultado (Lucro/Prejuízo ou Rendimento Projetado) */}
+                                   <td className="py-2.5 px-2 text-right font-bold font-mono">
+                                     {isFixedIncome ? (
+                                       (() => {
+                                         const fixedSim = calculateFixedIncomeYield(asset.currentBalance, asset.rateOrYield);
+                                         return (
+                                           <div className="flex flex-col items-end">
+                                             <span className="text-[#0047FF] font-bold">
+                                               +R$ {formatCurrency(fixedSim.monthlyGain)}/mês
+                                             </span>
+                                             <span className="text-[8.5px] text-[#64748B] font-medium">
+                                               ~R$ {formatCurrency(fixedSim.yearlyGain)}/ano
+                                             </span>
+                                             {asset.profit > 0 && (
+                                               <span className="text-[8px] text-emerald-600 font-medium">
+                                                 Acumulado: +R$ {formatCurrency(asset.profit)}
+                                               </span>
+                                             )}
+                                           </div>
+                                         );
+                                       })()
+                                     ) : (
+                                       <span className={isPositive ? 'text-[#1A44C8]' : 'text-rose-600'}>
+                                         {isPositive ? '+' : ''}R$ {formatCurrency(asset.profit)} ({isPositive ? '+' : ''}{asset.profitPct.toFixed(1)}%)
+                                       </span>
+                                     )}
+                                   </td>
 
                                   {/* % da Carteira Global */}
                                   <td className="py-2.5 px-2 text-right font-bold text-[#64748B] text-[10px]">
@@ -2141,11 +2254,27 @@ export default function InvestimentosPage() {
                               +R$ {formatCurrency(item.totalDividendsReceived || 0)}
                             </td>
 
-                            {/* Lucro Estimado */}
+                            {/* Lucro Estimado / Rendimento */}
                             <td className="py-2.5 px-2 text-right font-bold font-mono whitespace-nowrap">
-                              <span className={isPositive ? 'text-[#1A44C8]' : 'text-rose-600'}>
-                                {isPositive ? '+' : ''}R$ {formatCurrency(profit)}
-                              </span>
+                              {!isVar ? (
+                                (() => {
+                                  const sim = calculateFixedIncomeYield(item.currentBalance, item.rateOrYield, item.createdAt);
+                                  return (
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-[#0047FF] font-bold">
+                                        +R$ {formatCurrency(sim.monthlyGain)}/mês
+                                      </span>
+                                      <span className="text-[8.5px] text-[#64748B] font-medium">
+                                        ~R$ {formatCurrency(sim.yearlyGain)}/ano
+                                      </span>
+                                    </div>
+                                  );
+                                })()
+                              ) : (
+                                <span className={isPositive ? 'text-[#1A44C8]' : 'text-rose-600'}>
+                                  {isPositive ? '+' : ''}R$ {formatCurrency(profit)}
+                                </span>
+                              )}
                             </td>
 
                             {/* Ações: Editar e Excluir */}
@@ -2348,6 +2477,49 @@ export default function InvestimentosPage() {
                         />
                       </div>
                     </div>
+
+                    {/* Simulação em Tempo Real para Renda Fixa */}
+                    {parseFloat(rfAmount.replace(',', '.')) > 0 && (() => {
+                      const amt = parseFloat(rfAmount.replace(',', '.')) || 0;
+                      const sim = calculateFixedIncomeYield(amt, rfRate || '100% do CDI');
+                      return (
+                        <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50/90 via-indigo-50/50 to-white dark:from-blue-950/30 dark:via-[#0D111A] dark:to-[#07090E] border border-blue-200/80 dark:border-blue-900/50 shadow-sm animate-luxury-fade">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5 uppercase tracking-wide">
+                              <Sparkles size={12} className="text-blue-600 animate-pulse" />
+                              Simulação de Rendimento (CDI 10,65% a.a.)
+                            </span>
+                            <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-600/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                              Taxa Anual: ~{sim.annualRate.toFixed(2)}%
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 text-center pt-1.5 border-t border-blue-200/60 dark:border-blue-900/40">
+                            <div className="bg-white/80 dark:bg-white/[0.04] p-2 rounded-xl border border-blue-100 dark:border-white/[0.06] shadow-2xs">
+                              <span className="text-[8.5px] text-[#64748B] dark:text-zinc-400 block font-medium">Rende por Mês</span>
+                              <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 font-mono">
+                                +R$ {formatCurrency(sim.monthlyGain)}
+                              </span>
+                            </div>
+                            <div className="bg-white/80 dark:bg-white/[0.04] p-2 rounded-xl border border-blue-100 dark:border-white/[0.06] shadow-2xs">
+                              <span className="text-[8.5px] text-[#64748B] dark:text-zinc-400 block font-medium">Rende no 1º Ano</span>
+                              <span className="text-xs font-extrabold text-[#181B22] dark:text-white font-mono">
+                                +R$ {formatCurrency(sim.yearlyGain)}
+                              </span>
+                            </div>
+                            <div className="bg-white/80 dark:bg-white/[0.04] p-2 rounded-xl border border-blue-100 dark:border-white/[0.06] shadow-2xs">
+                              <span className="text-[8.5px] text-[#64748B] dark:text-zinc-400 block font-medium">Por Dia Útil</span>
+                              <span className="text-xs font-extrabold text-[#181B22] dark:text-white font-mono">
+                                ~R$ {formatCurrency(sim.dailyGain)}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-[8px] text-[#64748B] dark:text-zinc-400 mt-2 text-center">
+                            * Projeção teórica com base no indexador indicado e CDI de referência.
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </>
                 ) : (
                   <>

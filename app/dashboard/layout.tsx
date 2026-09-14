@@ -47,8 +47,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { isConcealed, toggleConcealed, togglePrivacy } = usePrivacy();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<{ name: string; email: string; avatar: string | null }>({
     name: 'Minha Conta',
@@ -155,13 +155,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
-    // Fast path: apenas administradores têm acesso instantâneo liberado (0ms)
     if (isAdminEmail(userInfo.email)) {
       setAccessGranted(true);
       return;
     }
 
-    // Verificação síncrona instantânea de expiração no cache local antes de renderizar qualquer UI
     if (typeof window !== 'undefined') {
       try {
         const localTrial = localStorage.getItem('kaxxa_trial_active');
@@ -232,15 +230,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       }
     }
     checkSubscription();
+
     return () => { isMounted = false; };
-  }, [pathname, router, userInfo.email]);
+  }, [userInfo.email, router]);
 
-  // Fechar menu mobile ao navegar
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
-
-  // Atalho global Cmd+K / Ctrl+K para Command Palette
+  // Listener global de atalhos
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -252,44 +246,37 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
+  // Fechar popovers ao mudar de rota
+  useEffect(() => {
+    setIsSettingsMenuOpen(false);
+    setIsUserMenuOpen(false);
+    setMobileMenuOpen(false);
+  }, [pathname, searchParams]);
+
   const isAdmin = isAdminEmail(userInfo.email);
 
-  const sidebarMenus = [
-    {
-      title: 'Principal',
-      items: [
-        { href: '/dashboard', icon: LayoutDashboard, label: 'Visão Geral' },
-      ]
-    },
-    {
-      title: 'Finanças',
-      items: [
-        { href: '/dashboard/transacoes', icon: Wallet, label: 'Saldo e Extrato' },
-        { href: '/dashboard/investimentos', icon: TrendingUp, label: 'Investimentos' },
-        { href: '/dashboard/cartoes', icon: CreditCard, label: 'Minhas Faturas' },
-        { href: '/dashboard/terceiros', icon: Users, label: 'Terceiros' },
-        { href: '/dashboard/dividas', icon: Landmark, label: 'Dívidas e Empréstimos' },
-      ]
-    },
-    {
-      title: 'Configurações',
-      items: [
-        { href: '/dashboard/configuracoes?tab=contas', icon: Landmark, label: 'Contas bancárias' },
-        { href: '/dashboard/configuracoes?tab=cartoes', icon: CreditCard, label: 'Cartões' },
-        { href: '/dashboard/configuracoes?tab=categorias', icon: Tag, label: 'Categorias' },
-        { href: '/dashboard/configuracoes?tab=terceiros', icon: Users, label: 'Pessoas' },
-      ]
-    },
-    ...(isAdmin ? [
-      {
-        title: 'Administração',
-        items: [
-          { href: '/dashboard/admin', icon: ShieldCheck, label: 'Gestão', badge: 'Admin' },
-          { href: '/dashboard/admin/cupons', icon: Ticket, label: 'Cupons' },
-        ]
-      }
-    ] : [])
+  // Navegação Principal de Alto Nível
+  const primaryNavItems = [
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Visão Geral' },
+    { href: '/dashboard/transacoes', icon: Wallet, label: 'Saldo e Extrato' },
+    { href: '/dashboard/investimentos', icon: TrendingUp, label: 'Investimentos' },
+    { href: '/dashboard/cartoes', icon: CreditCard, label: 'Minhas Faturas' },
+    { href: '/dashboard/terceiros', icon: Users, label: 'Terceiros' },
+    { href: '/dashboard/dividas', icon: Landmark, label: 'Dívidas' },
   ];
+
+  // Configurações & Gestão
+  const settingsNavItems = [
+    { href: '/dashboard/configuracoes?tab=contas', icon: Landmark, label: 'Contas bancárias' },
+    { href: '/dashboard/configuracoes?tab=cartoes', icon: CreditCard, label: 'Cartões' },
+    { href: '/dashboard/configuracoes?tab=categorias', icon: Tag, label: 'Categorias' },
+    { href: '/dashboard/configuracoes?tab=terceiros', icon: Users, label: 'Pessoas' },
+  ];
+
+  const adminNavItems = isAdmin ? [
+    { href: '/dashboard/admin', icon: ShieldCheck, label: 'Gestão Geral', badge: 'Admin' },
+    { href: '/dashboard/admin/cupons', icon: Ticket, label: 'Cupons de Desconto' },
+  ] : [];
 
   const isItemActive = (href: string) => {
     const [targetPath, targetQuery] = href.split('?');
@@ -308,6 +295,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
     return true;
   };
+
+  const isSettingsActive = pathname === '/dashboard/configuracoes' || pathname?.startsWith('/dashboard/admin');
 
   const getPageInfo = () => {
     if (pathname === '/dashboard') return { title: 'Visão Geral', icon: LayoutDashboard };
@@ -335,230 +324,197 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen h-screen w-full bg-luxury-atmosphere flex font-sans selection:bg-[#0047FF] selection:text-white text-slate-900 dark:text-[#F1F3F7] overflow-x-hidden overflow-y-hidden relative">
+    <div className="min-h-screen h-screen w-full bg-luxury-atmosphere flex flex-col font-sans selection:bg-[#0047FF] selection:text-white text-slate-900 dark:text-[#F1F3F7] overflow-x-hidden overflow-y-hidden relative">
       
-      {/* Overlay Mobile */}
-      {mobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Sidebar Flutuante no Padrão Luxury Frosted Glass Rail */}
-      <aside className={`my-2 sm:my-3 ml-2 sm:ml-3 flex-shrink-0 rounded-[24px] border border-slate-200/80 dark:border-white/[0.08] flex flex-col backdrop-blur-2xl bg-white/85 dark:bg-[#07090E]/85 shadow-[0_12px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-300 overflow-hidden relative ${
-        isSidebarCollapsed ? 'w-[68px]' : 'w-[210px]'
-      } ${
-        mobileMenuOpen 
-          ? 'fixed inset-y-2 left-2 !w-[245px] max-h-[calc(100dvh-16px)] h-[calc(100dvh-16px)] z-50 flex flex-col shadow-2xl' 
-          : 'hidden lg:flex z-0 h-[calc(100vh-16px)] sm:h-[calc(100vh-24px)]'
-      }`}>
-        {/* Glow de acento superior ultra-sutil */}
-        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#0047FF]/60 to-transparent pointer-events-none" />
+      {/* =========================================================================
+          1. TOP EXECUTIVE COMMAND CAPSULE NAVIGATION (NOVA ARQUITETURA LUXURY)
+      ========================================================================= */}
+      <header className="mx-2 sm:mx-4 mt-2 sm:mt-2.5 mb-1.5 h-14 px-3 sm:px-4 rounded-[20px] bg-white/85 dark:bg-[#07090E]/85 backdrop-blur-2xl border border-slate-200/85 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.03)] dark:shadow-[0_16px_45px_rgba(0,0,0,0.6)] flex items-center justify-between z-30 flex-shrink-0 relative">
         
-        {/* Brand Header do Card com a Nova Logo Oficial e Status Live */}
-        <div className={`h-14 flex items-center border-b border-slate-100/90 dark:border-white/[0.06] shrink-0 ${
-          isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3.5'
-        }`}>
-          <Link href="/dashboard" className="flex items-center gap-2 group min-w-0" title="Kaxxa">
-            {isSidebarCollapsed ? (
-              <KaxxaKLogo size={26} />
-            ) : (
-              <div className="flex items-center gap-2">
-                <KaxxaLogo size={22} />
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-mono font-medium text-emerald-600 dark:text-emerald-400 select-none">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  LIVE
-                </span>
-              </div>
-            )}
+        {/* Glow de acento superior ultra-sutil */}
+        <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0047FF]/60 to-transparent pointer-events-none" />
+
+        {/* Lado Esquerdo: Logo Kaxxa em Azul Degradê Tech Luxury (SEM tag LIVE) */}
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <Link href="/dashboard" className="flex items-center group transition-transform active:scale-95" title="Kaxxa">
+            <KaxxaLogo size={23} />
           </Link>
 
-          {/* Botão Fechar no Mobile */}
-          {mobileMenuOpen && (
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(false)}
-              className="lg:hidden p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors shrink-0"
-              title="Fechar menu"
-              aria-label="Fechar menu"
-            >
-              <X size={18} />
-            </button>
-          )}
-
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors hidden lg:flex items-center justify-center shrink-0"
-            title={isSidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
-          >
-            {isSidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-          </button>
+          {/* Breadcrumb da página em mobile */}
+          <div className="flex items-center gap-1.5 text-xs lg:hidden pl-1 border-l border-slate-200/80 dark:border-white/[0.08]">
+            <span className="text-slate-900 dark:text-white font-medium truncate max-w-[120px] sm:max-w-none">{pageTitle}</span>
+          </div>
         </div>
 
-        {/* Menus de Navegação em Formato Slim com Indicador Ativo e Micro-Interação */}
-        <div className="flex-1 min-h-0 px-2.5 py-3 flex flex-col justify-between overflow-y-auto custom-scrollbar">
-          <div className="flex flex-col gap-3">
-            {sidebarMenus.map((menu, idx) => (
-              <div key={idx}>
-                {!isSidebarCollapsed ? (
-                  <h4 className="text-[8.5px] font-semibold tracking-[0.22em] text-slate-400 dark:text-zinc-500 mb-1.5 px-2 uppercase">
-                    {menu.title}
-                  </h4>
-                ) : (
-                  <div className="w-5 h-[1px] bg-slate-200/80 dark:bg-white/[0.06] mx-auto my-1.5" />
+        {/* Centro: Deck de Navegação Segmentado Flutuante (Desktop & Tablet Grande) */}
+        <nav className="hidden lg:flex items-center gap-1 bg-slate-100/70 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/60 dark:border-white/[0.06] shadow-2xs">
+          {primaryNavItems.map((item) => {
+            const active = isItemActive(item.href);
+            return (
+              <Link 
+                key={item.href} 
+                href={item.href}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 select-none ${
+                  active 
+                    ? 'nav-pill-luxury-active font-medium' 
+                    : 'nav-pill-luxury-inactive font-normal'
+                }`}
+                title={item.label}
+              >
+                <item.icon size={13.5} strokeWidth={active ? 2.2 : 1.75} className="shrink-0" />
+                <span className="tracking-tight">{item.label}</span>
+                {active && (
+                  <span className="w-1 h-1 rounded-full bg-white ml-0.5 animate-pulse" />
                 )}
-                
-                <div className="flex flex-col gap-1">
-                  {menu.items.map((item) => {
-                    const active = isItemActive(item.href);
+              </Link>
+            );
+          })}
+
+          {/* Menu Dropdown de Configurações & Ajustes */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => { setIsSettingsMenuOpen(!isSettingsMenuOpen); setIsUserMenuOpen(false); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 select-none ${
+                isSettingsActive 
+                  ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-medium border border-blue-500/30' 
+                  : 'nav-pill-luxury-inactive font-normal'
+              }`}
+              title="Configurações e Mais"
+            >
+              <Settings size={13.5} strokeWidth={1.75} className="shrink-0" />
+              <span className="tracking-tight">Mais</span>
+              <ChevronRight size={11} className={`transition-transform duration-200 ${isSettingsMenuOpen ? 'rotate-90' : ''}`} />
+            </button>
+
+            {/* Dropdown Flutuante de Configurações */}
+            {isSettingsMenuOpen && (
+              <div 
+                className="absolute top-full right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-[#0D111A]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.1] shadow-2xl p-2 z-50 animate-luxury-fade"
+                onMouseLeave={() => setIsSettingsMenuOpen(false)}
+              >
+                <div className="px-2 py-1 text-[9px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                  Configurações
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  {settingsNavItems.map(sub => {
+                    const active = isItemActive(sub.href);
                     return (
-                      <Link key={item.label} href={item.href}>
-                        <div 
-                          className={`flex items-center rounded-xl transition-all duration-200 group relative overflow-hidden ${
-                            isSidebarCollapsed 
-                              ? 'justify-center py-2.5 px-1.5' 
-                              : 'justify-between px-2.5 py-2'
-                          } ${
-                            active 
-                              ? 'bg-gradient-to-r from-[#002B9E] via-[#0047FF] to-[#0055FF] text-white font-medium shadow-md shadow-blue-600/30' 
-                              : 'hover:bg-slate-100/80 dark:hover:bg-white/[0.05] hover:translate-x-1 text-slate-600 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-white font-light'
-                          }`}
-                          title={isSidebarCollapsed ? item.label : undefined}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            {!isSidebarCollapsed && active && (
-                              <span className="w-1 h-3.5 rounded-full bg-white shadow-[0_0_8px_#ffffff] shrink-0 mr-0.5 animate-pulse" />
-                            )}
-                            <item.icon 
-                              size={15} 
-                              strokeWidth={active ? 2 : 1.75}
-                              className={`shrink-0 transition-transform duration-200 ${
-                                active ? 'text-white' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
-                              }`} 
-                            />
-                            {!isSidebarCollapsed && (
-                              <span className="text-xs truncate tracking-tight">{item.label}</span>
-                            )}
-                          </div>
-
-                          {!isSidebarCollapsed && item.badge && (
-                            <span className={`text-[8.5px] font-medium px-1.5 py-0.2 rounded-md ${
-                              active 
-                                ? 'bg-white/20 text-white' 
-                                : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-white/[0.08]'
-                            }`}>
-                              {item.badge}
-                            </span>
-                          )}
-
-                          {isSidebarCollapsed && active && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white absolute right-1 shadow-[0_0_6px_#ffffff]" />
-                          )}
-                        </div>
+                      <Link
+                        key={sub.href}
+                        href={sub.href}
+                        onClick={() => setIsSettingsMenuOpen(false)}
+                        className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs transition-all ${
+                          active 
+                            ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-medium' 
+                            : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <sub.icon size={13.5} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500" />
+                        <span>{sub.label}</span>
                       </Link>
                     );
                   })}
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Rodapé da Sidebar - Perfil e Sair da Conta */}
-        <div className="p-2.5 border-t border-slate-100/90 dark:border-white/[0.06] shrink-0 bg-white/50 dark:bg-transparent">
+                {adminNavItems.length > 0 && (
+                  <>
+                    <div className="my-1.5 border-t border-slate-100 dark:border-white/[0.06]" />
+                    <div className="px-2 py-1 text-[9px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Administração
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      {adminNavItems.map(adm => {
+                        const active = isItemActive(adm.href);
+                        return (
+                          <Link
+                            key={adm.href}
+                            href={adm.href}
+                            onClick={() => setIsSettingsMenuOpen(false)}
+                            className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-all ${
+                              active 
+                                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-medium' 
+                                : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <adm.icon size={13.5} strokeWidth={1.75} className="text-blue-500" />
+                              <span>{adm.label}</span>
+                            </div>
+                            {adm.badge && (
+                              <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                {adm.badge}
+                              </span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </nav>
+
+        {/* Lado Direito: Ações Executivas (Busca, Privacidade, Tema, Perfil) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          
+          {/* Busca Rápida / Command Palette */}
           <button 
             type="button"
-            onClick={async (e) => { e.preventDefault(); await performGlobalSignOut(); router.push('/login'); }} 
-            className={`flex items-center rounded-xl transition-all text-rose-600 dark:text-rose-400 bg-rose-50/60 dark:bg-rose-950/20 hover:bg-rose-100/80 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-900/30 group text-xs font-normal tracking-tight shadow-2xs active:scale-[0.98] ${
-              isSidebarCollapsed ? 'justify-center p-2.5 w-full' : 'justify-start gap-2.5 px-3 py-2 w-full'
-            }`}
-            title="Sair da Conta"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="flex items-center gap-2 bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 rounded-xl px-2.5 sm:px-3 py-1.5 transition-all text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white shadow-2xs group active:scale-95"
+            title="Buscar no Kaxxa (⌘K)"
           >
-            <LogOut size={14} strokeWidth={1.75} className="text-rose-600 dark:text-rose-400 shrink-0 group-hover:-translate-x-0.5 transition-transform" />
-            {!isSidebarCollapsed && <span>Sair da Conta</span>}
+            <Search size={13.5} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+            <span className="text-xs font-light hidden md:inline truncate text-slate-400 dark:text-zinc-500">
+              Buscar...
+            </span>
+            <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-200/60 dark:bg-white/10 text-slate-500 dark:text-zinc-400 border border-slate-300/60 dark:border-white/10">
+              ⌘K
+            </kbd>
           </button>
-        </div>
-      </aside>
 
-      {/* Área Principal */}
-      <div className="flex-1 flex flex-col min-h-0 relative overflow-x-hidden overflow-y-hidden">
-        
-        {/* Topbar Flutuante no Formato Luxury Frosted Glass Capsule */}
-        <header className="my-2 sm:my-3 mr-2 sm:mr-3 ml-2 sm:ml-2.5 h-14 px-3 sm:px-5 rounded-[22px] bg-white/85 dark:bg-[#07090E]/85 backdrop-blur-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.45)] flex items-center justify-between z-0 flex-shrink-0">
-          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-            <button 
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors shrink-0"
-            >
-              <Menu size={18} strokeWidth={1.75} />
-            </button>
-            <div className="flex items-center gap-1.5 text-xs truncate">
-              <span className="text-slate-400 dark:text-zinc-500 font-light hidden sm:inline">Kaxxa</span>
-              <ChevronRight size={11} className="text-slate-300 dark:text-zinc-600 hidden sm:inline" />
-              <span className="text-slate-900 dark:text-white font-normal truncate max-w-[110px] sm:max-w-none">{pageTitle}</span>
-            </div>
-          </div>
+          {/* Alternar Modo Noturno / Claro */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="h-8 w-8 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all shadow-2xs active:scale-95 shrink-0"
+            title={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
+            aria-label={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
+          >
+            {theme === 'dark' ? (
+              <Sun size={14} strokeWidth={1.75} className="text-amber-400 hover:rotate-45 transition-transform" />
+            ) : (
+              <Moon size={14} strokeWidth={1.75} className="text-slate-600 hover:-rotate-12 transition-transform" />
+            )}
+          </button>
 
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {/* Campo de Busca Rápida (Abre Command Palette) */}
-            <div 
-              onClick={() => setIsCommandPaletteOpen(true)}
-              className="hidden md:flex items-center gap-2 bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 rounded-xl px-3 py-1.5 transition-all cursor-pointer group"
-              title="Buscar no Kaxxa"
-            >
-              <Search size={13} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500 group-hover:text-slate-900 dark:group-hover:text-white transition-colors" />
-              <span className="text-xs text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-300 w-36 font-sans select-none truncate font-light">
-                Buscar no Kaxxa...
-              </span>
-            </div>
+          {/* Modo Privacidade (Ocultar Valores) */}
+          <button 
+            type="button"
+            onClick={togglePrivacy}
+            className={`h-8 w-8 rounded-xl border flex items-center justify-center transition-all shadow-2xs active:scale-95 shrink-0 ${
+              isConcealed 
+                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]' 
+                : 'bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white border-slate-200/80 dark:border-white/[0.08]'
+            }`}
+            title={isConcealed ? "Revelar valores monetários" : "Ocultar valores monetários (Modo Privacidade)"}
+            aria-label={isConcealed ? "Revelar valores monetários" : "Ocultar valores monetários (Modo Privacidade)"}
+          >
+            {isConcealed ? <EyeOff size={14} strokeWidth={1.75} className="text-amber-600 dark:text-amber-400" /> : <Eye size={14} strokeWidth={1.75} className="text-slate-600 dark:text-zinc-300" />}
+          </button>
 
-            {/* Ícone de Busca em Telas Menores */}
-            <button
-              onClick={() => setIsCommandPaletteOpen(true)}
-              className="md:hidden h-8 w-8 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
-              title="Buscar"
-            >
-              <Search size={14} strokeWidth={1.75} />
-            </button>
-            
-            {/* Botão de Alternância de Modo Noturno / Claro */}
+          {/* Cápsula de Perfil & Menu do Usuário */}
+          <div className="relative">
             <button
               type="button"
-              onClick={toggleTheme}
-              className="h-8 w-8 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0"
-              title={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
-              aria-label={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
+              onClick={() => { setIsUserMenuOpen(!isUserMenuOpen); setIsSettingsMenuOpen(false); }}
+              className="flex items-center gap-1.5 sm:gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/[0.05] transition-all border border-transparent hover:border-slate-200/80 dark:hover:border-white/[0.08] active:scale-95"
+              title="Menu do Usuário"
             >
-              {theme === 'dark' ? (
-                <Sun size={14} strokeWidth={1.75} className="text-amber-400" />
-              ) : (
-                <Moon size={14} strokeWidth={1.75} className="text-slate-500" />
-              )}
-            </button>
-
-            {/* Botão de Modo Privacidade (Apenas Ícone do Olho) */}
-            <button 
-              type="button"
-              onClick={togglePrivacy}
-              className={`h-8 w-8 rounded-xl border flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0 ${
-                isConcealed 
-                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/80' 
-                  : 'bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white border-slate-200/80 dark:border-white/[0.08]'
-              }`}
-              title={isConcealed ? "Revelar valores monetários" : "Ocultar valores monetários (Modo Privacidade)"}
-              aria-label={isConcealed ? "Revelar valores monetários" : "Ocultar valores monetários (Modo Privacidade)"}
-            >
-              {isConcealed ? <EyeOff size={14} strokeWidth={1.75} className="text-amber-600 dark:text-amber-400" /> : <Eye size={14} strokeWidth={1.75} className="text-slate-600 dark:text-zinc-300" />}
-            </button>
-
-            {/* Perfil no Topbar */}
-            <Link 
-              href="/dashboard/minha-conta"
-              className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-xl hover:bg-slate-100/70 dark:hover:bg-white/[0.05] transition-colors border border-transparent hover:border-slate-200/80 dark:hover:border-white/[0.08]"
-              title="Minha Conta"
-            >
-              <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 dark:bg-white text-white dark:text-slate-950 flex items-center justify-center text-[10px] font-semibold shadow-2xs border border-slate-200/80 dark:border-white/10 shrink-0">
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-[#002288] to-[#0055FF] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs shrink-0 border border-white/20">
                 {userInfo.avatar ? (
                   <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -566,34 +522,292 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
               </div>
               <div className="flex flex-col text-left hidden sm:flex min-w-0">
-                <span className="text-xs font-normal text-slate-900 dark:text-white max-w-[110px] truncate leading-tight">{userInfo.name}</span>
-                <span className={`text-[9px] font-medium tracking-wide leading-none mt-0.5 uppercase ${
-                  subInfo.isRecurringPro ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                <span className="text-xs font-normal text-slate-900 dark:text-white max-w-[100px] truncate leading-tight">{userInfo.name}</span>
+                <span className={`text-[8.5px] font-semibold tracking-wide leading-none mt-0.5 uppercase ${
+                  subInfo.isRecurringPro ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'
                 }`}>
-                  {subInfo.isRecurringPro 
-                    ? 'PRO' 
-                    : getTrialRemainingText(subInfo.periodEnd).text
-                  }
+                  {subInfo.isRecurringPro ? 'PRO' : getTrialRemainingText(subInfo.periodEnd).text}
                 </span>
               </div>
-              <ChevronRight size={11} className="text-slate-400 dark:text-zinc-500 hidden sm:block shrink-0 ml-0.5" />
-            </Link>
+              <ChevronRight size={11} className={`text-slate-400 dark:text-zinc-500 hidden sm:block shrink-0 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-90' : ''}`} />
+            </button>
+
+            {/* Dropdown do Usuário */}
+            {isUserMenuOpen && (
+              <div 
+                className="absolute top-full right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-[#0D111A]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.1] shadow-2xl p-2 z-50 animate-luxury-fade"
+                onMouseLeave={() => setIsUserMenuOpen(false)}
+              >
+                <div className="px-2.5 py-2 border-b border-slate-100 dark:border-white/[0.06] mb-1">
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{userInfo.name}</p>
+                  <p className="text-[10px] text-slate-400 dark:text-zinc-400 truncate">{userInfo.email}</p>
+                  <div className="mt-1.5">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                      {subInfo.isRecurringPro ? 'Plano Pro' : 'Período de Testes'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <Link
+                    href="/dashboard/minha-conta"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] transition-all"
+                  >
+                    <UserCircle2 size={14} className="text-slate-400 dark:text-zinc-500" />
+                    <span>Minha Conta</span>
+                  </Link>
+
+                  <Link
+                    href="/dashboard/configuracoes"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] transition-all"
+                  >
+                    <Settings size={14} className="text-slate-400 dark:text-zinc-500" />
+                    <span>Preferências</span>
+                  </Link>
+
+                  <div className="my-1 border-t border-slate-100 dark:border-white/[0.06]" />
+
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      await performGlobalSignOut();
+                      router.push('/login');
+                    }}
+                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all w-full text-left"
+                  >
+                    <LogOut size={14} className="text-rose-600 dark:text-rose-400" />
+                    <span>Sair da Conta</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </header>
 
-        {/* Conteúdo com Scroll Próprio */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative px-2.5 sm:px-5 pb-6 z-0">
+          {/* Botão Hambúrguer Mobile */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden p-1.5 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors shrink-0"
+            title="Abrir Menu Completo"
+            aria-label="Menu"
+          >
+            <Menu size={18} strokeWidth={1.75} />
+          </button>
+
+        </div>
+      </header>
+
+      {/* =========================================================================
+          2. CONTEÚDO PRINCIPAL (100% DA LARGURA DISPONÍVEL - NENHUM CARD APERTADO)
+      ========================================================================= */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative px-2 sm:px-4 md:px-5 pb-20 lg:pb-6 z-0">
+        <div className="max-w-[1720px] mx-auto w-full">
           {children}
-        </main>
+        </div>
+      </main>
 
-        {/* Modal de Busca Global (⌘K / Ctrl+K) */}
-        <CommandPalette 
-          isOpen={isCommandPaletteOpen}
-          onClose={() => setIsCommandPaletteOpen(false)}
-          userEmail={userInfo.email}
-        />
+      {/* =========================================================================
+          3. DOCK FLUTUANTE LUXURY MOBILE (APENAS DISPOSITIVOS MÓVEIS / TABLETS)
+      ========================================================================= */}
+      <nav className="lg:hidden fixed bottom-2.5 inset-x-2.5 z-40 h-14 rounded-2xl bg-white/90 dark:bg-[#07090E]/90 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.09] shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.8)] flex items-center justify-around px-2">
+        {primaryNavItems.slice(0, 4).map((item) => {
+          const active = isItemActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 ${
+                active 
+                  ? 'text-blue-600 dark:text-blue-400 scale-105 font-semibold' 
+                  : 'text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-200'
+              }`}
+            >
+              <item.icon size={17} strokeWidth={active ? 2.3 : 1.75} />
+              <span className="text-[9.5px] mt-0.5 tracking-tight">{item.label.split(' ')[0]}</span>
+            </Link>
+          );
+        })}
 
-      </div>
+        {/* Botão Mais no Dock Mobile */}
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(true)}
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 ${
+            mobileMenuOpen || isItemActive('/dashboard/terceiros') || isItemActive('/dashboard/dividas') || isSettingsActive
+              ? 'text-blue-600 dark:text-blue-400 font-semibold' 
+              : 'text-slate-400 dark:text-zinc-500'
+          }`}
+        >
+          <Menu size={17} strokeWidth={1.75} />
+          <span className="text-[9.5px] mt-0.5 tracking-tight">Mais</span>
+        </button>
+      </nav>
+
+      {/* =========================================================================
+          4. DRAWER / SLIDE-OVER LUXURY MOBILE
+      ========================================================================= */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden animate-luxury-fade">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Drawer Lateral Direito */}
+          <div className="absolute inset-y-0 right-0 max-w-[300px] w-full bg-white/95 dark:bg-[#0A0D14]/95 backdrop-blur-2xl border-l border-slate-200/90 dark:border-white/[0.08] shadow-2xl p-4 flex flex-col justify-between z-10 overflow-y-auto custom-scrollbar">
+            <div>
+              {/* Header do Drawer */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06] mb-3">
+                <KaxxaLogo size={22} />
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
+                  aria-label="Fechar menu"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Perfil no Drawer */}
+              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] mb-3">
+                <div className="w-9 h-9 rounded-lg overflow-hidden bg-gradient-to-br from-[#002288] to-[#0055FF] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  {userInfo.avatar ? (
+                    <img src={userInfo.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{userInfo.name.slice(0, 2).toUpperCase()}</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{userInfo.name}</p>
+                  <p className="text-[10px] text-blue-600 dark:text-blue-400 font-mono font-medium">
+                    {subInfo.isRecurringPro ? 'PRO ATIVO' : 'PERÍODO TRIAL'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Todos os Menus em Lista Elegante */}
+              <div className="flex flex-col gap-3">
+                <div>
+                  <h4 className="text-[9px] font-semibold tracking-wider text-slate-400 dark:text-zinc-500 uppercase px-2 mb-1">
+                    Finanças
+                  </h4>
+                  <div className="flex flex-col gap-0.5">
+                    {primaryNavItems.map(item => {
+                      const active = isItemActive(item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs transition-all ${
+                            active 
+                              ? 'bg-blue-600 text-white font-medium shadow-md shadow-blue-600/30' 
+                              : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+                          }`}
+                        >
+                          <item.icon size={15} />
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-[9px] font-semibold tracking-wider text-slate-400 dark:text-zinc-500 uppercase px-2 mb-1">
+                    Configurações
+                  </h4>
+                  <div className="flex flex-col gap-0.5">
+                    {settingsNavItems.map(sub => {
+                      const active = isItemActive(sub.href);
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs transition-all ${
+                            active 
+                              ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-medium' 
+                              : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+                          }`}
+                        >
+                          <sub.icon size={15} className="text-slate-400" />
+                          <span>{sub.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {adminNavItems.length > 0 && (
+                  <div>
+                    <h4 className="text-[9px] font-semibold tracking-wider text-slate-400 dark:text-zinc-500 uppercase px-2 mb-1">
+                      Administração
+                    </h4>
+                    <div className="flex flex-col gap-0.5">
+                      {adminNavItems.map(adm => {
+                        const active = isItemActive(adm.href);
+                        return (
+                          <Link
+                            key={adm.href}
+                            href={adm.href}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all ${
+                              active 
+                                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-medium' 
+                                : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <adm.icon size={15} className="text-blue-500" />
+                              <span>{adm.label}</span>
+                            </div>
+                            {adm.badge && (
+                              <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-blue-500/10 text-blue-600">
+                                {adm.badge}
+                              </span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Rodapé Mobile - Sair da Conta */}
+            <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] mt-4">
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  await performGlobalSignOut();
+                  router.push('/login');
+                }}
+                className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-900/40 text-xs font-semibold active:scale-98 transition-all"
+              >
+                <LogOut size={14} />
+                <span>Sair da Conta</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Busca Global (⌘K) */}
+      <CommandPalette 
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        userEmail={userInfo.email}
+      />
+
     </div>
   );
 }

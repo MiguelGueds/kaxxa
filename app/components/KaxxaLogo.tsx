@@ -13,13 +13,20 @@ export function KaxxaKLogo({
       style={{ width: size, height: size }}
       aria-label="Kaxxa Emblem"
     >
-      {/* Tema Claro: Emblema K Oficial Colorido */}
-      <img 
-        src="/logos/kaxxa-k-emblem.png" 
-        alt="Kaxxa" 
-        width={size} 
-        height={size}
-        className="w-full h-full object-contain block dark:hidden select-none pointer-events-none"
+      {/* Tema Claro: Emblema K com Degradê Sapphire Oficial */}
+      <span 
+        className="block dark:hidden w-full h-full select-none pointer-events-none"
+        style={{
+          WebkitMaskImage: "url('/logos/kaxxa-k-emblem-white.png')",
+          WebkitMaskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskImage: "url('/logos/kaxxa-k-emblem-white.png')",
+          maskSize: "contain",
+          maskRepeat: "no-repeat",
+          maskPosition: "center",
+          background: "linear-gradient(135deg, #002288 0%, #0047FF 52%, #0088FF 100%)",
+        }}
       />
       {/* Tema Escuro: Emblema K Branco Puro */}
       <img 
@@ -44,7 +51,6 @@ export function KaxxaWordmark({
   fillColor?: string;
   accentColor?: string;
 }) {
-  // Proporção de aspecto 1024x341 ≈ 3:1
   const width = Math.round(size * 3.0);
 
   return (
@@ -53,12 +59,20 @@ export function KaxxaWordmark({
       style={{ height: size, width }}
       aria-label="Kaxxa"
     >
-      {/* Tema Claro: Logo Oficial Colorida */}
-      <img 
-        src="/logos/kaxxa-logo.png" 
-        alt="Kaxxa" 
-        style={{ height: size, width: 'auto' }}
-        className="object-contain block dark:hidden select-none pointer-events-none max-h-full"
+      {/* Tema Claro: Logo Oficial em Azul com Degradê Tech Luxury */}
+      <span 
+        className="block dark:hidden w-full h-full select-none pointer-events-none"
+        style={{
+          WebkitMaskImage: "url('/logos/kaxxa-logo-white.png')",
+          WebkitMaskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          WebkitMaskPosition: "center left",
+          maskImage: "url('/logos/kaxxa-logo-white.png')",
+          maskSize: "contain",
+          maskRepeat: "no-repeat",
+          maskPosition: "center left",
+          background: "linear-gradient(135deg, #002288 0%, #0047FF 52%, #0088FF 100%)",
+        }}
       />
       {/* Tema Escuro: Logo Oficial Toda Branca */}
       <img 
@@ -80,7 +94,6 @@ export function KaxxaLogo({
   className?: string; 
   textColor?: string; 
 }) {
-  // O logo completo oficial já engloba o símbolo 'K' e o nome 'KAXXA'
   const width = Math.round(size * 3.0);
 
   return (
@@ -89,12 +102,20 @@ export function KaxxaLogo({
       style={{ height: size, width }}
       aria-label="Kaxxa"
     >
-      {/* Tema Claro: Logo Oficial Colorida */}
-      <img 
-        src="/logos/kaxxa-logo.png" 
-        alt="Kaxxa" 
-        style={{ height: size, width: 'auto' }}
-        className="object-contain block dark:hidden select-none pointer-events-none max-h-full"
+      {/* Tema Claro: Logo Oficial em Azul com Degradê Tech Luxury */}
+      <span 
+        className="block dark:hidden w-full h-full select-none pointer-events-none"
+        style={{
+          WebkitMaskImage: "url('/logos/kaxxa-logo-white.png')",
+          WebkitMaskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          WebkitMaskPosition: "center left",
+          maskImage: "url('/logos/kaxxa-logo-white.png')",
+          maskSize: "contain",
+          maskRepeat: "no-repeat",
+          maskPosition: "center left",
+          background: "linear-gradient(135deg, #002288 0%, #0047FF 52%, #0088FF 100%)",
+        }}
       />
       {/* Tema Escuro: Logo Oficial 100% Branca */}
       <img 

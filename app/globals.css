@@ -393,27 +393,27 @@ html, body {
 /* Floating Luxury Cards with Satin Degradê and Micro-Highlights */
 .card-luxury-float {
   position: relative;
-  background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFD 100%);
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 2px 6px -1px rgba(0, 0, 0, 0.02), inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  background: linear-gradient(175deg, #FFFFFF 0%, #F5F8FE 52%, #EDF3FC 100%);
+  border: 1px solid rgba(210, 224, 246, 0.85);
+  box-shadow: 0 4px 20px -2px rgba(0, 49, 184, 0.04), 0 2px 8px -1px rgba(0, 0, 0, 0.02), inset 0 1px 0 0 rgba(255, 255, 255, 1), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
 }
 
 .card-luxury-float:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 1);
-  border-color: rgba(203, 213, 225, 0.9);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px -4px rgba(0, 49, 184, 0.09), 0 4px 14px -2px rgba(0, 0, 0, 0.03), inset 0 1px 0 0 #ffffff;
+  border-color: rgba(0, 71, 255, 0.35);
 }
 
 html.dark .card-luxury-float {
-  background: linear-gradient(180deg, #0E121B 0%, #090C13 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  background: linear-gradient(175deg, #111522 0%, #0A0D15 52%, #05080F 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 html.dark .card-luxury-float:hover {
-  border-color: rgba(0, 71, 255, 0.35);
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65), 0 0 25px rgba(0, 71, 255, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 71, 255, 0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 30px rgba(0, 71, 255, 0.16), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
 }
 
 /* Luxury Sapphire Navigation Rail Glow */
@@ -436,16 +436,42 @@ html.dark .card-luxury-float:hover {
 .bg-luxury-atmosphere {
   background-color: #F8F9FC;
   background-image: 
-    radial-gradient(ellipse 70% 40% at 50% -10%, rgba(0, 71, 255, 0.038) 0%, transparent 70%),
-    radial-gradient(circle 500px at 95% 20%, rgba(0, 49, 184, 0.02) 0%, transparent 60%);
+    radial-gradient(ellipse 70% 40% at 50% -10%, rgba(0, 71, 255, 0.045) 0%, transparent 70%),
+    radial-gradient(circle 500px at 95% 20%, rgba(0, 49, 184, 0.025) 0%, transparent 60%);
 }
 
 html.dark .bg-luxury-atmosphere {
   background-color: #05070B;
   background-image: 
-    radial-gradient(ellipse 70% 40% at 50% -10%, rgba(0, 71, 255, 0.12) 0%, transparent 70%),
-    radial-gradient(circle 600px at 100% 10%, rgba(0, 49, 184, 0.08) 0%, transparent 60%),
-    radial-gradient(circle 400px at 0% 90%, rgba(0, 71, 255, 0.05) 0%, transparent 60%);
+    radial-gradient(ellipse 70% 40% at 50% -10%, rgba(0, 71, 255, 0.14) 0%, transparent 70%),
+    radial-gradient(circle 600px at 100% 10%, rgba(0, 49, 184, 0.09) 0%, transparent 60%),
+    radial-gradient(circle 400px at 0% 90%, rgba(0, 71, 255, 0.06) 0%, transparent 60%);
+}
+
+/* Luxury Pill Tabs Micro-Glow */
+.nav-pill-luxury-active {
+  background: linear-gradient(135deg, #002288 0%, #0047FF 55%, #0077FF 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 71, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.nav-pill-luxury-inactive {
+  color: #64748B;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-pill-luxury-inactive:hover {
+  color: #0F172A;
+  background: rgba(0, 71, 255, 0.06);
+}
+
+html.dark .nav-pill-luxury-inactive {
+  color: #94A3B8;
+}
+
+html.dark .nav-pill-luxury-inactive:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
 }
 
 
