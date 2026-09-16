@@ -248,7 +248,8 @@ export const investmentsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const generatedId = generateUuid();
+    // Prefixo permite identificar registros locais pendentes e sincronizá-los após um reload.
+    const generatedId = `inv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const newItem: DbInvestment = {
       ...inv,
       id: generatedId,

@@ -211,7 +211,8 @@ export const cardsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
-    const generatedId = generateUuid();
+    // Prefixo permite identificar registros locais pendentes e sincronizá-los após um reload.
+    const generatedId = `crd-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const newItem: DbCard = {
       ...card,
       id: generatedId,
@@ -224,6 +225,12 @@ export const cardsService = {
       id: generatedId,
       user_id: user.id,
       name: card.name,
+      bank: card.bank || null,
+      brand: card.brand || null,
+      last_digits: card.last_digits || null,
+      credit_limit: Number(card.credit_limit || 0),
+      limit_used: 0,
+      color: card.color || null,
       closing_day: Number(card.closing_day || 1),
       due_day: Number(card.due_day || 10),
     };
@@ -401,7 +408,30 @@ export const cardsService = {
       } as DbCardExpense;
     }
 
-    return null;
+    const fallback = await transactionsService.createTransaction({
+      description: expense.description,
+      amount: Number(expense.amount || 0),
+      date: expense.date,
+      type: 'EXPENSE',
+      credit_card_id: expense.credit_card_id,
+      category_name: expense.category_name,
+      third_party_name: expense.third_party_name,
+      installments: expense.installments || 1,
+      current_installment: expense.current_installment || 1,
+      is_paid: true,
+    });
+
+    return fallback ? {
+      id: fallback.id,
+      credit_card_id: expense.credit_card_id,
+      description: fallback.description,
+      amount: Number(fallback.amount || 0),
+      date: fallback.date,
+      category_name: fallback.category_name,
+      installments: fallback.installments,
+      current_installment: fallback.current_installment,
+      third_party_name: fallback.third_party_name,
+    } : null;
   },
 
   async createCardExpenseBatch(expenses: Array<{
@@ -440,7 +470,30 @@ export const cardsService = {
 
     if (error) {
       console.error('Erro ao registrar lote de despesas no cartão:', error);
-      throw error;
+      const fallback = await Promise.all(expenses.map(expense => transactionsService.createTransaction({
+        description: expense.description,
+        amount: Number(expense.amount || 0),
+        date: expense.date,
+        type: 'EXPENSE',
+        credit_card_id: expense.credit_card_id,
+        category_name: expense.category_name,
+        third_party_name: expense.third_party_name,
+        installments: expense.installments || 1,
+        current_installment: expense.current_installment || 1,
+        is_paid: true,
+      })));
+
+      return fallback.filter(Boolean).map(item => ({
+        id: item!.id,
+        credit_card_id: item!.credit_card_id!,
+        description: item!.description,
+        amount: Number(item!.amount || 0),
+        date: item!.date,
+        category_name: item!.category_name,
+        installments: item!.installments,
+        current_installment: item!.current_installment,
+        third_party_name: item!.third_party_name,
+      }));
     }
 
     return (data || []).map(d => ({
