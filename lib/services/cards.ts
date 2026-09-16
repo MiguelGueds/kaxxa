@@ -162,6 +162,12 @@ export const cardsService = {
                 id: newUuid,
                 user_id: user.id,
                 name: cleanItem.name,
+                bank: cleanItem.bank || null,
+                brand: cleanItem.brand || null,
+                last_digits: cleanItem.last_digits || null,
+                credit_limit: Number(cleanItem.credit_limit || 0),
+                limit_used: Number(cleanItem.limit_used || 0),
+                color: cleanItem.color || null,
                 closing_day: Number(cleanItem.closing_day || 1),
                 due_day: Number(cleanItem.due_day || 10),
               };

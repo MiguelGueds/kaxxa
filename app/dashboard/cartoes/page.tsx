@@ -56,6 +56,14 @@ type CategoryOption = {
   type: 'INCOME' | 'EXPENSE';
 };
 
+const FALLBACK_CATEGORY_OPTIONS: CategoryOption[] = CATEGORIES_FLAT_LIST.map((name, index) => ({
+  id: `fallback-expense-${index}`,
+  name,
+  label: name,
+  parentId: null,
+  type: 'EXPENSE'
+}));
+
 function autoDetectCardCategory(text: string): string | null {
   const q = text.toLowerCase().trim();
   if (!q) return null;
@@ -219,7 +227,7 @@ export default function MinhasFaturasPage() {
 
   // Form Novo Cartão
   const [newCardName, setNewCardName] = useState('');
-  const [newCardBank, setNewCardBank] = useState('Nubank');
+  const [newCardBank, setNewCardBank] = useState('');
   const [newCardBrand, setNewCardBrand] = useState('Mastercard Black');
   const [newCardLastDigits, setNewCardLastDigits] = useState('');
   const [newCardLimit, setNewCardLimit] = useState('');
@@ -247,7 +255,7 @@ export default function MinhasFaturasPage() {
     { id: 'imp-5', checked: true, date: '2026-07-08', description: 'Posto Ipiranga Gasolina', amount: 220.00, category: 'Transporte e Combustível', thirdPartyName: 'Titular (Você)' }
   ]);
 
-  const [categoriesList, setCategoriesList] = useState<CategoryOption[]>([]);
+  const [categoriesList, setCategoriesList] = useState<CategoryOption[]>(FALLBACK_CATEGORY_OPTIONS);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -272,7 +280,7 @@ export default function MinhasFaturasPage() {
           }
         }
 
-        if (dbCategories) {
+        if (dbCategories && dbCategories.length > 0) {
           const categoryMap = new Map(dbCategories.map(category => [category.id, category]));
           const expenseCategories = dbCategories
             .filter(category => category.type === 'EXPENSE')
@@ -291,6 +299,10 @@ export default function MinhasFaturasPage() {
             setFormCategory(current => expenseCategories.some(category => category.name === current)
               ? current
               : expenseCategories[0].name);
+            setExtractedImports(current => current.map(item => expenseCategories.some(category => category.name === item.category)
+              ? item
+              : { ...item, category: expenseCategories[0].name }
+            ));
           }
         }
 
@@ -936,14 +948,16 @@ export default function MinhasFaturasPage() {
   // Salvar Novo Cartão
   const handleSaveNewCard = async () => {
     const parsedLimit = parseFloat(newCardLimit.replace(',', '.')) || 5000;
+    const lastDigits = newCardLastDigits.replace(/\D/g, '').slice(-4);
     if (!newCardName.trim()) return;
+    if (lastDigits.length !== 4) return;
 
     try {
       const created = await cardsService.createCard({
         name: newCardName.trim(),
-        bank: '',
-        brand: '',
-        last_digits: '0000',
+        bank: newCardBank.trim() || newCardName.trim(),
+        brand: newCardBrand.trim(),
+        last_digits: lastDigits,
         credit_limit: parsedLimit,
         closing_day: parseInt(newCardClosingDay, 10) || 15,
         due_day: parseInt(newCardDueDay, 10) || 22,
@@ -964,9 +978,9 @@ export default function MinhasFaturasPage() {
       } : {
         id: `card-${Date.now()}`,
         name: newCardName.trim(),
-        bank: '',
-        brand: '',
-        lastDigits: '0000',
+        bank: newCardBank.trim() || newCardName.trim(),
+        brand: newCardBrand.trim(),
+        lastDigits,
         limitTotal: parsedLimit,
         limitUsed: 0,
         closingDay: parseInt(newCardClosingDay, 10) || 15,
@@ -982,7 +996,7 @@ export default function MinhasFaturasPage() {
         name: newCardName.trim(),
         bank: '',
         brand: '',
-        lastDigits: '0000',
+        lastDigits,
         limitTotal: parsedLimit,
         limitUsed: 0,
         closingDay: parseInt(newCardClosingDay, 10) || 15,
@@ -994,6 +1008,7 @@ export default function MinhasFaturasPage() {
 
     setIsNewCardModalOpen(false);
     setNewCardName('');
+    setNewCardBank('');
     setNewCardLastDigits('');
     setNewCardLimit('');
   };
@@ -1651,6 +1666,32 @@ export default function MinhasFaturasPage() {
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Banco / Emissor</label>
+                    <input
+                      type="text"
+                      value={newCardBank}
+                      onChange={(e) => setNewCardBank(e.target.value)}
+                      placeholder="Ex: Nubank, Itaú..."
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Últimos 4 dígitos</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={newCardLastDigits}
+                      onChange={(e) => setNewCardLastDigits(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="1234"
+                      className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-mono font-bold"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[10.5px] text-[#64748B] mb-1 font-bold">Limite Total (R$)</label>
                   <input 
@@ -1699,7 +1740,7 @@ export default function MinhasFaturasPage() {
                 </button>
                 <button 
                   onClick={handleSaveNewCard}
-                  disabled={!newCardName.trim()}
+                  disabled={!newCardName.trim() || newCardLastDigits.replace(/\D/g, '').length !== 4}
                   className="flex-1 px-3 py-1.5 rounded-xl bg-[#1A44C8] text-white font-semibold text-xs hover:bg-[#1538A5] transition-all shadow-md active:scale-95 disabled:opacity-50"
                 >
                   Salvar Cartão

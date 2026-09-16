@@ -72,6 +72,9 @@ const toCategoryOptions = (names: string[], type: 'EXPENSE' | 'INCOME'): Categor
   parentId: null
 }));
 
+const getCategoryOption = (categories: CategoryOption[], name: string) =>
+  categories.find(category => category.name === name);
+
 function autoDetectTransactionCategory(text: string, type: 'EXPENSE' | 'INCOME'): string | null {
   const q = text.toLowerCase().trim();
   if (!q) return null;
@@ -162,6 +165,10 @@ export default function SaldoExtratoPage() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedBank, setSelectedBank] = useState('Nubank');
   const [selectedCategory, setSelectedCategory] = useState(EXPENSE_CATEGORIES[0]);
+  const [selectedParentCategoryId, setSelectedParentCategoryId] = useState(
+    toCategoryOptions(EXPENSE_CATEGORIES, 'EXPENSE')[0]?.id || ''
+  );
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('');
   const [isThirdParty, setIsThirdParty] = useState(false);
   const [thirdPartyName, setThirdPartyName] = useState(AVAILABLE_RESPONSIBLES[0]);
 
@@ -229,6 +236,13 @@ export default function SaldoExtratoPage() {
   const [expenseCategories, setExpenseCategories] = useState<CategoryOption[]>(toCategoryOptions(EXPENSE_CATEGORIES, 'EXPENSE'));
   const [incomeCategories, setIncomeCategories] = useState<CategoryOption[]>(toCategoryOptions(INCOME_CATEGORIES, 'INCOME'));
 
+  const selectCategory = (name: string, categories: CategoryOption[]) => {
+    const option = getCategoryOption(categories, name);
+    setSelectedCategory(name);
+    setSelectedParentCategoryId(option?.parentId || option?.id || '');
+    setSelectedSubcategoryId(option?.parentId ? option.id : '');
+  };
+
   // Carregar dados reais do Supabase
   useEffect(() => {
     async function loadData() {
@@ -262,6 +276,14 @@ export default function SaldoExtratoPage() {
               ? current
               : availableCategories[0]?.name || '';
           });
+          const availableCategories = transactionType === 'EXPENSE' ? configuredExpenses : configuredIncomes;
+          const currentCategory = availableCategories.some(category => category.name === selectedCategory)
+            ? selectedCategory
+            : availableCategories[0]?.name || '';
+          const currentOption = getCategoryOption(availableCategories, currentCategory);
+          setSelectedCategory(currentCategory);
+          setSelectedParentCategoryId(currentOption?.parentId || currentOption?.id || '');
+          setSelectedSubcategoryId(currentOption?.parentId ? currentOption.id : '');
         }
 
         if (dbAccounts && dbAccounts.length > 0) {
@@ -331,7 +353,7 @@ export default function SaldoExtratoPage() {
     setAmount('');
     setDate(new Date().toISOString().split('T')[0]);
     setSelectedBank('Nubank');
-    setSelectedCategory(expenseCategories[0]?.name || '');
+    selectCategory(expenseCategories[0]?.name || '', expenseCategories);
     setIsThirdParty(false);
     setThirdPartyName(AVAILABLE_RESPONSIBLES[0]);
     setIsModalOpen(true);
@@ -345,7 +367,7 @@ export default function SaldoExtratoPage() {
     setAmount(Math.abs(tx.amount).toString());
     setDate(tx.rawDate || new Date().toISOString().split('T')[0]);
     setSelectedBank(tx.bank);
-    setSelectedCategory(tx.category);
+    selectCategory(tx.category, tx.type === 'EXPENSE' ? expenseCategories : incomeCategories);
     setIsThirdParty(!!tx.isThirdParty);
     setThirdPartyName(tx.thirdPartyName || AVAILABLE_RESPONSIBLES[0]);
     setIsModalOpen(true);
@@ -473,7 +495,8 @@ export default function SaldoExtratoPage() {
     setAmount('');
     setIsThirdParty(false);
     setThirdPartyName(AVAILABLE_RESPONSIBLES[0]);
-    setSelectedCategory(transactionType === 'INCOME' ? incomeCategories[0]?.name || '' : expenseCategories[0]?.name || '');
+    const availableCategories = transactionType === 'INCOME' ? incomeCategories : expenseCategories;
+    selectCategory(availableCategories[0]?.name || '', availableCategories);
   };
 
   // Transferência entre Contas
@@ -1110,7 +1133,7 @@ export default function SaldoExtratoPage() {
                     type="button"
                     onClick={() => {
                       setTransactionType('EXPENSE');
-                      setSelectedCategory(expenseCategories[0]?.name || '');
+                      selectCategory(expenseCategories[0]?.name || '', expenseCategories);
                     }}
                     className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                       transactionType === 'EXPENSE' 
@@ -1126,7 +1149,7 @@ export default function SaldoExtratoPage() {
                     type="button"
                     onClick={() => {
                       setTransactionType('INCOME');
-                      setSelectedCategory(incomeCategories[0]?.name || '');
+                      selectCategory(incomeCategories[0]?.name || '', incomeCategories);
                       setIsThirdParty(false);
                     }}
                     className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
@@ -1153,7 +1176,7 @@ export default function SaldoExtratoPage() {
                     const detected = autoDetectTransactionCategory(val, transactionType);
                     const availableCategories = transactionType === 'EXPENSE' ? expenseCategories : incomeCategories;
                     if (detected && availableCategories.some(category => category.name === detected)) {
-                      setSelectedCategory(detected);
+                      selectCategory(detected, availableCategories);
                     }
                   }}
                   placeholder="Ex: Supermercado, Uber, iFood, Salário..."
@@ -1220,16 +1243,42 @@ export default function SaldoExtratoPage() {
                 </div>
               </div>
 
-              {/* Categoria */}
+              {/* Categoria e Subcategoria */}
               <div>
                 <label className="block text-[11px] text-[#64748B] mb-1 font-bold">Categoria</label>
                 <select 
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  value={selectedParentCategoryId}
+                  onChange={(e) => {
+                    const availableCategories = transactionType === 'EXPENSE' ? expenseCategories : incomeCategories;
+                    const parent = availableCategories.find(category => category.id === e.target.value);
+                    if (parent) selectCategory(parent.name, availableCategories);
+                  }}
                   className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
                 >
-                  {(transactionType === 'EXPENSE' ? expenseCategories : incomeCategories).map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.label}</option>
+                  {(transactionType === 'EXPENSE' ? expenseCategories : incomeCategories)
+                    .filter(category => !category.parentId)
+                    .map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+
+                <label className="block text-[11px] text-[#64748B] mt-2 mb-1 font-bold">Subcategoria</label>
+                <select
+                  value={selectedSubcategoryId}
+                  onChange={(e) => {
+                    const availableCategories = transactionType === 'EXPENSE' ? expenseCategories : incomeCategories;
+                    const subcategory = availableCategories.find(category => category.id === e.target.value);
+                    if (subcategory) setSelectedCategory(subcategory.name);
+                    setSelectedSubcategoryId(e.target.value);
+                  }}
+                  disabled={!selectedParentCategoryId || !(transactionType === 'EXPENSE' ? expenseCategories : incomeCategories).some(category => category.parentId === selectedParentCategoryId)}
+                  className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <option value="">Sem subcategoria</option>
+                  {(transactionType === 'EXPENSE' ? expenseCategories : incomeCategories)
+                    .filter(category => category.parentId === selectedParentCategoryId)
+                    .map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
               </div>
