@@ -350,7 +350,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Centro: Deck de Navegação Segmentado Flutuante (Desktop & Notebook) */}
         <nav className="hidden lg:flex items-stretch flex-col gap-1 mt-8 bg-transparent p-0 border-0 shadow-none overflow-visible no-scrollbar min-w-0">
-          {primaryNavItems.slice(0, 4).map((item) => {
+          {primaryNavItems.map((item) => {
             const active = isItemActive(item.href);
             return (
               <Link 
@@ -480,6 +480,34 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
               </div>
             )}
+          </div>
+          <div className="mt-7 pt-5 border-t border-white/[0.1] flex flex-col gap-1">
+            <span className="px-3.5 text-[9px] uppercase tracking-[0.22em] text-blue-200/45 mb-1">Organização</span>
+            {settingsNavItems.map(item => {
+              const active = isItemActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs whitespace-nowrap transition-all duration-300 ${
+                    active ? 'nav-pill-luxury-active font-medium' : 'nav-pill-luxury-inactive font-normal'
+                  }`}
+                >
+                  <item.icon size={14} strokeWidth={1.7} className="shrink-0" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+            {adminNavItems.map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs text-blue-100/60 hover:text-white hover:bg-white/[0.08] transition-all"
+              >
+                <item.icon size={14} strokeWidth={1.7} className="shrink-0" />
+                <span>{item.label}</span>
+              </Link>
+            ))}
           </div>
         </nav>
 

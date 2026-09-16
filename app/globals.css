@@ -549,6 +549,10 @@ html.dark .bg-luxury-atmosphere {
   font-weight: 500;
 }
 
+.dashboard-content .font-semibold {
+  font-weight: 500;
+}
+
 .dashboard-content .font-extrabold,
 .dashboard-content .font-black {
   font-weight: 600;
@@ -569,6 +573,10 @@ html.dark .bg-luxury-atmosphere {
 
 .dashboard-sidebar nav > * {
   animation: sidebarNavReveal 0.5s both;
+}
+
+.dashboard-sidebar nav > .relative {
+  display: none;
 }
 
 .dashboard-sidebar nav > *:nth-child(2) { animation-delay: 0.04s; }
