@@ -264,6 +264,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     { href: '/dashboard/terceiros', icon: Users, label: 'Terceiros' },
     { href: '/dashboard/dividas', icon: Landmark, label: 'Dívidas' },
   ];
+  const secondaryNavItems = primaryNavItems.slice(4);
 
   // Configurações & Gestão
   const settingsNavItems = [
@@ -297,6 +298,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   const isSettingsActive = pathname === '/dashboard/configuracoes' || pathname?.startsWith('/dashboard/admin');
+  const isMoreActive = isSettingsActive || secondaryNavItems.some(item => isItemActive(item.href));
 
   const getPageInfo = () => {
     if (pathname === '/dashboard') return { title: 'Visão Geral', icon: LayoutDashboard };
@@ -352,7 +354,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Centro: Deck de Navegação Segmentado Flutuante (Desktop & Notebook) */}
         <nav className="hidden lg:flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/70 dark:border-white/[0.07] shadow-inner overflow-x-auto no-scrollbar min-w-0">
-          {primaryNavItems.map((item) => {
+          {primaryNavItems.slice(0, 4).map((item) => {
             const active = isItemActive(item.href);
             return (
               <Link 
@@ -380,7 +382,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={() => { setIsSettingsMenuOpen(!isSettingsMenuOpen); setIsUserMenuOpen(false); }}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-200 select-none ${
-                isSettingsActive 
+                isMoreActive 
                   ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold border border-blue-500/30' 
                   : 'nav-pill-luxury-inactive font-medium'
               }`}
@@ -397,6 +399,30 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 className="absolute top-full right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-[#0D111A]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.1] shadow-2xl p-2 z-50 animate-luxury-fade"
                 onMouseLeave={() => setIsSettingsMenuOpen(false)}
               >
+                <div className="px-2 py-1 text-[9px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                  Outras áreas
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  {secondaryNavItems.map(item => {
+                    const active = isItemActive(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsSettingsMenuOpen(false)}
+                        className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs transition-all ${
+                          active
+                            ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-medium'
+                            : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <item.icon size={13.5} strokeWidth={1.75} className="text-slate-400 dark:text-zinc-500" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+                <div className="my-1.5 border-t border-slate-100 dark:border-white/[0.06]" />
                 <div className="px-2 py-1 text-[9px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
                   Configurações
                 </div>

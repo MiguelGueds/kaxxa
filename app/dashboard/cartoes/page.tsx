@@ -48,6 +48,14 @@ const CATEGORIES_FLAT_LIST = [
   'Compras Pessoais e Outros'
 ];
 
+type CategoryOption = {
+  id: string;
+  name: string;
+  label: string;
+  parentId: string | null;
+  type: 'INCOME' | 'EXPENSE';
+};
+
 function autoDetectCardCategory(text: string): string | null {
   const q = text.toLowerCase().trim();
   if (!q) return null;
@@ -202,9 +210,10 @@ export default function MinhasFaturasPage() {
   const [formDesc, setFormDesc] = useState('');
   const [formAmount, setFormAmount] = useState('');
   const [formDate, setFormDate] = useState('2026-07-10');
-  const [formCategory, setFormCategory] = useState(CATEGORIES_FLAT_LIST[0]);
+  const [formCategory, setFormCategory] = useState('');
   const [formIsInstallment, setFormIsInstallment] = useState(false);
   const [formInstallments, setFormInstallments] = useState('3');
+  const [formCurrentInstallment, setFormCurrentInstallment] = useState('1');
   const [formIsThirdParty, setFormIsThirdParty] = useState(false);
   const [formThirdPartyName, setFormThirdPartyName] = useState('');
 
@@ -238,7 +247,7 @@ export default function MinhasFaturasPage() {
     { id: 'imp-5', checked: true, date: '2026-07-08', description: 'Posto Ipiranga Gasolina', amount: 220.00, category: 'Transporte e Combustível', thirdPartyName: 'Titular (Você)' }
   ]);
 
-  const [categoriesList, setCategoriesList] = useState<string[]>(CATEGORIES_FLAT_LIST);
+  const [categoriesList, setCategoriesList] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -263,9 +272,26 @@ export default function MinhasFaturasPage() {
           }
         }
 
-        if (dbCategories && dbCategories.length > 0) {
-          const customCats = dbCategories.map(c => c.name);
-          setCategoriesList(Array.from(new Set([...customCats, ...CATEGORIES_FLAT_LIST])));
+        if (dbCategories) {
+          const categoryMap = new Map(dbCategories.map(category => [category.id, category]));
+          const expenseCategories = dbCategories
+            .filter(category => category.type === 'EXPENSE')
+            .sort((a, b) => Number(Boolean(a.parent_id)) - Number(Boolean(b.parent_id)) || a.name.localeCompare(b.name))
+            .map(category => ({
+              id: category.id,
+              name: category.name,
+              parentId: category.parent_id || null,
+              type: category.type,
+              label: category.parent_id && categoryMap.get(category.parent_id)
+                ? `${categoryMap.get(category.parent_id)!.name} / ${category.name}`
+                : category.name
+            }));
+          setCategoriesList(expenseCategories);
+          if (expenseCategories.length > 0) {
+            setFormCategory(current => expenseCategories.some(category => category.name === current)
+              ? current
+              : expenseCategories[0].name);
+          }
         }
 
         if (dbCards && dbCards.length > 0) {
@@ -752,9 +778,10 @@ export default function MinhasFaturasPage() {
     setFormDesc('');
     setFormAmount('');
     setFormDate(new Date().toISOString().split('T')[0]);
-    setFormCategory(CATEGORIES_FLAT_LIST[0]);
+    setFormCategory(categoriesList[0]?.name || '');
     setFormIsInstallment(false);
     setFormInstallments('3');
+    setFormCurrentInstallment('1');
     setFormIsThirdParty(false);
     setFormThirdPartyName('');
     setIsNewExpenseModalOpen(true);
@@ -770,6 +797,7 @@ export default function MinhasFaturasPage() {
     setFormCategory(exp.category);
     setFormIsInstallment(exp.isInstallment);
     setFormInstallments(exp.totalInstallments ? exp.totalInstallments.toString() : '1');
+    setFormCurrentInstallment(exp.currentInstallment ? exp.currentInstallment.toString() : '1');
     setFormIsThirdParty(!!exp.isThirdParty);
     setFormThirdPartyName(exp.thirdPartyName || '');
     setIsNewExpenseModalOpen(true);
@@ -778,10 +806,11 @@ export default function MinhasFaturasPage() {
   // Salvar Compra / Edição
   const handleSaveExpense = async () => {
     const parsedAmount = parseFloat(formAmount.replace(',', '.')) || 0;
-    if (!formDesc.trim() || parsedAmount <= 0) return;
+    if (!formDesc.trim() || parsedAmount <= 0 || !formCategory) return;
 
     const targetCard = cards.find(c => c.id === formCardId) || cards[0];
     const instCount = parseInt(formInstallments, 10) || 1;
+    const currentInstallment = Math.min(Math.max(parseInt(formCurrentInstallment, 10) || 1, 1), instCount);
 
     if (editingExpense) {
       try {
@@ -820,7 +849,7 @@ export default function MinhasFaturasPage() {
         const newItems: CardExpense[] = [];
         const instAmount = parsedAmount / instCount;
 
-        for (let i = 0; i < instCount; i++) {
+        for (let i = currentInstallment - 1; i < instCount; i++) {
           const d = new Date(baseDate);
           d.setMonth(d.getMonth() + i);
           const y = d.getFullYear();
@@ -1765,7 +1794,7 @@ export default function MinhasFaturasPage() {
                     className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1.5 px-2.5 text-xs text-[#181B22] focus:outline-none cursor-pointer font-medium"
                   >
                     {categoriesList.map(c => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c.id} value={c.name}>{c.label}</option>
                     ))}
                   </select>
                 </div>
@@ -1784,15 +1813,31 @@ export default function MinhasFaturasPage() {
 
                   {formIsInstallment && (
                     <div className="mt-2 pl-6 animate-fade-in-up">
-                      <label className="block text-[10px] text-[#64748B] mb-1 font-bold">Quantidade de Parcelas</label>
-                      <input 
-                        type="number"
-                        min="2"
-                        max="72"
-                        value={formInstallments}
-                        onChange={(e) => setFormInstallments(e.target.value)}
-                        className="w-24 bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1 px-2.5 text-xs text-[#181B22] font-bold focus:outline-none"
-                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-[#64748B] mb-1 font-bold">Parcela atual</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max={formInstallments || '72'}
+                            value={formCurrentInstallment}
+                            onChange={(e) => setFormCurrentInstallment(e.target.value)}
+                            className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1 px-2.5 text-xs text-[#181B22] font-bold focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-[#64748B] mb-1 font-bold">Total de parcelas</label>
+                          <input
+                            type="number"
+                            min="2"
+                            max="72"
+                            value={formInstallments}
+                            onChange={(e) => setFormInstallments(e.target.value)}
+                            className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-1 px-2.5 text-xs text-[#181B22] font-bold focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <p className="mt-1 text-[9px] text-[#94A3B8]">A parcela atual e as próximas serão lançadas nesta fatura e nas seguintes.</p>
                     </div>
                   )}
                 </div>
@@ -2102,7 +2147,7 @@ export default function MinhasFaturasPage() {
                                 className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-1 px-2 text-[10.5px] text-[#181B22] focus:outline-none cursor-pointer font-medium"
                               >
                                 {categoriesList.map(cat => (
-                                  <option key={cat} value={cat}>{cat}</option>
+                                  <option key={cat.id} value={cat.name}>{cat.label}</option>
                                 ))}
                               </select>
                             </div>
