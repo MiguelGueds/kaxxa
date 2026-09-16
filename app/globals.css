@@ -531,6 +531,42 @@ html.dark .bg-luxury-atmosphere {
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
+.dashboard-content > .max-w-7xl,
+.dashboard-content > .max-w-\[1720px\] {
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.dashboard-content h1,
+.dashboard-content h2,
+.dashboard-content h3,
+.dashboard-content h4 {
+  font-weight: 500;
+}
+
+.dashboard-content .font-bold {
+  font-weight: 500;
+}
+
+.dashboard-content .font-extrabold,
+.dashboard-content .font-black {
+  font-weight: 600;
+}
+
+.dashboard-sidebar .absolute.top-0.left-full {
+  color: rgba(235, 242, 255, 0.86);
+}
+
+.dashboard-sidebar .absolute.top-0.left-full .text-slate-600,
+.dashboard-sidebar .absolute.top-0.left-full .text-slate-900 {
+  color: rgba(235, 242, 255, 0.76) !important;
+}
+
+.dashboard-sidebar .absolute.top-0.left-full .hover\:text-slate-900:hover {
+  color: #ffffff !important;
+}
+
 .dashboard-sidebar nav > * {
   animation: sidebarNavReveal 0.5s both;
 }

@@ -336,7 +336,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* =========================================================================
           1. TOP EXECUTIVE COMMAND CAPSULE NAVIGATION (POLIDA & EQUILIBRADA PARA NOTEBOOK)
       ========================================================================= */}
-      <header className="dashboard-sidebar mx-2 sm:mx-4 lg:mx-0 mt-2.5 lg:mt-0 mb-2 lg:mb-0 h-14 lg:h-screen lg:w-[246px] lg:fixed lg:inset-y-0 lg:left-0 px-3 sm:px-4 lg:px-5 lg:py-7 rounded-xl lg:rounded-none bg-white/88 dark:bg-[#07090E]/90 lg:bg-[#091a38] lg:dark:bg-[#07152e] backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.09] lg:border-r lg:border-white/[0.1] lg:border-y-0 lg:border-l-0 shadow-[0_8px_30px_rgba(32,48,75,0.06)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.7)] lg:shadow-[14px_0_50px_rgba(3,15,38,0.22)] flex lg:flex-col items-center lg:items-stretch justify-between lg:justify-start z-30 flex-shrink-0 relative gap-2 sm:gap-4 min-w-0 overflow-visible lg:overflow-hidden">
+      <header className="dashboard-sidebar mx-2 sm:mx-4 lg:mx-0 mt-2.5 lg:mt-0 mb-2 lg:mb-0 h-14 lg:h-screen lg:w-[246px] lg:fixed lg:inset-y-0 lg:left-0 px-3 sm:px-4 lg:px-5 lg:py-7 rounded-xl lg:rounded-none bg-white/88 dark:bg-[#07090E]/90 lg:bg-[#091a38] lg:dark:bg-[#07152e] backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.09] lg:border-r lg:border-white/[0.1] lg:border-y-0 lg:border-l-0 shadow-[0_8px_30px_rgba(32,48,75,0.06)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.7)] lg:shadow-[14px_0_50px_rgba(3,15,38,0.22)] flex lg:flex-col items-center lg:items-stretch justify-between lg:justify-start z-30 flex-shrink-0 relative gap-2 sm:gap-4 min-w-0 overflow-visible">
         
         {/* Glow de acento superior ultra-sutil */}
         <div className="absolute top-0 left-8 right-8 h-px bg-[#7da9ec]/60 pointer-events-none lg:left-5 lg:right-5" />
@@ -379,7 +379,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               onClick={() => { setIsSettingsMenuOpen(!isSettingsMenuOpen); setIsUserMenuOpen(false); }}
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs whitespace-nowrap transition-all duration-300 select-none ${
                 isMoreActive 
-                  ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold border border-blue-500/30' 
+                  ? 'nav-pill-luxury-active font-semibold' 
                   : 'nav-pill-luxury-inactive font-medium'
               }`}
               title="Configurações e Mais"
@@ -637,7 +637,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           2. CONTEÚDO PRINCIPAL (100% DA LARGURA DISPONÍVEL - NENHUM CARD APERTADO)
       ========================================================================= */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative px-2 sm:px-4 md:px-5 pb-20 lg:pb-8 lg:pl-[270px] z-0">
-        <div className="max-w-[1720px] mx-auto w-full">
+        <div className="dashboard-content w-full max-w-none mx-0">
           {children}
         </div>
       </main>
