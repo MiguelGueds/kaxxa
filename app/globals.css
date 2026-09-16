@@ -27,6 +27,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.landing-atmosphere {
+  background-image:
+    linear-gradient(rgba(26, 68, 200, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 68, 200, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 75% 18%, rgba(0, 163, 255, 0.1), transparent 26%),
+    radial-gradient(circle at 18% 12%, rgba(26, 68, 200, 0.07), transparent 24%);
+  background-size: 48px 48px, 48px 48px, auto, auto;
+}
+
+.landing-atmosphere > * {
+  display: none;
+}
+
+@keyframes floatSaas {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+.animate-float-saas {
+  animation: floatSaas 7s ease-in-out infinite;
+}
+
 /* A interface premium usa contraste e espacamento para hierarquia, nao peso excessivo. */
 .font-bold {
   font-weight: 600;

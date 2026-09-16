@@ -82,7 +82,7 @@ export default function LandingPage() {
     <div className="bg-[#F8F9FA] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] min-h-screen overflow-x-hidden">
       
       {/* 1. FUNDO DINÂMICO DE LUXO: ONDAS FLUIDAS, ESFERAS DE CRISTAL 3D & SPOTLIGHT INTERATIVO */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden landing-atmosphere">
         
         {/* Spotlight Interativo que Segue o Cursor */}
         <div 
@@ -238,61 +238,55 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 3. HERO SECTION DE ALTA CONVERSÃO */}
-      <div className="hero-wrapper flex justify-center items-center min-h-screen">
-        <section className={`relative z-10 pt-36 pb-14 md:pt-44 md:pb-20 px-6 max-w-5xl mx-auto flex flex-col items-center text-center ${heroVisible ? 'animate-fade-in-up' : ''}`}>
+      {/* 3. HERO SECTION SAAS */}
+      <div className="hero-wrapper min-h-screen flex items-center">
+        <section className={`relative z-10 w-full max-w-7xl mx-auto px-6 pt-32 pb-16 lg:pt-40 lg:pb-24 ${heroVisible ? 'animate-fade-in-up' : ''}`}>
+          <div className="grid items-center gap-14 lg:grid-cols-[0.88fr_1.12fr] lg:gap-16">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#C8D8FF] bg-[#EEF3FF] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#1A44C8]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#1A44C8] animate-pulse" />
+                Inteligência financeira pessoal
+              </div>
+              <h1 className="mt-6 text-4xl font-black leading-[1.08] tracking-[-0.04em] text-[#181B22] sm:text-5xl lg:text-[60px]">
+                Sua vida financeira, finalmente <span className="text-[#1A44C8]">sob controle.</span>
+              </h1>
+              <p className="mt-6 max-w-lg text-base leading-7 text-[#64748B] sm:text-lg">
+                O Kaxxa reúne patrimônio, cartões, dívidas e gastos de terceiros em uma visão clara para você tomar decisões melhores todos os dias.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href="/planos" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A44C8] px-6 py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(26,68,200,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#1538A5]">
+                  Começar agora <ArrowRight size={16} />
+                </Link>
+                <a href="#demonstracao" className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DCE2EA] bg-white px-6 py-3.5 text-sm font-bold text-[#181B22] transition-all hover:-translate-y-0.5 hover:border-[#1A44C8]/40 hover:shadow-sm">
+                  <Play size={13} className="fill-[#1A44C8] text-[#1A44C8]" /> Ver como funciona
+                </a>
+              </div>
+              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-[#64748B]">
+                <span className="flex items-center gap-1.5"><ShieldCheck size={15} className="text-[#059669]" /> 7 dias de garantia</span>
+                <span className="flex items-center gap-1.5"><Lock size={14} className="text-[#1A44C8]" /> Seus dados protegidos</span>
+              </div>
+            </div>
 
-        {/* Badge de Destaque Oficial */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-[#1A44C8] text-xs font-bold mb-6 shadow-2xs animate-in fade-in duration-300">
-          <Sparkles size={13} className="text-[#1A44C8]" />
-          <span>O Gerenciador Financeiro Oficial de Alta Performance</span>
-        </div>
-
-        {/* Título Principal de Alto Impacto */}
-        <h1 className="text-3xl sm:text-5xl md:text-[54px] font-black tracking-[-0.03em] leading-[1.12] text-[#181B22] max-w-3xl">
-          Controle absoluto do seu dinheiro e <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A44C8] via-[#00A3FF] to-[#059669]">fim das faturas surpresa.</span>
-        </h1>
-
-        {/* Subtítulo Claro, Específico e Persuasivo */}
-        <p className="mt-5 text-sm sm:text-base text-[#64748B] max-w-2xl font-normal leading-relaxed tracking-normal">
-          O único gerenciador que separa seus gastos dos gastos de terceiros, calcula a amortização antecipada de dívidas e indica o melhor cartão de compra hoje para até 40 dias sem juros.
-        </p>
-
-        {/* Botões de Ação */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto">
-          <Link 
-            href="/planos" 
-            className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#1A44C8] hover:bg-[#1538A5] text-white font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-lg shadow-[#1A44C8]/25 flex items-center justify-center gap-2 active:scale-95"
-          >
-            <span>Assinar por R$ 39,90/mês</span>
-            <ArrowRight size={14} />
-          </Link>
-          <a 
-            href="#demonstracao" 
-            className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#FFFFFF] hover:bg-[#F8FAFC] border border-[#E5E7EB] text-[#181B22] font-semibold text-xs tracking-wider uppercase transition-all duration-300 flex items-center justify-center gap-2 shadow-sm"
-          >
-            <Play size={11} className="fill-[#181B22]" />
-            <span>Ver Demonstração</span>
-          </a>
-        </div>
-
-        {/* Selos de Confiança Imediatos */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] text-[#64748B] font-medium">
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-[#059669]" />
-            Garantia de 7 dias
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Zap size={14} className="text-[#1A44C8]" />
-            Ativação imediata via Pix e Cartão
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Lock size={14} className="text-[#00A3FF]" />
-            100% privado e sem anúncios
-          </span>
-        </div>
-
-      </section>
+            <div className="relative mx-auto w-full max-w-[680px] animate-float-saas">
+              <div className="absolute -right-3 -top-5 z-10 hidden items-center gap-2 rounded-xl border border-[#DCE2EA] bg-white px-3 py-2 shadow-lg sm:flex animate-float">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"><TrendingUp size={15} /></span>
+                <span><strong className="block text-xs text-[#181B22]">Patrimônio em alta</strong><small className="text-[10px] font-semibold text-emerald-600">+18,4% este ano</small></span>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-[#DCE2EA] bg-white shadow-[0_24px_70px_rgba(26,45,85,0.16)]">
+                <div className="flex items-center justify-between border-b border-[#EDF0F5] bg-[#FBFCFE] px-5 py-3">
+                  <div className="flex items-center gap-2"><KaxxaLogo size={22} /><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Dashboard</span></div>
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Sincronizado</span>
+                </div>
+                <div className="grid gap-4 bg-[#F6F8FC] p-5 sm:p-7">
+                  <div className="flex items-end justify-between"><div><p className="text-xs font-semibold text-[#64748B]">Patrimônio líquido</p><p className="mt-1 text-2xl font-black tracking-tight text-[#181B22] sm:text-3xl">R$ 484.300,50</p></div><span className="rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-600">+18,4%</span></div>
+                  <div className="rounded-xl border border-[#E7ECF4] bg-white p-4"><div className="mb-3 flex justify-between text-[10px] font-bold text-[#94A3B8]"><span>EVOLUÇÃO PATRIMONIAL</span><span>2026</span></div><svg viewBox="0 0 600 150" className="h-32 w-full" preserveAspectRatio="none"><defs><linearGradient id="heroChartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#1A44C8" stopOpacity=".2" /><stop offset="1" stopColor="#1A44C8" stopOpacity="0" /></linearGradient></defs><path d="M0 125 C80 118 105 108 170 105 S250 88 310 92 S390 58 455 63 S540 35 600 20 V150 H0Z" fill="url(#heroChartFill)" /><path d="M0 125 C80 118 105 108 170 105 S250 88 310 92 S390 58 455 63 S540 35 600 20" fill="none" stroke="#1A44C8" strokeWidth="3" strokeLinecap="round" /><circle cx="600" cy="20" r="5" fill="#00A3FF" /></svg><div className="mt-2 flex justify-between text-[9px] font-bold text-[#B0BAC9]"><span>JAN</span><span>ABR</span><span>JUL</span><span>OUT</span><span>DEZ</span></div></div>
+                  <div className="grid grid-cols-3 gap-3"><div className="rounded-xl border border-[#E7ECF4] bg-white p-3"><span className="text-[10px] font-semibold text-[#94A3B8]">Investimentos</span><strong className="mt-1 block text-sm text-[#181B22]">R$ 102,8k</strong></div><div className="rounded-xl border border-[#E7ECF4] bg-white p-3"><span className="text-[10px] font-semibold text-[#94A3B8]">Despesas</span><strong className="mt-1 block text-sm text-[#181B22]">R$ 4,4k</strong></div><div className="rounded-xl border border-[#E7ECF4] bg-white p-3"><span className="text-[10px] font-semibold text-[#94A3B8]">Economia</span><strong className="mt-1 block text-sm text-emerald-600">R$ 38,8k</strong></div></div>
+                </div>
+              </div>
+              <div className="absolute -bottom-5 -left-4 hidden items-center gap-2 rounded-xl border border-[#DCE2EA] bg-white px-3 py-2 shadow-lg sm:flex animate-float" style={{ animationDelay: '1.5s' }}><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EEF3FF] text-[#1A44C8]"><ShieldCheck size={15} /></span><span><strong className="block text-xs text-[#181B22]">Controle total</strong><small className="text-[10px] font-semibold text-[#64748B]">Tudo em um só lugar</small></span></div>
+            </div>
+          </div>
+        </section>
       </div>
 
 
