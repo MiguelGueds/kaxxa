@@ -331,19 +331,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* =========================================================================
           AMBIENT LUXURY DRIFT (GPU-ACCELERATED, 60FPS, SILKY SMOOTH, ZERO OVERHEAD)
       ========================================================================= */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none" aria-hidden="true">
-        <div className="absolute -top-[15%] left-[20%] w-[500px] h-[500px] rounded-full bg-blue-500/[0.08] dark:bg-[#0047FF]/[0.13] blur-[100px] animate-crystal-orb-1" />
-        <div className="absolute top-[30%] -right-[10%] w-[600px] h-[600px] rounded-full bg-indigo-500/[0.07] dark:bg-[#002288]/[0.15] blur-[120px] animate-crystal-orb-2" />
-        <div className="absolute -bottom-[10%] left-[10%] w-[550px] h-[550px] rounded-full bg-cyan-500/[0.06] dark:bg-[#0066FF]/[0.09] blur-[110px] animate-crystal-orb-3" />
-      </div>
+      <div className="fixed inset-0 pointer-events-none z-0 select-none" aria-hidden="true" />
 
       {/* =========================================================================
           1. TOP EXECUTIVE COMMAND CAPSULE NAVIGATION (POLIDA & EQUILIBRADA PARA NOTEBOOK)
       ========================================================================= */}
-      <header className="mx-2 sm:mx-4 lg:mx-6 mt-2.5 mb-2 h-14 px-3 sm:px-4 lg:px-5 rounded-[22px] bg-white/90 dark:bg-[#07090E]/90 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.09] shadow-[0_8px_30px_rgba(0,35,140,0.04)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.7)] flex items-center justify-between z-30 flex-shrink-0 relative gap-2 sm:gap-4 min-w-0">
+      <header className="mx-2 sm:mx-4 lg:mx-6 mt-2.5 mb-2 h-14 px-3 sm:px-4 lg:px-5 rounded-xl bg-white/88 dark:bg-[#07090E]/90 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.09] shadow-[0_8px_30px_rgba(32,48,75,0.06)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.7)] flex items-center justify-between z-30 flex-shrink-0 relative gap-2 sm:gap-4 min-w-0">
         
         {/* Glow de acento superior ultra-sutil */}
-        <div className="absolute top-0 left-6 right-6 h-[1.5px] bg-gradient-to-r from-transparent via-[#0047FF]/70 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-8 right-8 h-px bg-[#315b9d]/35 pointer-events-none" />
 
         {/* Lado Esquerdo: Logo Kaxxa em Azul Degradê Tech Luxury */}
         <div className="flex items-center shrink-0">
