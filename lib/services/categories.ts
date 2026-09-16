@@ -22,12 +22,30 @@ export const categoriesService = {
       .eq('user_id', user.id)
       .order('name', { ascending: true });
 
-    if (error) {
-      console.error('Erro ao buscar categorias:', error);
-      return null;
+    if (!error && data && data.length > 0) return data as DbCategory[];
+
+    if (typeof window !== 'undefined') {
+      try {
+        const response = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'select',
+            table: 'categories',
+            filters: { user_id: user.id }
+          })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && Array.isArray(result.data)) {
+          return result.data as DbCategory[];
+        }
+      } catch (fallbackError) {
+        console.error('Erro ao buscar categorias pelo fallback:', fallbackError);
+      }
     }
 
-    return data as DbCategory[];
+    if (error) console.error('Erro ao buscar categorias:', error);
+    return data as DbCategory[] | null;
   },
 
   async createCategory(cat: {

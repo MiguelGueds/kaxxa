@@ -239,7 +239,7 @@ export default function SaldoExtratoPage() {
           categoriesService.fetchCategories()
         ]);
 
-        if (dbCategories) {
+        if (dbCategories && dbCategories.length > 0) {
           const categoryMap = new Map(dbCategories.map(category => [category.id, category]));
           const toConfiguredOptions = (type: 'EXPENSE' | 'INCOME'): CategoryOption[] => dbCategories
             .filter(category => category.type === type)
@@ -256,6 +256,12 @@ export default function SaldoExtratoPage() {
           const configuredIncomes = toConfiguredOptions('INCOME');
           setExpenseCategories(configuredExpenses);
           setIncomeCategories(configuredIncomes);
+          setSelectedCategory(current => {
+            const availableCategories = transactionType === 'EXPENSE' ? configuredExpenses : configuredIncomes;
+            return availableCategories.some(category => category.name === current)
+              ? current
+              : availableCategories[0]?.name || '';
+          });
         }
 
         if (dbAccounts && dbAccounts.length > 0) {
