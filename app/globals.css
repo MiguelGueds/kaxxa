@@ -496,6 +496,61 @@ html.dark .bg-luxury-atmosphere {
   background: rgba(0, 71, 255, 0.06);
 }
 
+/* Navegacao principal: uma barra editorial, fixa e profunda. */
+.dashboard-sidebar {
+  background-image: linear-gradient(155deg, #0a2045 0%, #0a1935 48%, #071126 100%) !important;
+}
+
+.dashboard-sidebar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, rgba(118, 166, 235, 0.12), transparent 32%, transparent 72%, rgba(0, 0, 0, 0.18));
+  opacity: 0.9;
+}
+
+.dashboard-sidebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-sidebar .nav-pill-luxury-inactive {
+  color: rgba(220, 232, 250, 0.68);
+}
+
+.dashboard-sidebar .nav-pill-luxury-inactive:hover {
+  color: #ffffff;
+  background: rgba(132, 174, 235, 0.12);
+  transform: translateX(3px);
+}
+
+.dashboard-sidebar .nav-pill-luxury-active {
+  background: linear-gradient(120deg, #183b70 0%, #3d6eae 100%);
+  border: 1px solid rgba(169, 204, 249, 0.28);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dashboard-sidebar nav > * {
+  animation: sidebarNavReveal 0.5s both;
+}
+
+.dashboard-sidebar nav > *:nth-child(2) { animation-delay: 0.04s; }
+.dashboard-sidebar nav > *:nth-child(3) { animation-delay: 0.08s; }
+.dashboard-sidebar nav > *:nth-child(4) { animation-delay: 0.12s; }
+.dashboard-sidebar nav > *:nth-child(5) { animation-delay: 0.16s; }
+
+@keyframes sidebarNavReveal {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    background-image: none !important;
+  }
+}
+
 html.dark .nav-pill-luxury-inactive {
   color: #94A3B8;
 }

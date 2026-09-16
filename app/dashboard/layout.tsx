@@ -336,27 +336,27 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* =========================================================================
           1. TOP EXECUTIVE COMMAND CAPSULE NAVIGATION (POLIDA & EQUILIBRADA PARA NOTEBOOK)
       ========================================================================= */}
-      <header className="mx-2 sm:mx-4 lg:mx-6 mt-2.5 mb-2 h-14 px-3 sm:px-4 lg:px-5 rounded-xl bg-white/88 dark:bg-[#07090E]/90 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.09] shadow-[0_8px_30px_rgba(32,48,75,0.06)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.7)] flex items-center justify-between z-30 flex-shrink-0 relative gap-2 sm:gap-4 min-w-0">
+      <header className="dashboard-sidebar mx-2 sm:mx-4 lg:mx-0 mt-2.5 lg:mt-0 mb-2 lg:mb-0 h-14 lg:h-screen lg:w-[246px] lg:fixed lg:inset-y-0 lg:left-0 px-3 sm:px-4 lg:px-5 lg:py-7 rounded-xl lg:rounded-none bg-white/88 dark:bg-[#07090E]/90 lg:bg-[#091a38] lg:dark:bg-[#07152e] backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.09] lg:border-r lg:border-white/[0.1] lg:border-y-0 lg:border-l-0 shadow-[0_8px_30px_rgba(32,48,75,0.06)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.7)] lg:shadow-[14px_0_50px_rgba(3,15,38,0.22)] flex lg:flex-col items-center lg:items-stretch justify-between lg:justify-start z-30 flex-shrink-0 relative gap-2 sm:gap-4 min-w-0 overflow-visible lg:overflow-hidden">
         
         {/* Glow de acento superior ultra-sutil */}
-        <div className="absolute top-0 left-8 right-8 h-px bg-[#315b9d]/35 pointer-events-none" />
+        <div className="absolute top-0 left-8 right-8 h-px bg-[#7da9ec]/60 pointer-events-none lg:left-5 lg:right-5" />
 
         {/* Lado Esquerdo: Logo Kaxxa em Azul Degradê Tech Luxury */}
-        <div className="flex items-center shrink-0">
+        <div className="flex items-center shrink-0 lg:pb-7 lg:border-b lg:border-white/[0.1]">
           <Link href="/dashboard" className="flex items-center group transition-transform active:scale-95" title="Kaxxa">
             <KaxxaLogo size={22} />
           </Link>
         </div>
 
         {/* Centro: Deck de Navegação Segmentado Flutuante (Desktop & Notebook) */}
-        <nav className="hidden lg:flex items-center gap-1 bg-slate-100/80 dark:bg-white/[0.04] p-1 rounded-xl border border-slate-200/70 dark:border-white/[0.07] shadow-inner overflow-x-auto no-scrollbar min-w-0">
+        <nav className="hidden lg:flex items-stretch flex-col gap-1 mt-8 bg-transparent p-0 border-0 shadow-none overflow-visible no-scrollbar min-w-0">
           {primaryNavItems.slice(0, 4).map((item) => {
             const active = isItemActive(item.href);
             return (
               <Link 
                 key={item.href} 
                 href={item.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-200 select-none shrink-0 ${
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs whitespace-nowrap transition-all duration-300 select-none shrink-0 ${
                   active 
                     ? 'nav-pill-luxury-active font-semibold' 
                     : 'nav-pill-luxury-inactive font-medium'
@@ -377,7 +377,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => { setIsSettingsMenuOpen(!isSettingsMenuOpen); setIsUserMenuOpen(false); }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all duration-200 select-none ${
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs whitespace-nowrap transition-all duration-300 select-none ${
                 isMoreActive 
                   ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold border border-blue-500/30' 
                   : 'nav-pill-luxury-inactive font-medium'
@@ -392,7 +392,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Dropdown Flutuante de Configurações */}
             {isSettingsMenuOpen && (
               <div 
-                className="absolute top-full right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-[#0D111A]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.1] shadow-2xl p-2 z-50 animate-luxury-fade"
+                className="absolute top-0 left-full ml-3 w-56 rounded-2xl bg-[#0d2348]/98 backdrop-blur-2xl border border-white/[0.14] shadow-2xl p-2 z-50 animate-luxury-fade"
                 onMouseLeave={() => setIsSettingsMenuOpen(false)}
               >
                 <div className="px-2 py-1 text-[9px] font-semibold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
@@ -484,7 +484,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Lado Direito: Ações Executivas (Sem Busca, Limpo & Espaçoso) */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 lg:mt-auto lg:pt-5 lg:border-t lg:border-white/[0.1]">
           
           {/* Alternar Modo Noturno / Claro */}
           <button
@@ -636,7 +636,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* =========================================================================
           2. CONTEÚDO PRINCIPAL (100% DA LARGURA DISPONÍVEL - NENHUM CARD APERTADO)
       ========================================================================= */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative px-2 sm:px-4 md:px-5 pb-20 lg:pb-6 z-0">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative px-2 sm:px-4 md:px-5 pb-20 lg:pb-8 lg:pl-[270px] z-0">
         <div className="max-w-[1720px] mx-auto w-full">
           {children}
         </div>
