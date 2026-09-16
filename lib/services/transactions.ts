@@ -131,8 +131,10 @@ export const transactionsService = {
                 amount: Number(item.amount || 0),
                 type: item.type || 'EXPENSE',
                 category_id: isValidUuid(item.category_id) ? item.category_id : null,
+                category_name: item.category_name || null,
                 account_id: isValidUuid(item.account_id) ? item.account_id : null,
                 credit_card_id: isValidUuid(item.credit_card_id) ? item.credit_card_id : null,
+                third_party_name: item.third_party_name || null,
                 date: item.date || new Date().toISOString().split('T')[0],
                 is_paid: item.is_paid !== undefined ? Boolean(item.is_paid) : true,
                 notes: item.notes || null,
@@ -188,8 +190,10 @@ export const transactionsService = {
       amount: Number(tx.amount || 0),
       type: tx.type || 'EXPENSE',
       category_id: isValidUuid(tx.category_id) ? tx.category_id : null,
+      category_name: tx.category_name || null,
       account_id: isValidUuid(tx.account_id) ? tx.account_id : null,
       credit_card_id: isValidUuid(tx.credit_card_id) ? tx.credit_card_id : null,
+      third_party_name: tx.third_party_name || null,
       date: tx.date || new Date().toISOString().split('T')[0],
       is_paid: tx.is_paid !== undefined ? Boolean(tx.is_paid) : true,
       notes: tx.notes || null,
@@ -243,6 +247,43 @@ export const transactionsService = {
     const updated = [newItem, ...currentLocal.filter(t => t.id !== newItem.id)];
     saveLocalTransactions(user.id, updated);
     return newItem;
+  },
+
+  async updateTransaction(id: string, tx: Partial<Omit<DbTransaction, 'id' | 'user_id' | 'created_at'>>): Promise<DbTransaction | null> {
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+
+    const payload = {
+      ...(tx.description !== undefined ? { description: tx.description } : {}),
+      ...(tx.amount !== undefined ? { amount: Number(tx.amount) } : {}),
+      ...(tx.date !== undefined ? { date: tx.date } : {}),
+      ...(tx.type !== undefined ? { type: tx.type } : {}),
+      ...(tx.account_id !== undefined ? { account_id: isValidUuid(tx.account_id) ? tx.account_id : null } : {}),
+      ...(tx.category_name !== undefined ? { category_name: tx.category_name || null } : {}),
+      ...(tx.category_id !== undefined ? { category_id: isValidUuid(tx.category_id) ? tx.category_id : null } : {}),
+      ...(tx.third_party_name !== undefined ? { third_party_name: tx.third_party_name || null } : {}),
+      ...(tx.is_paid !== undefined ? { is_paid: Boolean(tx.is_paid) } : {}),
+      ...(tx.notes !== undefined ? { notes: tx.notes || null } : {}),
+    };
+
+    const client = supabaseAdmin || supabase;
+    const { data, error } = await client
+      .from('transactions')
+      .update(payload)
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error || !data) {
+      console.error('Erro ao atualizar transação:', error);
+      return null;
+    }
+
+    const saved = { ...data, amount: Number(data.amount || 0) } as DbTransaction;
+    const currentLocal = getLocalTransactions(user.id);
+    saveLocalTransactions(user.id, currentLocal.map(item => item.id === id ? saved : item));
+    return saved;
   },
 
   async deleteTransaction(id: string): Promise<boolean> {

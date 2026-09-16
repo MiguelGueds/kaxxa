@@ -58,6 +58,20 @@ const INCOME_CATEGORIES = [
   'Outras Entradas'
 ];
 
+type CategoryOption = {
+  id: string;
+  name: string;
+  label: string;
+  parentId: string | null;
+};
+
+const toCategoryOptions = (names: string[], type: 'EXPENSE' | 'INCOME'): CategoryOption[] => names.map((name, index) => ({
+  id: `fallback-${type}-${index}`,
+  name,
+  label: name,
+  parentId: null
+}));
+
 function autoDetectTransactionCategory(text: string, type: 'EXPENSE' | 'INCOME'): string | null {
   const q = text.toLowerCase().trim();
   if (!q) return null;
@@ -212,8 +226,8 @@ export default function SaldoExtratoPage() {
     }));
   });
 
-  const [expenseCategories, setExpenseCategories] = useState<string[]>(EXPENSE_CATEGORIES);
-  const [incomeCategories, setIncomeCategories] = useState<string[]>(INCOME_CATEGORIES);
+  const [expenseCategories, setExpenseCategories] = useState<CategoryOption[]>(toCategoryOptions(EXPENSE_CATEGORIES, 'EXPENSE'));
+  const [incomeCategories, setIncomeCategories] = useState<CategoryOption[]>(toCategoryOptions(INCOME_CATEGORIES, 'INCOME'));
 
   // Carregar dados reais do Supabase
   useEffect(() => {
@@ -225,15 +239,23 @@ export default function SaldoExtratoPage() {
           categoriesService.fetchCategories()
         ]);
 
-        if (dbCategories && dbCategories.length > 0) {
-          const customExpenses = dbCategories.filter(c => c.type === 'EXPENSE').map(c => c.name);
-          const customIncomes = dbCategories.filter(c => c.type === 'INCOME').map(c => c.name);
-          if (customExpenses.length > 0) {
-            setExpenseCategories(Array.from(new Set([...customExpenses, ...EXPENSE_CATEGORIES])));
-          }
-          if (customIncomes.length > 0) {
-            setIncomeCategories(Array.from(new Set([...customIncomes, ...INCOME_CATEGORIES])));
-          }
+        if (dbCategories) {
+          const categoryMap = new Map(dbCategories.map(category => [category.id, category]));
+          const toConfiguredOptions = (type: 'EXPENSE' | 'INCOME'): CategoryOption[] => dbCategories
+            .filter(category => category.type === type)
+            .sort((a, b) => Number(Boolean(a.parent_id)) - Number(Boolean(b.parent_id)) || a.name.localeCompare(b.name))
+            .map(category => ({
+              id: category.id,
+              name: category.name,
+              parentId: category.parent_id || null,
+              label: category.parent_id && categoryMap.get(category.parent_id)
+                ? `${categoryMap.get(category.parent_id)!.name} / ${category.name}`
+                : category.name
+            }));
+          const configuredExpenses = toConfiguredOptions('EXPENSE');
+          const configuredIncomes = toConfiguredOptions('INCOME');
+          setExpenseCategories(configuredExpenses);
+          setIncomeCategories(configuredIncomes);
         }
 
         if (dbAccounts && dbAccounts.length > 0) {
@@ -247,13 +269,14 @@ export default function SaldoExtratoPage() {
         }
 
         if (dbTransactions && dbTransactions.length > 0) {
+          const accountNames = new Map((dbAccounts || []).map(account => [account.id, account.name]));
           setTransactions(dbTransactions.map(t => ({
             id: t.id,
             name: t.description,
             date: t.date ? new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR') : 'Hoje',
             rawDate: t.date,
             amount: t.type === 'EXPENSE' ? -Math.abs(t.amount) : Math.abs(t.amount),
-            bank: t.category_name || 'Conta Corrente',
+            bank: accountNames.get(t.account_id || '') || 'Conta Corrente',
             category: t.category_name || 'Geral',
             type: t.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
             isThirdParty: !!t.third_party_name,
@@ -302,7 +325,7 @@ export default function SaldoExtratoPage() {
     setAmount('');
     setDate(new Date().toISOString().split('T')[0]);
     setSelectedBank('Nubank');
-    setSelectedCategory(EXPENSE_CATEGORIES[0]);
+    setSelectedCategory(expenseCategories[0]?.name || '');
     setIsThirdParty(false);
     setThirdPartyName(AVAILABLE_RESPONSIBLES[0]);
     setIsModalOpen(true);
@@ -323,13 +346,26 @@ export default function SaldoExtratoPage() {
   };
 
   // Salvar Lançamento
-  const handleSaveTransaction = () => {
+  const handleSaveTransaction = async () => {
     const parsedAmount = parseFloat(amount.replace(',', '.')) || 0;
     if (parsedAmount <= 0) return;
 
     const finalAmount = transactionType === 'EXPENSE' ? -parsedAmount : parsedAmount;
+    const categoryName = isThirdParty ? 'Empréstimo a Terceiro' : selectedCategory;
 
     if (editingTransaction) {
+      const accountId = banks.find(bank => bank.name === selectedBank)?.id;
+      const saved = await transactionsService.updateTransaction(editingTransaction.id.toString(), {
+        description: description.trim() || (transactionType === 'INCOME' ? 'Entrada Avulsa' : 'Saída Avulsa'),
+        amount: parsedAmount,
+        date,
+        type: transactionType,
+        account_id: accountId,
+        category_name: categoryName,
+        third_party_name: isThirdParty ? thirdPartyName : undefined,
+        is_paid: true
+      });
+      if (!saved) return;
       setTransactions(prev => prev.map(t => {
         if (t.id === editingTransaction.id) {
           return {
@@ -338,7 +374,7 @@ export default function SaldoExtratoPage() {
             rawDate: date,
             amount: finalAmount,
             bank: selectedBank,
-            category: isThirdParty ? 'Empréstimo a Terceiro' : selectedCategory,
+            category: categoryName,
             type: transactionType,
             isThirdParty: isThirdParty,
             thirdPartyName: isThirdParty ? thirdPartyName : undefined
@@ -386,7 +422,7 @@ export default function SaldoExtratoPage() {
           date: date,
           type: transactionType,
           account_id: accountId,
-          category_name: isThirdParty ? 'Empréstimo a Terceiro' : selectedCategory,
+          category_name: categoryName,
           third_party_name: isThirdParty ? thirdPartyName : undefined,
           is_paid: true
         });
@@ -431,7 +467,7 @@ export default function SaldoExtratoPage() {
     setAmount('');
     setIsThirdParty(false);
     setThirdPartyName(AVAILABLE_RESPONSIBLES[0]);
-    setSelectedCategory(transactionType === 'INCOME' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0]);
+    setSelectedCategory(transactionType === 'INCOME' ? incomeCategories[0]?.name || '' : expenseCategories[0]?.name || '');
   };
 
   // Transferência entre Contas
@@ -1068,7 +1104,7 @@ export default function SaldoExtratoPage() {
                     type="button"
                     onClick={() => {
                       setTransactionType('EXPENSE');
-                      setSelectedCategory(EXPENSE_CATEGORIES[0]);
+                      setSelectedCategory(expenseCategories[0]?.name || '');
                     }}
                     className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                       transactionType === 'EXPENSE' 
@@ -1084,7 +1120,7 @@ export default function SaldoExtratoPage() {
                     type="button"
                     onClick={() => {
                       setTransactionType('INCOME');
-                      setSelectedCategory(INCOME_CATEGORIES[0]);
+                      setSelectedCategory(incomeCategories[0]?.name || '');
                       setIsThirdParty(false);
                     }}
                     className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
@@ -1109,7 +1145,10 @@ export default function SaldoExtratoPage() {
                     const val = e.target.value;
                     setDescription(val);
                     const detected = autoDetectTransactionCategory(val, transactionType);
-                    if (detected) setSelectedCategory(detected);
+                    const availableCategories = transactionType === 'EXPENSE' ? expenseCategories : incomeCategories;
+                    if (detected && availableCategories.some(category => category.name === detected)) {
+                      setSelectedCategory(detected);
+                    }
                   }}
                   placeholder="Ex: Supermercado, Uber, iFood, Salário..."
                   className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1A44C8] font-medium"
@@ -1183,8 +1222,8 @@ export default function SaldoExtratoPage() {
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full bg-[#F1F3F7] border border-[#E5E7EB] rounded-xl py-2 px-3 text-xs text-[#181B22] focus:outline-none focus:border-[#1A44C8] cursor-pointer font-medium"
                 >
-                  {(transactionType === 'EXPENSE' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {(transactionType === 'EXPENSE' ? expenseCategories : incomeCategories).map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.label}</option>
                   ))}
                 </select>
               </div>
