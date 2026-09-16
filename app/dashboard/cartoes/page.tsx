@@ -35,19 +35,6 @@ import { usePrivacy } from '@/app/contexts/PrivacyContext';
 import { BankLogo } from '@/app/components/BankLogo';
 import { PortalModal } from '@/app/components/PortalModal';
 
-// Categorias Limpas e Padronizadas
-const CATEGORIES_FLAT_LIST = [
-  'Alimentação e Supermercado',
-  'Restaurante e Delivery',
-  'Transporte e Combustível',
-  'Lazer e Assinaturas (Streaming)',
-  'Moradia e Casa',
-  'Saúde e Farmácia',
-  'Vestuário e Moda',
-  'Educação e Livros',
-  'Compras Pessoais e Outros'
-];
-
 type CategoryOption = {
   id: string;
   name: string;
@@ -55,14 +42,6 @@ type CategoryOption = {
   parentId: string | null;
   type: 'INCOME' | 'EXPENSE';
 };
-
-const FALLBACK_CATEGORY_OPTIONS: CategoryOption[] = CATEGORIES_FLAT_LIST.map((name, index) => ({
-  id: `fallback-expense-${index}`,
-  name,
-  label: name,
-  parentId: null,
-  type: 'EXPENSE'
-}));
 
 function autoDetectCardCategory(text: string): string | null {
   const q = text.toLowerCase().trim();
@@ -248,14 +227,14 @@ export default function MinhasFaturasPage() {
 
   // Dados Extraídos no Modal de Importação
   const [extractedImports, setExtractedImports] = useState<ImportItem[]>([
-    { id: 'imp-1', checked: true, date: '2026-07-12', description: 'Uber Viagens', amount: 38.50, category: 'Transporte e Combustível', thirdPartyName: 'Titular (Você)' },
-    { id: 'imp-2', checked: true, date: '2026-07-11', description: 'Mercado Livre - Fones', amount: 189.90, category: 'Lazer e Assinaturas (Streaming)', installmentText: '1/3', thirdPartyName: 'Titular (Você)' },
-    { id: 'imp-3', checked: true, date: '2026-07-10', description: 'Restaurante Outback', amount: 215.00, category: 'Restaurante e Delivery', thirdPartyName: 'Titular (Você)' },
-    { id: 'imp-4', checked: true, date: '2026-07-09', description: 'Droga Raia Farmácia', amount: 84.20, category: 'Saúde e Farmácia', thirdPartyName: 'Titular (Você)' },
-    { id: 'imp-5', checked: true, date: '2026-07-08', description: 'Posto Ipiranga Gasolina', amount: 220.00, category: 'Transporte e Combustível', thirdPartyName: 'Titular (Você)' }
+    { id: 'imp-1', checked: true, date: '2026-07-12', description: 'Uber Viagens', amount: 38.50, category: '', thirdPartyName: 'Titular (Você)' },
+    { id: 'imp-2', checked: true, date: '2026-07-11', description: 'Mercado Livre - Fones', amount: 189.90, category: '', installmentText: '1/3', thirdPartyName: 'Titular (Você)' },
+    { id: 'imp-3', checked: true, date: '2026-07-10', description: 'Restaurante Outback', amount: 215.00, category: '', thirdPartyName: 'Titular (Você)' },
+    { id: 'imp-4', checked: true, date: '2026-07-09', description: 'Droga Raia Farmácia', amount: 84.20, category: '', thirdPartyName: 'Titular (Você)' },
+    { id: 'imp-5', checked: true, date: '2026-07-08', description: 'Posto Ipiranga Gasolina', amount: 220.00, category: '', thirdPartyName: 'Titular (Você)' }
   ]);
 
-  const [categoriesList, setCategoriesList] = useState<CategoryOption[]>(FALLBACK_CATEGORY_OPTIONS);
+  const [categoriesList, setCategoriesList] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -280,7 +259,7 @@ export default function MinhasFaturasPage() {
           }
         }
 
-        if (dbCategories && dbCategories.length > 0) {
+        if (dbCategories) {
           const categoryMap = new Map(dbCategories.map(category => [category.id, category]));
           const expenseCategories = dbCategories
             .filter(category => category.type === 'EXPENSE')
@@ -295,15 +274,13 @@ export default function MinhasFaturasPage() {
                 : category.name
             }));
           setCategoriesList(expenseCategories);
-          if (expenseCategories.length > 0) {
-            setFormCategory(current => expenseCategories.some(category => category.name === current)
-              ? current
-              : expenseCategories[0].name);
-            setExtractedImports(current => current.map(item => expenseCategories.some(category => category.name === item.category)
-              ? item
-              : { ...item, category: expenseCategories[0].name }
-            ));
-          }
+          setFormCategory(current => expenseCategories.some(category => category.name === current)
+            ? current
+            : expenseCategories[0]?.name || '');
+          setExtractedImports(current => current.map(item => expenseCategories.some(category => category.name === item.category)
+            ? item
+            : { ...item, category: expenseCategories[0]?.name || '' }
+          ));
         }
 
         if (dbCards && dbCards.length > 0) {
@@ -332,7 +309,7 @@ export default function MinhasFaturasPage() {
             description: e.description,
             amount: e.amount,
             date: e.date,
-            category: e.category_name || CATEGORIES_FLAT_LIST[0],
+            category: e.category_name || '',
             month: e.date.substring(0, 7),
             isInstallment: (e.installments || 1) > 1,
             currentInstallment: e.current_installment,
@@ -602,12 +579,17 @@ export default function MinhasFaturasPage() {
       }
 
       if (parsedItems.length > 0) {
-        setExtractedImports(parsedItems);
+        setExtractedImports(parsedItems.map(item => ({
+          ...item,
+          category: categoriesList.some(category => category.name === item.category)
+            ? item.category
+            : categoriesList[0]?.name || ''
+        })));
       } else {
         setExtractedImports([
-          { id: `imp-1`, checked: true, date: `${selectedYear}-${selectedMonthNum}-12`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 1`, amount: 150.00, category: 'Alimentação e Supermercado', thirdPartyName: 'Titular (Você)' },
-          { id: `imp-2`, checked: true, date: `${selectedYear}-${selectedMonthNum}-11`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 2`, amount: 89.90, category: 'Lazer e Assinaturas (Streaming)', thirdPartyName: 'Titular (Você)' },
-          { id: `imp-3`, checked: true, date: `${selectedYear}-${selectedMonthNum}-10`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 3`, amount: 230.00, category: 'Transporte e Combustível', thirdPartyName: 'Titular (Você)' },
+          { id: `imp-1`, checked: true, date: `${selectedYear}-${selectedMonthNum}-12`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 1`, amount: 150.00, category: categoriesList[0]?.name || '', thirdPartyName: 'Titular (Você)' },
+          { id: `imp-2`, checked: true, date: `${selectedYear}-${selectedMonthNum}-11`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 2`, amount: 89.90, category: categoriesList[0]?.name || '', thirdPartyName: 'Titular (Você)' },
+          { id: `imp-3`, checked: true, date: `${selectedYear}-${selectedMonthNum}-10`, description: `Fatura ${file.name.replace(/\.[^/.]+$/, "")} - Item 3`, amount: 230.00, category: categoriesList[0]?.name || '', thirdPartyName: 'Titular (Você)' },
         ]);
       }
     } catch (err) {

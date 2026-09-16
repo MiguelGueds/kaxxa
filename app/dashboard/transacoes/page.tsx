@@ -35,42 +35,12 @@ const AVAILABLE_RESPONSIBLES = [
   'Carlos Eduardo'
 ];
 
-// Categorias Diretas para Entradas e Saídas
-const EXPENSE_CATEGORIES = [
-  'Alimentação & Supermercado',
-  'Moradia & Contas',
-  'Transporte & Combustível',
-  'Saúde & Farmácia',
-  'Lazer & Assinaturas',
-  'Educação',
-  'Pagamento de Cartão / Fatura',
-  'Empréstimo a Terceiro',
-  'Outras Saídas'
-];
-
-const INCOME_CATEGORIES = [
-  'Salário & Remuneração',
-  'Dividendos & Rendimentos',
-  'Vendas / Freelance',
-  'Pix / Transferência Recebida',
-  'Recebimento de Terceiro',
-  'Reembolso',
-  'Outras Entradas'
-];
-
 type CategoryOption = {
   id: string;
   name: string;
   label: string;
   parentId: string | null;
 };
-
-const toCategoryOptions = (names: string[], type: 'EXPENSE' | 'INCOME'): CategoryOption[] => names.map((name, index) => ({
-  id: `fallback-${type}-${index}`,
-  name,
-  label: name,
-  parentId: null
-}));
 
 const getCategoryOption = (categories: CategoryOption[], name: string) =>
   categories.find(category => category.name === name);
@@ -164,10 +134,8 @@ export default function SaldoExtratoPage() {
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedBank, setSelectedBank] = useState('Nubank');
-  const [selectedCategory, setSelectedCategory] = useState(EXPENSE_CATEGORIES[0]);
-  const [selectedParentCategoryId, setSelectedParentCategoryId] = useState(
-    toCategoryOptions(EXPENSE_CATEGORIES, 'EXPENSE')[0]?.id || ''
-  );
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedParentCategoryId, setSelectedParentCategoryId] = useState('');
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('');
   const [isThirdParty, setIsThirdParty] = useState(false);
   const [thirdPartyName, setThirdPartyName] = useState(AVAILABLE_RESPONSIBLES[0]);
@@ -233,8 +201,8 @@ export default function SaldoExtratoPage() {
     }));
   });
 
-  const [expenseCategories, setExpenseCategories] = useState<CategoryOption[]>(toCategoryOptions(EXPENSE_CATEGORIES, 'EXPENSE'));
-  const [incomeCategories, setIncomeCategories] = useState<CategoryOption[]>(toCategoryOptions(INCOME_CATEGORIES, 'INCOME'));
+  const [expenseCategories, setExpenseCategories] = useState<CategoryOption[]>([]);
+  const [incomeCategories, setIncomeCategories] = useState<CategoryOption[]>([]);
 
   const selectCategory = (name: string, categories: CategoryOption[]) => {
     const option = getCategoryOption(categories, name);
@@ -253,38 +221,30 @@ export default function SaldoExtratoPage() {
           categoriesService.fetchCategories()
         ]);
 
-        if (dbCategories && dbCategories.length > 0) {
-          const categoryMap = new Map(dbCategories.map(category => [category.id, category]));
-          const toConfiguredOptions = (type: 'EXPENSE' | 'INCOME'): CategoryOption[] => dbCategories
-            .filter(category => category.type === type)
-            .sort((a, b) => Number(Boolean(a.parent_id)) - Number(Boolean(b.parent_id)) || a.name.localeCompare(b.name))
-            .map(category => ({
-              id: category.id,
-              name: category.name,
-              parentId: category.parent_id || null,
-              label: category.parent_id && categoryMap.get(category.parent_id)
-                ? `${categoryMap.get(category.parent_id)!.name} / ${category.name}`
-                : category.name
-            }));
-          const configuredExpenses = toConfiguredOptions('EXPENSE');
-          const configuredIncomes = toConfiguredOptions('INCOME');
-          setExpenseCategories(configuredExpenses);
-          setIncomeCategories(configuredIncomes);
-          setSelectedCategory(current => {
-            const availableCategories = transactionType === 'EXPENSE' ? configuredExpenses : configuredIncomes;
-            return availableCategories.some(category => category.name === current)
-              ? current
-              : availableCategories[0]?.name || '';
-          });
-          const availableCategories = transactionType === 'EXPENSE' ? configuredExpenses : configuredIncomes;
-          const currentCategory = availableCategories.some(category => category.name === selectedCategory)
-            ? selectedCategory
-            : availableCategories[0]?.name || '';
-          const currentOption = getCategoryOption(availableCategories, currentCategory);
-          setSelectedCategory(currentCategory);
-          setSelectedParentCategoryId(currentOption?.parentId || currentOption?.id || '');
-          setSelectedSubcategoryId(currentOption?.parentId ? currentOption.id : '');
-        }
+        const categoryMap = new Map((dbCategories || []).map(category => [category.id, category]));
+        const toConfiguredOptions = (type: 'EXPENSE' | 'INCOME'): CategoryOption[] => (dbCategories || [])
+          .filter(category => category.type === type)
+          .sort((a, b) => Number(Boolean(a.parent_id)) - Number(Boolean(b.parent_id)) || a.name.localeCompare(b.name))
+          .map(category => ({
+            id: category.id,
+            name: category.name,
+            parentId: category.parent_id || null,
+            label: category.parent_id && categoryMap.get(category.parent_id)
+              ? `${categoryMap.get(category.parent_id)!.name} / ${category.name}`
+              : category.name
+          }));
+        const configuredExpenses = toConfiguredOptions('EXPENSE');
+        const configuredIncomes = toConfiguredOptions('INCOME');
+        setExpenseCategories(configuredExpenses);
+        setIncomeCategories(configuredIncomes);
+        const availableCategories = transactionType === 'EXPENSE' ? configuredExpenses : configuredIncomes;
+        const currentCategory = availableCategories.some(category => category.name === selectedCategory)
+          ? selectedCategory
+          : availableCategories[0]?.name || '';
+        const currentOption = getCategoryOption(availableCategories, currentCategory);
+        setSelectedCategory(currentCategory);
+        setSelectedParentCategoryId(currentOption?.parentId || currentOption?.id || '');
+        setSelectedSubcategoryId(currentOption?.parentId ? currentOption.id : '');
 
         if (dbAccounts && dbAccounts.length > 0) {
           setBanks(dbAccounts.map(a => ({
@@ -322,10 +282,10 @@ export default function SaldoExtratoPage() {
 
   // Simulação de Importação
   const [extractedExtrato, setExtractedExtrato] = useState([
-    { id: 'ex-1', checked: true, name: 'Recebimento de Cliente Pix', date: '2026-10-12', amount: 800.00, type: 'INCOME' as const, originBank: 'Mercado Pago', category: 'Vendas / Freelance' },
-    { id: 'ex-2', checked: true, name: 'iFood Restaurante', date: '2026-10-11', amount: -76.50, type: 'EXPENSE' as const, originBank: 'Mercado Pago', category: 'Alimentação & Supermercado' },
-    { id: 'ex-3', checked: true, name: 'Pagamento de Fatura', date: '2026-10-10', amount: -1450.00, type: 'EXPENSE' as const, originBank: 'Mercado Pago', category: 'Pagamento de Cartão / Fatura' },
-    { id: 'ex-4', checked: true, name: 'Depósito em Conta', date: '2026-10-09', amount: 2400.00, type: 'INCOME' as const, originBank: 'Mercado Pago', category: 'Outras Entradas' },
+    { id: 'ex-1', checked: true, name: 'Recebimento de Cliente Pix', date: '2026-10-12', amount: 800.00, type: 'INCOME' as const, originBank: 'Mercado Pago', category: '' },
+    { id: 'ex-2', checked: true, name: 'iFood Restaurante', date: '2026-10-11', amount: -76.50, type: 'EXPENSE' as const, originBank: 'Mercado Pago', category: '' },
+    { id: 'ex-3', checked: true, name: 'Pagamento de Fatura', date: '2026-10-10', amount: -1450.00, type: 'EXPENSE' as const, originBank: 'Mercado Pago', category: '' },
+    { id: 'ex-4', checked: true, name: 'Depósito em Conta', date: '2026-10-09', amount: 2400.00, type: 'INCOME' as const, originBank: 'Mercado Pago', category: '' },
   ]);
 
   const formatCurrency = (val: number) => {
@@ -376,10 +336,10 @@ export default function SaldoExtratoPage() {
   // Salvar Lançamento
   const handleSaveTransaction = async () => {
     const parsedAmount = parseFloat(amount.replace(',', '.')) || 0;
-    if (parsedAmount <= 0) return;
+    if (parsedAmount <= 0 || !selectedCategory) return;
 
     const finalAmount = transactionType === 'EXPENSE' ? -parsedAmount : parsedAmount;
-    const categoryName = isThirdParty ? 'Empréstimo a Terceiro' : selectedCategory;
+    const categoryName = selectedCategory;
 
     if (editingTransaction) {
       const accountId = banks.find(bank => bank.name === selectedBank)?.id;
@@ -1343,7 +1303,8 @@ export default function SaldoExtratoPage() {
               <button 
                 type="button" 
                 onClick={handleSaveTransaction}
-                className="flex-1 px-3 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs transition-all shadow-md active:scale-95"
+                disabled={!selectedCategory}
+                className="flex-1 px-3 py-2 rounded-xl bg-[#1A44C8] hover:bg-[#1538A5] text-white font-semibold text-xs transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Salvar Lançamento
               </button>

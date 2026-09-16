@@ -205,9 +205,7 @@ function SettingsContent() {
   const fetchData = async () => {
     try {
       const user = await getAuthenticatedUser();
-      const userIds = user?.email?.toLowerCase().trim() === 'miguelguedes110@gmail.com'
-        ? ['b0a91108-2b2f-4e43-86a8-260969705b7f', 'b141c1ba-97c9-4b20-a662-aedeb4b38acd']
-        : [user?.id].filter(Boolean);
+      const userIds = [user?.id].filter(Boolean);
 
       const [catRes, accList, cardList, thirdList] = await Promise.all([
         supabase.from('categories').select('*').in('user_id', userIds).order('name').then(r => r, () => ({ data: null })),
