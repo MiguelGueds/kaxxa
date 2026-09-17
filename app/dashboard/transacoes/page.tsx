@@ -419,7 +419,7 @@ export default function SaldoExtratoPage() {
         }
       };
 
-      saveTx().catch(err => console.error('Erro ao persistir transação no Supabase:', err));
+      await saveTx();
 
       const newTx: TransactionItem = {
         id: newId,

@@ -278,6 +278,8 @@ export const accountsService = {
     const user = await getAuthenticatedUser();
     if (!user) return false;
 
+    const currentLocal = getLocalAccounts(user.id);
+    const localAccount = currentLocal.find(account => account.id === id);
     const client = supabaseAdmin || supabase;
     const { data: acc } = await client
       .from('accounts')
@@ -286,18 +288,46 @@ export const accountsService = {
       .eq('user_id', user.id)
       .single();
 
-    if (!acc) return false;
-
-    const currentBal = Number(acc.balance ?? acc.initial_balance ?? 0);
+    const currentBal = Number(acc?.balance ?? acc?.initial_balance ?? localAccount?.balance ?? 0);
     const newBalance = currentBal + deltaAmount;
+    let updated = false;
 
-    const { error } = await client
-      .from('accounts')
-      .update({ initial_balance: newBalance })
-      .eq('id', id)
-      .eq('user_id', user.id);
+    if (acc) {
+      const { error } = await client
+        .from('accounts')
+        .update({ balance: newBalance, initial_balance: newBalance })
+        .eq('id', id)
+        .eq('user_id', user.id);
+      updated = !error;
+    }
 
-    return !error;
+    if (!updated && typeof window !== 'undefined') {
+      try {
+        const response = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update',
+            table: 'accounts',
+            id,
+            payload: { balance: newBalance, initial_balance: newBalance, user_id: user.id }
+          })
+        });
+        updated = response.ok;
+      } catch (error) {
+        console.warn('Erro ao atualizar saldo pela API:', error);
+      }
+    }
+
+    if (localAccount) {
+      saveLocalAccounts(user.id, currentLocal.map(account => account.id === id
+        ? { ...account, balance: newBalance, initial_balance: newBalance }
+        : account
+      ));
+      updated = true;
+    }
+
+    return updated;
   },
 
   async deleteAccount(id: string): Promise<boolean> {
