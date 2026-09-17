@@ -228,6 +228,28 @@ export const transactionsService = {
       console.warn('Exceção ao cadastrar transação no Supabase, salvando localmente:', err);
     }
 
+    if (!insertedData && typeof window !== 'undefined') {
+      try {
+        const response = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'insert',
+            table: 'transactions',
+            payload
+          })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && result?.data) {
+          insertedData = result.data;
+        } else {
+          console.error('Erro ao cadastrar transação pela API:', result?.error || response.statusText);
+        }
+      } catch (fallbackError) {
+        console.error('Erro ao usar fallback da API para transação:', fallbackError);
+      }
+    }
+
     if (tx.account_id && tx.is_paid !== false) {
       const delta = tx.type === 'INCOME' ? Number(tx.amount) : -Number(tx.amount);
       await accountsService.updateBalance(tx.account_id, delta);

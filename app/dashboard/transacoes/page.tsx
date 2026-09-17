@@ -430,7 +430,7 @@ export default function SaldoExtratoPage() {
         rawDate: date,
         amount: finalAmount,
         bank: selectedBank,
-        category: isThirdParty ? 'Empréstimo a Terceiro' : selectedCategory,
+        category: categoryName,
         type: transactionType,
         isThirdParty: isThirdParty,
         thirdPartyName: isThirdParty ? thirdPartyName : undefined
