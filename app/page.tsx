@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, 
-  Sparkles, 
   ShieldCheck, 
   TrendingUp, 
   CreditCard, 
@@ -24,7 +23,8 @@ import {
   Star,
   HelpCircle,
   Clock,
-  Wallet
+  Wallet,
+  Target
 } from 'lucide-react';
 import { KaxxaLogo } from '@/app/components/KaxxaLogo';
 import { PixIcon } from '@/app/components/PixLogo';
@@ -127,8 +127,8 @@ export default function LandingPage() {
   return (
     <div className="landing-page bg-[#07101f] text-[#f8fafc] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] min-h-screen overflow-x-hidden">
       
-      {/* 1. FUNDO DINÂMICO DE LUXO: ONDAS FLUIDAS, ESFERAS DE CRISTAL 3D & SPOTLIGHT INTERATIVO */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden landing-atmosphere">
+      {/* Atmosfera antiga removida: o vídeo do hero é a única camada de movimento do palco. */}
+      <div className="hidden" aria-hidden="true">
         
         {/* Spotlight Interativo que Segue o Cursor */}
         <div 
@@ -251,11 +251,11 @@ export default function LandingPage() {
       </div>
 
       {/* 2. HERO CONTÍNUO COM VÍDEO */}
-      <section className="relative min-h-screen overflow-visible bg-[#07020f] text-[#f8f7f2]">
+      <section className="relative min-h-screen overflow-visible bg-[#07101f] text-[#f8f7f2]">
         <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
           <video
             ref={heroVideoRef}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="hero-video absolute inset-0 h-full w-full object-cover"
             style={{ opacity: videoOpacity }}
             muted
             playsInline
@@ -289,12 +289,11 @@ export default function LandingPage() {
           <div className="flex flex-1 items-center justify-center py-24 text-center sm:py-28">
             <div className="hero-content-reveal max-w-5xl">
               <p className="mb-5 text-xs font-semibold uppercase tracking-[0.28em] text-white/55">Inteligência para o seu patrimônio</p>
-              <h1 className="font-general text-[clamp(4.2rem,16vw,13.75rem)] font-normal leading-[1.02] tracking-[-0.024em] text-white">
-                Kaxxa <span className="bg-gradient-to-l from-[#60A5FA] via-[#1A44C8] to-[#00A3FF] bg-clip-text text-transparent">Finance</span>
+              <img src="/logos/kaxxa-logo-white.png" alt="Kaxxa" className="mx-auto mb-8 h-9 w-auto opacity-90" />
+              <h1 className="font-general text-[clamp(3.5rem,10vw,8.5rem)] font-normal leading-[1.02] tracking-[-0.024em] text-white">
+                Sua vida financeira,<br />
+                <span className="bg-gradient-to-r from-[#60A5FA] via-[#1A44C8] to-[#00A3FF] bg-clip-text text-transparent">finalmente sob controle.</span>
               </h1>
-              <p className="mx-auto mt-3 max-w-md text-lg leading-8 text-[#d6d1cc]/80 sm:text-xl">
-                Sua vida financeira, finalmente sob controle.
-              </p>
               <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-white/55 sm:text-base">
                 Patrimônio, cartões, dívidas e gastos em uma visão clara para decisões melhores todos os dias.
               </p>
@@ -648,7 +647,7 @@ export default function LandingPage() {
 
                     <div className="p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs">
+                        <div className="w-8 h-8 rounded-lg bg-[#1A44C8]/10 text-[#60A5FA] flex items-center justify-center font-bold text-xs">
                           NU
                         </div>
                         <div>
@@ -912,14 +911,14 @@ export default function LandingPage() {
                     {/* Card: Foco & Metas */}
                     <div className="p-4 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-2 hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                          <Sparkles size={16} className="text-purple-500" />
+                        <div className="w-8 h-8 rounded-lg bg-[#1A44C8]/10 flex items-center justify-center">
+                          <Target size={16} className="text-[#60A5FA]" />
                         </div>
                         <span className="text-xs font-bold text-[#181B22]">Foco & Metas</span>
                       </div>
                       <p className="text-lg font-extrabold text-[#1A44C8]">3 de 5</p>
                       <div className="w-full h-2 rounded-full bg-[#F1F3F7] overflow-hidden">
-                        <div className="h-full bg-purple-500 rounded-full w-[60%]"></div>
+                        <div className="h-full bg-[#1A44C8] rounded-full w-[60%]"></div>
                       </div>
                       <p className="text-[10px] text-[#64748B]">Metas atingidas este trimestre</p>
                     </div>
@@ -1197,7 +1196,7 @@ export default function LandingPage() {
 
           {/* Badge Plano Único */}
           <div className="mt-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#1A44C8]/10 border border-[#1A44C8]/20 text-[#1A44C8] text-xs font-bold shadow-sm">
-            <Sparkles size={14} />
+            <Target size={14} />
             <span>Plano Único Mensal • Sem Fidelidade</span>
           </div>
         </div>

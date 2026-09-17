@@ -51,6 +51,35 @@ body {
   display: none;
 }
 
+.landing-page .animate-pulse,
+.landing-page .animate-ping,
+.landing-page .animate-float-spark-1,
+.landing-page .animate-float-spark-2,
+.landing-page .animate-float-spark-3,
+.landing-page .animate-float-spark-4,
+.landing-page .animate-crystal-orb-1,
+.landing-page .animate-crystal-orb-2,
+.landing-page .animate-crystal-orb-3,
+.landing-page .animate-spin-orbit,
+.landing-page .animate-aurora-glow {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+.landing-page section:not(:first-of-type),
+.landing-page footer {
+  position: relative;
+  background: transparent !important;
+}
+
+.landing-page section:not(:first-of-type)::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #07101f;
+  content: '';
+}
+
 .landing-page [class~="bg-white"],
 .landing-page [class~="bg-[#FFFFFF]"],
 .landing-page [class~="bg-[#F8F9FA]"],
@@ -123,6 +152,10 @@ body {
   background: linear-gradient(135deg, #f7f3ed 0%, #d5d0ca 100%);
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.8);
   transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.hero-video {
+  filter: hue-rotate(42deg) saturate(0.82) brightness(0.82);
 }
 
 .hero-cta:hover {
