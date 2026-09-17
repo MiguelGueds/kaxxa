@@ -41,6 +41,68 @@ body {
   display: none;
 }
 
+/* A landing inteira compartilha o palco escuro do hero; o conteúdo interno mantém sua hierarquia, mas não o tema claro legado. */
+.landing-page {
+  background: #07101f !important;
+  color: #f8fafc !important;
+}
+
+.landing-page .landing-atmosphere {
+  display: none;
+}
+
+.landing-page [class~="bg-white"],
+.landing-page [class~="bg-[#FFFFFF]"],
+.landing-page [class~="bg-[#F8F9FA]"],
+.landing-page [class~="bg-[#F5F6F9]"],
+.landing-page [class~="bg-[#F8FAFC]"],
+.landing-page [class~="bg-[#F1F3F7]"] {
+  background-color: #0d192b !important;
+}
+
+.landing-page [class*="bg-[#FFFFFF]"],
+.landing-page [class*="bg-[#F8F9FA]"],
+.landing-page [class*="bg-[#F5F6F9]"],
+.landing-page [class*="bg-[#F8FAFC]"],
+.landing-page [class*="bg-[#F1F3F7]"] {
+  background-color: #0d192b !important;
+}
+
+.landing-page [class~="text-[#181B22]"],
+.landing-page [class~="text-gray-900"],
+.landing-page [class~="text-slate-900"] {
+  color: #f8fafc !important;
+}
+
+.landing-page [class~="text-[#64748B]"],
+.landing-page [class~="text-[#94A3B8]"],
+.landing-page [class~="text-slate-600"],
+.landing-page [class~="text-slate-500"],
+.landing-page [class~="text-slate-400"] {
+  color: #a9b7ca !important;
+}
+
+.landing-page [class~="border-[#E5E7EB]"],
+.landing-page [class~="border-[#E7ECF4]"],
+.landing-page [class~="border-[#DCE2EA]"],
+.landing-page [class~="border-[#F1F5F9]"] {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+.landing-page [class~="bg-purple-500/10"],
+.landing-page [class~="bg-purple-50"],
+.landing-page [class~="text-purple-500"],
+.landing-page [class~="text-purple-600"],
+.landing-page [class~="bg-purple-500"] {
+  background-color: rgba(26, 68, 200, 0.14) !important;
+  color: #60a5fa !important;
+}
+
+.landing-page footer {
+  background-color: #081221 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
 .font-general {
   font-family: 'General Sans', 'Manrope', sans-serif;
 }

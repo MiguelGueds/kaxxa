@@ -125,7 +125,7 @@ export default function LandingPage() {
   }, [isPaused]);
 
   return (
-    <div className="bg-[#F8F9FA] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] min-h-screen overflow-x-hidden">
+    <div className="landing-page bg-[#07101f] text-[#f8fafc] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] min-h-screen overflow-x-hidden">
       
       {/* 1. FUNDO DINÂMICO DE LUXO: ONDAS FLUIDAS, ESFERAS DE CRISTAL 3D & SPOTLIGHT INTERATIVO */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden landing-atmosphere">
@@ -290,7 +290,7 @@ export default function LandingPage() {
             <div className="hero-content-reveal max-w-5xl">
               <p className="mb-5 text-xs font-semibold uppercase tracking-[0.28em] text-white/55">Inteligência para o seu patrimônio</p>
               <h1 className="font-general text-[clamp(4.2rem,16vw,13.75rem)] font-normal leading-[1.02] tracking-[-0.024em] text-white">
-                Kaxxa <span className="bg-gradient-to-l from-indigo-400 via-purple-400 to-amber-300 bg-clip-text text-transparent">Finance</span>
+                Kaxxa <span className="bg-gradient-to-l from-[#60A5FA] via-[#1A44C8] to-[#00A3FF] bg-clip-text text-transparent">Finance</span>
               </h1>
               <p className="mx-auto mt-3 max-w-md text-lg leading-8 text-[#d6d1cc]/80 sm:text-xl">
                 Sua vida financeira, finalmente sob controle.
