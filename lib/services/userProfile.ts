@@ -36,57 +36,52 @@ export const userProfileService = {
   async getProfile(userId: string): Promise<UserProfileData | null> {
     const local = this.getLocalProfile(userId);
 
-    try {
-      // 1. Tenta recuperar do Supabase Auth metadata diretamente (mais rápido e 100% garantido cross-device)
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData?.user) {
-        const metaAvatar = authData.user.user_metadata?.avatar_url;
-        const metaName = authData.user.user_metadata?.full_name;
-        const metaPhone = authData.user.user_metadata?.phone;
-
-        if (metaAvatar || metaName || metaPhone) {
-          const profileFromMeta: UserProfileData = {
-            avatar: metaAvatar ?? local?.avatar ?? null,
-            name: metaName ?? local?.name,
-            phone: metaPhone ?? local?.phone
-          };
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(`${PROFILE_KEY_PREFIX}${userId}`, JSON.stringify(profileFromMeta));
-            if (profileFromMeta.avatar) {
-              localStorage.setItem(`kaxxa_user_avatar_${userId}`, profileFromMeta.avatar);
-              localStorage.setItem('kaxxa_user_avatar', profileFromMeta.avatar);
-            }
-          }
-          return profileFromMeta;
-        }
+    const cacheProfile = (profile: UserProfileData) => {
+      if (typeof window === 'undefined') return;
+      localStorage.setItem(`${PROFILE_KEY_PREFIX}${userId}`, JSON.stringify(profile));
+      if (profile.avatar) {
+        localStorage.setItem(`kaxxa_user_avatar_${userId}`, profile.avatar);
+        localStorage.setItem('kaxxa_user_avatar', profile.avatar);
       }
+    };
 
-      // 2. Fallback para tabela third_parties (sem coluna updated_at que causava erro)
-      const targetUserIds = UNIFIED_USER_IDS.includes(userId) ? UNIFIED_USER_IDS : [userId];
-      const { data, error } = await supabase
+    try {
+      const remoteQuery = await supabase
         .from('third_parties')
         .select('contact_info, user_id')
         .eq('name', PROFILE_ROW_NAME)
-        .in('user_id', targetUserIds)
+        .eq('user_id', userId)
         .limit(1);
+      let remoteRow = remoteQuery.data?.[0];
 
-      if (!error && data && data.length > 0 && data[0].contact_info) {
-        try {
-          const remoteProfile: UserProfileData = JSON.parse(data[0].contact_info);
-          if (remoteProfile) {
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(`${PROFILE_KEY_PREFIX}${userId}`, JSON.stringify(remoteProfile));
-              if (remoteProfile.avatar) {
-                localStorage.setItem(`kaxxa_user_avatar_${userId}`, remoteProfile.avatar);
-                localStorage.setItem('kaxxa_user_avatar', remoteProfile.avatar);
-              }
-            }
-            return remoteProfile;
-          }
-        } catch {}
-      } else if (local?.avatar) {
-        // Se existe avatar salvo localmente no dispositivo atual mas ainda não está na nuvem, sobe agora!
-        this.saveProfile(userId, local).catch(() => {});
+      if (!remoteRow && typeof window !== 'undefined') {
+        const response = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'select', table: 'third_parties', filters: { user_id: userId } })
+        });
+        const result = await response.json().catch(() => ({}));
+        remoteRow = Array.isArray(result.data)
+          ? result.data.find((item: any) => item.name === PROFILE_ROW_NAME && item.contact_info)
+          : undefined;
+      }
+
+      if (remoteRow?.contact_info) {
+        const remoteProfile = JSON.parse(remoteRow.contact_info) as UserProfileData;
+        cacheProfile(remoteProfile);
+        return remoteProfile;
+      }
+
+      const { data: authData } = await supabase.auth.getUser();
+      const metadata = authData?.user?.user_metadata;
+      if (metadata?.avatar_url || metadata?.full_name || metadata?.phone) {
+        const profileFromMetadata: UserProfileData = {
+          avatar: metadata.avatar_url ?? local?.avatar ?? null,
+          name: metadata.full_name ?? local?.name,
+          phone: metadata.phone ?? local?.phone
+        };
+        cacheProfile(profileFromMetadata);
+        return profileFromMetadata;
       }
     } catch (e) {
       console.warn('Erro ao carregar perfil remoto do Supabase:', e);
@@ -128,40 +123,57 @@ export const userProfileService = {
       console.warn('Erro ao atualizar metadata do Supabase Auth:', e);
     }
 
-    // 3. Backup de persistência no banco Supabase (tabela third_parties)
+    // 3. Persistência canônica no banco Supabase (tabela third_parties)
     try {
-      const targetUserIds = UNIFIED_USER_IDS.includes(userId) ? UNIFIED_USER_IDS : [userId];
+      const rowPayload = {
+        user_id: userId,
+        name: PROFILE_ROW_NAME,
+        contact_info: JSON.stringify(data)
+      };
+      const { data: existing, error: lookupError } = await supabase
+        .from('third_parties')
+        .select('id')
+        .eq('name', PROFILE_ROW_NAME)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (lookupError) throw lookupError;
 
-      for (const uid of targetUserIds) {
-        const { data: existing } = await supabase
-          .from('third_parties')
-          .select('id')
-          .eq('name', PROFILE_ROW_NAME)
-          .eq('user_id', uid)
-          .maybeSingle();
-
-        const rowPayload = {
-          user_id: uid,
-          name: PROFILE_ROW_NAME,
-          contact_info: JSON.stringify(data)
-        };
-
-        if (existing?.id) {
-          await supabase
-            .from('third_parties')
-            .update(rowPayload)
-            .eq('id', existing.id);
-        } else {
-          await supabase
-            .from('third_parties')
-            .insert({
-              id: generateUuid(),
-              ...rowPayload
-            });
-        }
+      const result = existing?.id
+        ? await supabase.from('third_parties').update(rowPayload).eq('id', existing.id).select().single()
+        : await supabase.from('third_parties').insert({ id: generateUuid(), ...rowPayload }).select().single();
+      if (result.error) throw result.error;
+    } catch (directError) {
+      try {
+        const selectResponse = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'select', table: 'third_parties', filters: { user_id: userId } })
+        });
+        const selectResult = await selectResponse.json().catch(() => ({}));
+        const existingRow = Array.isArray(selectResult.data)
+          ? selectResult.data.find((item: any) => item.name === PROFILE_ROW_NAME)
+          : null;
+        const response = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(existingRow?.id
+            ? {
+                action: 'update',
+                table: 'third_parties',
+                id: existingRow.id,
+                payload: { user_id: userId, name: PROFILE_ROW_NAME, contact_info: JSON.stringify(data) }
+              }
+            : {
+                action: 'insert',
+                table: 'third_parties',
+                payload: { id: generateUuid(), user_id: userId, name: PROFILE_ROW_NAME, contact_info: JSON.stringify(data) }
+              })
+        });
+        if (!response.ok) throw new Error('Falha no fallback de perfil');
+      } catch (fallbackError) {
+        console.warn('Erro ao salvar perfil na nuvem Supabase:', directError, fallbackError);
+        throw fallbackError;
       }
-    } catch (e) {
-      console.warn('Erro ao salvar perfil na nuvem Supabase:', e);
     }
   }
 };

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, 
   Sparkles, 
@@ -37,6 +37,8 @@ export default function LandingPage() {
   const [isPaused, setIsPaused] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+  const [videoOpacity, setVideoOpacity] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -59,6 +61,50 @@ export default function LandingPage() {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video) return;
+
+    let frameId = 0;
+    let resetTimer: ReturnType<typeof setTimeout> | undefined;
+    const fadeDuration = 500;
+
+    const animateFade = (timestamp: number) => {
+      const duration = video.duration;
+      if (!Number.isFinite(duration) || duration <= 0) {
+        frameId = requestAnimationFrame(animateFade);
+        return;
+      }
+
+      const elapsed = video.currentTime;
+      const fadeIn = Math.min(1, elapsed / (fadeDuration / 1000));
+      const remaining = duration - elapsed;
+      const fadeOut = Math.min(1, remaining / (fadeDuration / 1000));
+      setVideoOpacity(Math.max(0, Math.min(fadeIn, fadeOut)));
+      frameId = requestAnimationFrame(animateFade);
+    };
+
+    const handleEnded = () => {
+      cancelAnimationFrame(frameId);
+      setVideoOpacity(0);
+      resetTimer = setTimeout(() => {
+        video.currentTime = 0;
+        void video.play();
+        frameId = requestAnimationFrame(animateFade);
+      }, 100);
+    };
+
+    video.addEventListener('ended', handleEnded);
+    void video.play().catch(() => undefined);
+    frameId = requestAnimationFrame(animateFade);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      if (resetTimer) clearTimeout(resetTimer);
+      video.removeEventListener('ended', handleEnded);
     };
   }, []);
 
@@ -204,8 +250,78 @@ export default function LandingPage() {
         ></div>
       </div>
 
-      {/* 2. HEADER STICKY GLASSMORPHISM */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      {/* 2. HERO CONTÍNUO COM VÍDEO */}
+      <section className="relative min-h-screen overflow-visible bg-[#07020f] text-[#f8f7f2]">
+        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+          <video
+            ref={heroVideoRef}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ opacity: videoOpacity }}
+            muted
+            playsInline
+            preload="auto"
+            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_065045_c44942da-53c6-4804-b734-f9e07fc22e08.mp4"
+            aria-hidden="true"
+          />
+        </div>
+
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[527px] w-[984px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gray-950/90 blur-[82px]" aria-hidden="true" />
+
+        <div className="relative z-10 flex min-h-screen flex-col px-5 sm:px-8">
+          <nav className="mx-auto flex w-full max-w-7xl items-center justify-between py-5" aria-label="Navegação principal">
+            <Link href="/" className="transition-opacity hover:opacity-75" aria-label="Kaxxa início">
+              <img src="/logos/kaxxa-logo-white.png" alt="Kaxxa" className="h-8 w-auto" />
+            </Link>
+
+            <div className="hidden items-center gap-7 text-sm text-white/90 md:flex">
+              <a href="#demonstracao" className="hero-nav-link">Demonstração <ChevronDown size={14} /></a>
+              <a href="#economia" className="hero-nav-link">Economia</a>
+              <a href="#planos" className="hero-nav-link">Planos</a>
+              <a href="#arquitetura" className="hero-nav-link">Aprenda <ChevronDown size={14} /></a>
+            </div>
+
+            <Link href="/login" className="liquid-glass inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5">
+              Entrar
+            </Link>
+          </nav>
+          <div className="mx-auto h-px w-full max-w-7xl bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+          <div className="flex flex-1 items-center justify-center py-24 text-center sm:py-28">
+            <div className="hero-content-reveal max-w-5xl">
+              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.28em] text-white/55">Inteligência para o seu patrimônio</p>
+              <h1 className="font-general text-[clamp(4.2rem,16vw,13.75rem)] font-normal leading-[1.02] tracking-[-0.024em] text-white">
+                Kaxxa <span className="bg-gradient-to-l from-indigo-400 via-purple-400 to-amber-300 bg-clip-text text-transparent">Finance</span>
+              </h1>
+              <p className="mx-auto mt-3 max-w-md text-lg leading-8 text-[#d6d1cc]/80 sm:text-xl">
+                Sua vida financeira, finalmente sob controle.
+              </p>
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-white/55 sm:text-base">
+                Patrimônio, cartões, dívidas e gastos em uma visão clara para decisões melhores todos os dias.
+              </p>
+              <Link href="/planos" className="hero-cta mt-7 inline-flex items-center gap-2 rounded-full px-7 py-4 text-sm font-semibold text-[#151018]">
+                Começar agora <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+
+          <div className="mx-auto flex w-full max-w-5xl flex-col items-start gap-6 pb-10 sm:flex-row sm:items-center sm:gap-12">
+            <p className="max-w-[150px] text-sm leading-5 text-white/50">Escolhido por quem leva o futuro a sério</p>
+            <div className="logo-marquee-viewport min-w-0 flex-1">
+              <div className="logo-marquee-track">
+                {['Nubank', 'Inter', 'Itaú', 'Santander', 'XP', 'Mercado Pago', 'Nubank', 'Inter', 'Itaú', 'Santander', 'XP', 'Mercado Pago'].map((brand, index) => (
+                  <span key={`${brand}-${index}`} className="flex shrink-0 items-center gap-2 text-base font-semibold text-white/80">
+                    <span className="liquid-glass flex h-6 w-6 items-center justify-center rounded-lg text-[10px] text-white/90">{brand.charAt(0)}</span>
+                    {brand}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. HEADER STICKY GLASSMORPHISM */}
+      <header className={`hidden fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled 
           ? 'bg-[#FFFFFF]/90 backdrop-blur-xl border-b border-[#E5E7EB] shadow-[0_4px_20px_rgba(0,0,0,0.03)] py-3.5' 
           : 'bg-transparent py-5 border-b border-transparent'
@@ -239,7 +355,7 @@ export default function LandingPage() {
       </header>
 
       {/* 3. HERO SECTION SAAS */}
-      <div className="hero-wrapper min-h-screen flex items-center">
+      <div className="hero-wrapper hidden min-h-screen flex items-center">
         <section className={`relative z-10 w-full max-w-7xl mx-auto px-6 pt-32 pb-16 lg:pt-40 lg:pb-24 ${heroVisible ? 'animate-fade-in-up' : ''}`}>
           <div className="grid items-center gap-14 lg:grid-cols-[0.88fr_1.12fr] lg:gap-16">
             <div className="max-w-xl">

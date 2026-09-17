@@ -256,7 +256,7 @@ export default function SaldoExtratoPage() {
           setBanks([]);
         }
 
-        if (dbTransactions && dbTransactions.length > 0) {
+        if (dbTransactions !== null) {
           const accountNames = new Map((dbAccounts || []).map(account => [account.id, account.name]));
           setTransactions(dbTransactions.map(t => ({
             id: t.id,
@@ -270,8 +270,6 @@ export default function SaldoExtratoPage() {
             isThirdParty: !!t.third_party_name,
             thirdPartyName: t.third_party_name
           })));
-        } else {
-          setTransactions([]);
         }
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);

@@ -106,6 +106,22 @@ export const transactionsService = {
       if (!error && data !== null) {
         let rawList = [...data];
 
+        if (rawList.length === 0 && typeof window !== 'undefined') {
+          try {
+            const response = await fetch('/api/db', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'select', table: 'transactions', filters: { user_id: user.id } })
+            });
+            const result = await response.json().catch(() => ({}));
+            if (response.ok && Array.isArray(result.data) && result.data.length > 0) {
+              rawList = result.data;
+            }
+          } catch (fallbackError) {
+            console.warn('Erro ao consultar transações pela API:', fallbackError);
+          }
+        }
+
         const formatted = rawList.map(t => ({
           ...t,
           amount: Number(t.amount || 0),
@@ -168,7 +184,25 @@ export const transactionsService = {
       console.warn('Erro ao buscar transações do Supabase, usando backup local:', err);
     }
 
-    return getLocalTransactions(user.id);
+    const localItems = getLocalTransactions(user.id);
+    if (typeof window !== 'undefined') {
+      try {
+        const response = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'select', table: 'transactions', filters: { user_id: user.id } })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && Array.isArray(result.data)) {
+          return [...result.data, ...localItems.filter(local =>
+            !result.data.some((remote: DbTransaction) => remote.id === local.id)
+          )] as DbTransaction[];
+        }
+      } catch (fallbackError) {
+        console.warn('Erro no fallback de leitura das transações:', fallbackError);
+      }
+    }
+    return localItems;
   },
 
   async createTransaction(tx: Omit<DbTransaction, 'id' | 'user_id' | 'created_at'>): Promise<DbTransaction | null> {

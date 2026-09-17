@@ -171,7 +171,7 @@ function MinhaContaContent() {
     e.target.value = '';
   };
 
-  const handleConfirmCrop = () => {
+  const handleConfirmCrop = async () => {
     if (!cropImageSrc || !cropImageRef.current) return;
 
     const img = cropImageRef.current;
@@ -201,7 +201,7 @@ function MinhaContaContent() {
     setUserAvatar(compressedBase64);
     setIsCropModalOpen(false);
     setCropImageSrc(null);
-    setSuccessMsg('Foto de perfil atualizada com sucesso!');
+    resetMessages();
 
     // 1. Grava no localStorage imediatamente para resposta visual instantânea
     if (typeof window !== 'undefined') {
@@ -217,17 +217,18 @@ function MinhaContaContent() {
     }
 
     // 2. Sincroniza diretamente com Supabase Auth
-    supabase.auth.updateUser({
-      data: { avatar_url: compressedBase64 }
-    }).catch(err => console.warn('Erro ao atualizar avatar no Supabase Auth:', err));
-
-    // 3. Salva no serviço de perfil
+    // 3. Aguarda a confirmação da persistência remota
     const effectiveUserId = userId || 'b0a91108-2b2f-4e43-86a8-260969705b7f';
-    userProfileService.saveProfile(effectiveUserId, {
-      avatar: compressedBase64,
-      name: userName,
-      phone: userPhone
-    }).catch(err => console.warn('Erro ao sincronizar avatar com a nuvem:', err));
+    try {
+      await userProfileService.saveProfile(effectiveUserId, {
+        avatar: compressedBase64,
+        name: userName,
+        phone: userPhone
+      });
+      setSuccessMsg('Foto de perfil atualizada com sucesso!');
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Não foi possível confirmar o salvamento da foto na nuvem.');
+    }
   };
 
   const handleRemoveAvatar = async () => {
@@ -285,7 +286,7 @@ function MinhaContaContent() {
       setSuccessMsg('Perfil atualizado com sucesso!');
     } catch (err: any) {
       console.warn('Erro ao atualizar perfil:', err);
-      setSuccessMsg('Perfil atualizado com sucesso!');
+      setErrorMsg(err?.message || 'Não foi possível salvar o perfil na nuvem. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
