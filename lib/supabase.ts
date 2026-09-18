@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { clearMemorySubscriptions } from '@/lib/services/subscription';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -106,6 +105,7 @@ export async function getAuthenticatedUser() {
 }
 
 export async function performGlobalSignOut() {
+  const { clearMemorySubscriptions } = await import('@/lib/services/subscription');
   clearMemorySubscriptions();
   if (typeof window !== 'undefined') {
     localStorage.removeItem('kaxxa_access_granted');
