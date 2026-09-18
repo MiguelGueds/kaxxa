@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import { supabase, supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase';
 import { saveSubscriptionLocal, subscriptionService, DbSubscription } from '@/lib/services/subscription';
 
@@ -35,72 +33,17 @@ export function calculateCouponDiscount(originalPrice: number, coupon: Coupon): 
 
 let MEMORY_COUPONS: Coupon[] | null = null;
 
-function getStoragePaths() {
-  const primaryDir = path.join(process.cwd(), 'data');
-  const primaryFile = path.join(primaryDir, 'coupons.json');
-  const tmpDir = '/tmp/kaxxa_data';
-  const tmpFile = path.join(tmpDir, 'coupons.json');
-  return { primaryDir, primaryFile, tmpDir, tmpFile };
-}
-
 function ensureLocalFile(): Coupon[] {
   if (MEMORY_COUPONS !== null) {
     return MEMORY_COUPONS;
   }
 
-  const { primaryDir, primaryFile, tmpDir, tmpFile } = getStoragePaths();
-
-  // 1. Tenta ler do primary (process.cwd)
-  try {
-    if (fs.existsSync(primaryFile)) {
-      const data = fs.readFileSync(primaryFile, 'utf8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        MEMORY_COUPONS = parsed;
-        return MEMORY_COUPONS;
-      }
-    }
-  } catch {}
-
-  // 2. Tenta ler do /tmp
-  try {
-    if (fs.existsSync(tmpFile)) {
-      const data = fs.readFileSync(tmpFile, 'utf8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        MEMORY_COUPONS = parsed;
-        return MEMORY_COUPONS;
-      }
-    }
-  } catch {}
-
-  // 3. Se não houver nenhum arquivo salvo, inicializa como array VAZIO []
   MEMORY_COUPONS = [];
-  try {
-    if (!fs.existsSync(primaryDir)) fs.mkdirSync(primaryDir, { recursive: true });
-    fs.writeFileSync(primaryFile, JSON.stringify([], null, 2), 'utf8');
-  } catch {}
-  try {
-    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-    fs.writeFileSync(tmpFile, JSON.stringify([], null, 2), 'utf8');
-  } catch {}
-
   return MEMORY_COUPONS;
 }
 
 function saveLocalCoupons(coupons: Coupon[]) {
   MEMORY_COUPONS = coupons;
-  const { primaryDir, primaryFile, tmpDir, tmpFile } = getStoragePaths();
-
-  try {
-    if (!fs.existsSync(primaryDir)) fs.mkdirSync(primaryDir, { recursive: true });
-    fs.writeFileSync(primaryFile, JSON.stringify(coupons, null, 2), 'utf8');
-  } catch {}
-
-  try {
-    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-    fs.writeFileSync(tmpFile, JSON.stringify(coupons, null, 2), 'utf8');
-  } catch {}
 }
 
 export const couponService = {

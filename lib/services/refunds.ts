@@ -13,83 +13,14 @@ export interface RefundRequest {
   updated_at?: string;
 }
 
-let MEMORY_REFUNDS: RefundRequest[] = [];
-
-function getFs() {
-  if (typeof window === 'undefined') {
-    try {
-      return eval('require')('fs');
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function getPath() {
-  if (typeof window === 'undefined') {
-    try {
-      return eval('require')('path');
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function getRefundPaths() {
-  const pathMod = getPath();
-  if (!pathMod) return null;
-  const primaryDir = pathMod.join(process.cwd(), 'data');
-  const primaryFile = pathMod.join(primaryDir, 'refunds.json');
-  const tmpDir = '/tmp/kaxxa_data';
-  const tmpFile = pathMod.join(tmpDir, 'refunds.json');
-  return { primaryDir, primaryFile, tmpDir, tmpFile };
-}
+let memoryRefunds: RefundRequest[] = [];
 
 function loadLocalRefunds(): RefundRequest[] {
-  const fsMod = getFs();
-  const paths = getRefundPaths();
-  if (!fsMod || !paths) return MEMORY_REFUNDS;
-
-  try {
-    if (fsMod.existsSync(paths.primaryFile)) {
-      const content = fsMod.readFileSync(paths.primaryFile, 'utf-8');
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        MEMORY_REFUNDS = parsed;
-        return parsed;
-      }
-    }
-    if (fsMod.existsSync(paths.tmpFile)) {
-      const content = fsMod.readFileSync(paths.tmpFile, 'utf-8');
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        MEMORY_REFUNDS = parsed;
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.warn('Erro ao ler refunds do disco:', err);
-  }
-  return MEMORY_REFUNDS;
+  return memoryRefunds;
 }
 
 function saveLocalRefunds(list: RefundRequest[]) {
-  MEMORY_REFUNDS = list;
-  const fsMod = getFs();
-  const paths = getRefundPaths();
-  if (!fsMod || !paths) return;
-
-  const serialized = JSON.stringify(list, null, 2);
-  try {
-    if (!fsMod.existsSync(paths.primaryDir)) fsMod.mkdirSync(paths.primaryDir, { recursive: true });
-    fsMod.writeFileSync(paths.primaryFile, serialized, 'utf-8');
-  } catch {}
-  try {
-    if (!fsMod.existsSync(paths.tmpDir)) fsMod.mkdirSync(paths.tmpDir, { recursive: true });
-    fsMod.writeFileSync(paths.tmpFile, serialized, 'utf-8');
-  } catch {}
+  memoryRefunds = list;
 }
 
 export const refundService = {

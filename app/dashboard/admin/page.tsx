@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { isAdminEmail } from '@/lib/admin';
-import { RefundRequest } from '@/lib/services/refunds';
+import type { RefundRequest } from '@/lib/services/refunds';
 
 interface SubscriberUser {
   id: string;

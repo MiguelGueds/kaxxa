@@ -52,60 +52,9 @@ export function getTrialRemainingText(endDateStr?: string): { text: string; hour
   };
 }
 
-function getFs() {
-  if (typeof window === 'undefined') {
-    try {
-      return eval('require')('fs');
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function getPath() {
-  if (typeof window === 'undefined') {
-    try {
-      return eval('require')('path');
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function getSubscriptionPaths() {
-  const pathMod = getPath();
-  if (!pathMod) return null;
-  const primaryDir = pathMod.join(process.cwd(), 'data');
-  const primaryFile = pathMod.join(primaryDir, 'subscriptions.json');
-  const tmpDir = '/tmp/kaxxa_data';
-  const tmpFile = pathMod.join(tmpDir, 'subscriptions.json');
-  return { primaryDir, primaryFile, tmpDir, tmpFile };
-}
-
 function loadLocalSubscriptions(): Record<string, DbSubscription> {
   const memorySubscriptions = getMemorySubscriptions<Record<string, DbSubscription>>();
-  if (Object.keys(memorySubscriptions).length > 0) {
-    return memorySubscriptions;
-  }
-
-  const fsMod = getFs();
-  const paths = getSubscriptionPaths();
-  if (fsMod && paths) {
-    const { primaryFile, tmpFile } = paths;
-    for (const filePath of [tmpFile, primaryFile]) {
-      try {
-        if (fsMod.existsSync(filePath)) {
-          const content = fsMod.readFileSync(filePath, 'utf8');
-          const parsed = JSON.parse(content) as Record<string, DbSubscription>;
-          setMemorySubscriptions(parsed);
-          return parsed;
-        }
-      } catch {}
-    }
-  }
-  return getMemorySubscriptions<Record<string, DbSubscription>>();
+  return memorySubscriptions;
 }
 
 export function clearMemorySubscriptions() {
@@ -135,20 +84,6 @@ export function saveSubscriptionLocal(sub: DbSubscription) {
     } catch {}
   }
 
-  const fsMod = getFs();
-  const paths = getSubscriptionPaths();
-  if (fsMod && paths) {
-    const { primaryDir, primaryFile, tmpDir, tmpFile } = paths;
-    try {
-      if (!fsMod.existsSync(primaryDir)) fsMod.mkdirSync(primaryDir, { recursive: true });
-      fsMod.writeFileSync(primaryFile, JSON.stringify(memorySubscriptions, null, 2), 'utf8');
-    } catch {}
-
-    try {
-      if (!fsMod.existsSync(tmpDir)) fsMod.mkdirSync(tmpDir, { recursive: true });
-      fsMod.writeFileSync(tmpFile, JSON.stringify(memorySubscriptions, null, 2), 'utf8');
-    } catch {}
-  }
 }
 
 export const subscriptionService = {
