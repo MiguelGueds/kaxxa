@@ -1,6 +1,7 @@
 import { supabase, supabaseAdmin, getAuthenticatedUser, isSupabaseConfigured } from '@/lib/supabase';
 import { generateUuid, isValidUuid } from '@/lib/utils/uuid';
 import { isAdminEmail } from '@/lib/admin';
+import { getMemorySubscriptions, setMemorySubscriptions, clearMemorySubscriptions as clearSubscriptionMemory } from './subscriptionMemory';
 
 export interface DbSubscription {
   id: string;
@@ -51,8 +52,6 @@ export function getTrialRemainingText(endDateStr?: string): { text: string; hour
   };
 }
 
-let MEMORY_SUBSCRIPTIONS: Record<string, DbSubscription> = {};
-
 function getFs() {
   if (typeof window === 'undefined') {
     try {
@@ -86,8 +85,9 @@ function getSubscriptionPaths() {
 }
 
 function loadLocalSubscriptions(): Record<string, DbSubscription> {
-  if (Object.keys(MEMORY_SUBSCRIPTIONS).length > 0) {
-    return MEMORY_SUBSCRIPTIONS;
+  const memorySubscriptions = getMemorySubscriptions<Record<string, DbSubscription>>();
+  if (Object.keys(memorySubscriptions).length > 0) {
+    return memorySubscriptions;
   }
 
   const fsMod = getFs();
@@ -98,21 +98,24 @@ function loadLocalSubscriptions(): Record<string, DbSubscription> {
       try {
         if (fsMod.existsSync(filePath)) {
           const content = fsMod.readFileSync(filePath, 'utf8');
-          MEMORY_SUBSCRIPTIONS = JSON.parse(content);
-          return MEMORY_SUBSCRIPTIONS;
+          const parsed = JSON.parse(content) as Record<string, DbSubscription>;
+          setMemorySubscriptions(parsed);
+          return parsed;
         }
       } catch {}
     }
   }
-  return MEMORY_SUBSCRIPTIONS;
+  return getMemorySubscriptions<Record<string, DbSubscription>>();
 }
 
 export function clearMemorySubscriptions() {
-  MEMORY_SUBSCRIPTIONS = {};
+  clearSubscriptionMemory();
 }
 
 export function saveSubscriptionLocal(sub: DbSubscription) {
-  MEMORY_SUBSCRIPTIONS[sub.user_id] = sub;
+  const memorySubscriptions = getMemorySubscriptions<Record<string, DbSubscription>>();
+  memorySubscriptions[sub.user_id] = sub;
+  setMemorySubscriptions(memorySubscriptions);
 
   if (typeof window !== 'undefined') {
     try {
@@ -138,12 +141,12 @@ export function saveSubscriptionLocal(sub: DbSubscription) {
     const { primaryDir, primaryFile, tmpDir, tmpFile } = paths;
     try {
       if (!fsMod.existsSync(primaryDir)) fsMod.mkdirSync(primaryDir, { recursive: true });
-      fsMod.writeFileSync(primaryFile, JSON.stringify(MEMORY_SUBSCRIPTIONS, null, 2), 'utf8');
+      fsMod.writeFileSync(primaryFile, JSON.stringify(memorySubscriptions, null, 2), 'utf8');
     } catch {}
 
     try {
       if (!fsMod.existsSync(tmpDir)) fsMod.mkdirSync(tmpDir, { recursive: true });
-      fsMod.writeFileSync(tmpFile, JSON.stringify(MEMORY_SUBSCRIPTIONS, null, 2), 'utf8');
+      fsMod.writeFileSync(tmpFile, JSON.stringify(memorySubscriptions, null, 2), 'utf8');
     } catch {}
   }
 }
