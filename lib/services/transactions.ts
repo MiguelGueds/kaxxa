@@ -23,6 +23,89 @@ export interface DbTransaction {
 }
 
 const STORAGE_KEY = 'kaxxa_transactions_backup';
+const PENDING_SYNC_KEY = 'kaxxa_transactions_pending_sync';
+
+function getPendingTransactionSyncQueue(userId: string): DbTransaction[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const keys = [`${PENDING_SYNC_KEY}_${userId}`, PENDING_SYNC_KEY];
+    for (const key of keys) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function savePendingTransactionSyncQueue(userId: string, items: DbTransaction[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${PENDING_SYNC_KEY}_${userId}`, JSON.stringify(items));
+    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(items));
+  } catch (e) {
+    console.error('Erro ao salvar fila de sincronização de transações:', e);
+  }
+}
+
+async function syncPendingTransactionsToRemote(userId: string) {
+  if (typeof window === 'undefined') return;
+
+  const pending = getPendingTransactionSyncQueue(userId);
+  if (!pending.length) return;
+
+  const user = await getAuthenticatedUser();
+  if (!user) return;
+
+  const client = supabaseAdmin || supabase;
+  const remaining: DbTransaction[] = [];
+
+  for (const item of pending) {
+    try {
+      const payload = {
+        id: isValidUuid(item.id) ? item.id : generateUuid(),
+        user_id: user.id,
+        description: item.description || 'Sem descrição',
+        amount: Number(item.amount || 0),
+        type: item.type || 'EXPENSE',
+        category_id: isValidUuid(item.category_id) ? item.category_id : null,
+        category_name: item.category_name || null,
+        account_id: isValidUuid(item.account_id) ? item.account_id : null,
+        credit_card_id: isValidUuid(item.credit_card_id) ? item.credit_card_id : null,
+        third_party_id: isValidUuid(item.third_party_id) ? item.third_party_id : null,
+        third_party_name: item.third_party_name || null,
+        date: item.date || new Date().toISOString().split('T')[0],
+        is_paid: item.is_paid !== undefined ? Boolean(item.is_paid) : true,
+        notes: item.notes || null,
+      };
+
+      const { data, error } = await client
+        .from('transactions')
+        .upsert(payload, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (!error && data) {
+        const currentLocal = getLocalTransactions(user.id);
+        const saved = {
+          ...data,
+          amount: Number(data.amount || 0),
+        } as DbTransaction;
+        saveLocalTransactions(user.id, [saved, ...currentLocal.filter(t => t.id !== saved.id && !(t.description === saved.description && t.date === saved.date && Number(t.amount) === Number(saved.amount))) ]);
+      } else {
+        remaining.push(item);
+      }
+    } catch (e) {
+      console.warn('Erro ao sincronizar transação pendente:', e);
+      remaining.push(item);
+    }
+  }
+
+  savePendingTransactionSyncQueue(userId, remaining);
+}
 
 function getLocalTransactions(userId: string): DbTransaction[] {
   if (typeof window === 'undefined') return [];
@@ -105,6 +188,8 @@ export const transactionsService = {
 
       if (!error && data !== null) {
         let rawList = [...data];
+
+        await syncPendingTransactionsToRemote(user.id);
 
         if (rawList.length === 0 && typeof window !== 'undefined') {
           try {
@@ -303,6 +388,7 @@ export const transactionsService = {
     const currentLocal = getLocalTransactions(user.id);
     const updated = [newItem, ...currentLocal.filter(t => t.id !== newItem.id)];
     saveLocalTransactions(user.id, updated);
+    savePendingTransactionSyncQueue(user.id, [newItem, ...getPendingTransactionSyncQueue(user.id).filter(t => t.id !== newItem.id)]);
     return newItem;
   },
 

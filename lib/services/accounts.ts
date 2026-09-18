@@ -13,6 +13,82 @@ export interface DbAccount {
 }
 
 const STORAGE_KEY = 'kaxxa_accounts_backup';
+const PENDING_SYNC_KEY = 'kaxxa_accounts_pending_sync';
+
+function getPendingAccountSyncQueue(userId: string): DbAccount[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const keys = [`${PENDING_SYNC_KEY}_${userId}`, PENDING_SYNC_KEY];
+    for (const key of keys) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function savePendingAccountSyncQueue(userId: string, items: DbAccount[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${PENDING_SYNC_KEY}_${userId}`, JSON.stringify(items));
+    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(items));
+  } catch (e) {
+    console.error('Erro ao salvar fila de sincronização de contas:', e);
+  }
+}
+
+async function syncPendingAccountsToRemote(userId: string) {
+  if (typeof window === 'undefined') return;
+
+  const pending = getPendingAccountSyncQueue(userId);
+  if (!pending.length) return;
+
+  const user = await getAuthenticatedUser();
+  if (!user) return;
+
+  const client = supabaseAdmin || supabase;
+  const remaining: DbAccount[] = [];
+
+  for (const item of pending) {
+    try {
+      const payload = {
+        id: isValidUuid(item.id) ? item.id : generateUuid(),
+        user_id: user.id,
+        name: item.name,
+        type: item.type,
+        initial_balance: Number(item.initial_balance ?? item.balance ?? 0),
+      };
+
+      const { data, error } = await client
+        .from('accounts')
+        .upsert(payload, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (!error && data) {
+        const currentLocal = getLocalAccounts(user.id);
+        const saved = {
+          ...data,
+          balance: Number(data.balance ?? data.initial_balance ?? 0),
+          initial_balance: Number(data.initial_balance ?? 0),
+          color: item.color || '#1A44C8',
+        } as DbAccount;
+        saveLocalAccounts(user.id, [saved, ...currentLocal.filter(a => a.id !== saved.id && a.name.toLowerCase() !== saved.name.toLowerCase())]);
+      } else {
+        remaining.push(item);
+      }
+    } catch (e) {
+      console.warn('Erro ao sincronizar conta pendente:', e);
+      remaining.push(item);
+    }
+  }
+
+  savePendingAccountSyncQueue(userId, remaining);
+}
 
 function getLocalAccounts(userId: string): DbAccount[] {
   if (typeof window === 'undefined') return [];
@@ -106,6 +182,8 @@ export const accountsService = {
           balance: Number(acc.balance ?? acc.initial_balance ?? 0),
           initial_balance: Number(acc.initial_balance ?? 0),
         })) as DbAccount[];
+
+        await syncPendingAccountsToRemote(user.id);
 
         // Sincroniza contas criadas localmente pendentes que ainda não subiram para o Supabase
         const localItems = getLocalAccounts(user.id);
@@ -271,6 +349,7 @@ export const accountsService = {
     const currentLocal = getLocalAccounts(user.id);
     const updated = [newItem, ...currentLocal.filter(a => a.id !== newItem.id)];
     saveLocalAccounts(user.id, updated);
+    savePendingAccountSyncQueue(user.id, [newItem, ...getPendingAccountSyncQueue(user.id).filter(a => a.id !== newItem.id)]);
     return newItem;
   },
 
