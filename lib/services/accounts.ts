@@ -60,6 +60,7 @@ async function syncPendingAccountsToRemote(userId: string) {
         user_id: user.id,
         name: item.name,
         type: item.type,
+        balance: Number(item.balance ?? item.initial_balance ?? 0),
         initial_balance: Number(item.initial_balance ?? item.balance ?? 0),
       };
 
@@ -399,10 +400,16 @@ export const accountsService = {
     }
 
     if (localAccount) {
-      saveLocalAccounts(user.id, currentLocal.map(account => account.id === id
+      const nextAccounts = currentLocal.map(account => account.id === id
         ? { ...account, balance: newBalance, initial_balance: newBalance }
-        : account
-      ));
+        : account);
+      saveLocalAccounts(user.id, nextAccounts);
+      if (!updated) {
+        const queued = nextAccounts.find(account => account.id === id);
+        if (queued) {
+          savePendingAccountSyncQueue(user.id, [queued, ...getPendingAccountSyncQueue(user.id).filter(account => account.id !== id)]);
+        }
+      }
       updated = true;
     }
 

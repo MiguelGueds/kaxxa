@@ -385,7 +385,7 @@ export default function SaldoExtratoPage() {
             newBal -= parsedAmount;
           }
         }
-        return { ...b, balance: Math.max(0, newBal) };
+        return { ...b, balance: newBal };
       }));
     } else {
       let bankAccount = banks.find(b => b.name === selectedBank) || banks[0];
@@ -397,7 +397,7 @@ export default function SaldoExtratoPage() {
           const newAcc = await accountsService.createAccount({
             name: selectedBank || 'Conta Principal',
             type: 'CHECKING',
-            balance: transactionType === 'INCOME' ? parsedAmount : -parsedAmount,
+            balance: 0,
           });
           if (newAcc) accountId = newAcc.id;
         }
@@ -438,7 +438,7 @@ export default function SaldoExtratoPage() {
         if (b.name === selectedBank) {
           return {
             ...b,
-            balance: transactionType === 'INCOME' ? b.balance + parsedAmount : Math.max(0, b.balance - parsedAmount)
+            balance: transactionType === 'INCOME' ? b.balance + parsedAmount : b.balance - parsedAmount
           };
         }
         return b;
@@ -467,7 +467,7 @@ export default function SaldoExtratoPage() {
 
     setBanks(prev => prev.map(b => {
       if (b.name === transferOrigin) {
-        return { ...b, balance: Math.max(0, b.balance - parsedAmount) };
+        return { ...b, balance: b.balance - parsedAmount };
       }
       if (b.name === transferDest) {
         return { ...b, balance: b.balance + parsedAmount };
@@ -475,9 +475,6 @@ export default function SaldoExtratoPage() {
       return b;
     }));
 
-    if (originAcc?.id) {
-      accountsService.updateBalance(originAcc.id, -parsedAmount);
-    }
     if (destAcc?.id) {
       accountsService.updateBalance(destAcc.id, parsedAmount);
     }
@@ -522,14 +519,10 @@ export default function SaldoExtratoPage() {
 
     setBanks(prev => prev.map(b => {
       if (b.name === payOriginBank) {
-        return { ...b, balance: Math.max(0, b.balance - parsedAmount) };
+        return { ...b, balance: b.balance - parsedAmount };
       }
       return b;
     }));
-
-    if (originAcc?.id) {
-      accountsService.updateBalance(originAcc.id, -parsedAmount);
-    }
 
     let createdId: string | number = Date.now();
     try {
@@ -605,14 +598,10 @@ export default function SaldoExtratoPage() {
 
     setBanks(prev => prev.map(b => {
       if (b.name === selectedImportBank) {
-        return { ...b, balance: Math.max(0, b.balance + deltaBal) };
+        return { ...b, balance: b.balance + deltaBal };
       }
       return b;
     }));
-
-    if (targetBankAcc?.id) {
-      accountsService.updateBalance(targetBankAcc.id, deltaBal);
-    }
 
     setTransactions(prev => [...newItems, ...prev]);
     setIsImportModalOpen(false);
@@ -629,7 +618,7 @@ export default function SaldoExtratoPage() {
       setBanks(prev => prev.map(b => {
         if (b.name === target.bank) {
           const revert = target.type === 'INCOME' ? -target.amount : Math.abs(target.amount);
-          return { ...b, balance: Math.max(0, b.balance + revert) };
+          return { ...b, balance: b.balance + revert };
         }
         return b;
       }));

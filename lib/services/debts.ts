@@ -121,7 +121,17 @@ export const debtsService = {
       if (!error && data !== null) {
         let rawList = [...data];
 
-        const formatted = rawList as DbDebt[];
+        const formatted = rawList.map(debt => ({
+          ...debt,
+          original_amount: Number(debt.original_amount || 0),
+          current_balance: Number(debt.current_balance || 0),
+          monthly_payment: Number(debt.monthly_payment || 0),
+          total_paid: Number(debt.total_paid || 0),
+          total_discounts: Number(debt.total_discounts || 0),
+          total_installments: Number(debt.total_installments || 0),
+          paid_installments: Number(debt.paid_installments || 0),
+          interest_numeric: Number(debt.interest_numeric || 0),
+        })) as DbDebt[];
 
         const localItems = getLocalDebts(user.id);
         const pendingLocal = localItems.filter(local =>

@@ -88,12 +88,8 @@ export default function DashboardPage() {
       dbCards: any[] | null,
       dbCardExpenses: any[] | null
     ) {
-      if (dbAccounts && dbAccounts.length > 0) {
-        setSaldoEmContas(dbAccounts.reduce((acc, a) => acc + (a.balance || 0), 0));
-      }
-      if (dbDebts && dbDebts.length > 0) {
-        setDividasAtivas(dbDebts.reduce((acc, d) => acc + (d.current_balance || 0), 0));
-      }
+      setSaldoEmContas((dbAccounts || []).reduce((acc, a) => acc + Number(a.balance ?? a.initial_balance ?? 0), 0));
+      setDividasAtivas((dbDebts || []).reduce((acc, d) => acc + Number(d.current_balance || 0), 0));
       if (dbInvestments && dbInvestments.length > 0) {
         const totalInvest = dbInvestments.reduce((acc, i) => acc + (i.current_value || i.invested_amount || 0), 0);
         setPatrimonio(totalInvest);
@@ -111,19 +107,29 @@ export default function DashboardPage() {
           { label: 'Internacional', value: inter, color: '#8B5CF6' },
           { label: 'Cripto', value: cripto, color: '#F59E0B' },
         ].filter(item => item.value > 0));
+      } else {
+        setPatrimonio(0);
+        setInvestmentBreakdown([]);
       }
       if (dbTransactions && dbTransactions.length > 0) {
-        const totalExp = dbTransactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + Math.abs(t.amount || 0), 0);
-        const totalInc = dbTransactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + Math.abs(t.amount || 0), 0);
+        const totalExp = dbTransactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + Math.abs(Number(t.amount || 0)), 0);
+        const totalInc = dbTransactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + Math.abs(Number(t.amount || 0)), 0);
         setDespesasMes(totalExp);
         setAportesMes(totalInc);
+      } else {
+        setDespesasMes(0);
+        setAportesMes(0);
       }
       if (dbCards && dbCards.length > 0) {
-        setTotalLimiteCartoes(dbCards.reduce((acc, c) => acc + (c.credit_limit || 0), 0));
+        setTotalLimiteCartoes(dbCards.reduce((acc, c) => acc + Number(c.credit_limit || 0), 0));
         setQtdCartoes(dbCards.length);
-        const totalCardExpenses = (dbCardExpenses || []).reduce((acc, e) => acc + (e.amount || 0), 0);
-        const explicitUsed = dbCards.reduce((acc, c) => acc + (c.limit_used || 0), 0);
+        const totalCardExpenses = (dbCardExpenses || []).reduce((acc, e) => acc + Number(e.amount || 0), 0);
+        const explicitUsed = dbCards.reduce((acc, c) => acc + Number(c.limit_used || 0), 0);
         setLimiteComprometido(totalCardExpenses > 0 ? totalCardExpenses : explicitUsed);
+      } else {
+        setTotalLimiteCartoes(0);
+        setLimiteComprometido(0);
+        setQtdCartoes(0);
       }
     }
 

@@ -25,6 +25,10 @@ export interface DbTransaction {
 const STORAGE_KEY = 'kaxxa_transactions_backup';
 const PENDING_SYNC_KEY = 'kaxxa_transactions_pending_sync';
 
+function normalizeAccountId(accountId?: string | null): string | null {
+  return accountId && accountId.trim() ? accountId : null;
+}
+
 function getPendingTransactionSyncQueue(userId: string): DbTransaction[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -73,7 +77,7 @@ async function syncPendingTransactionsToRemote(userId: string) {
         type: item.type || 'EXPENSE',
         category_id: isValidUuid(item.category_id) ? item.category_id : null,
         category_name: item.category_name || null,
-        account_id: isValidUuid(item.account_id) ? item.account_id : null,
+        account_id: normalizeAccountId(item.account_id),
         credit_card_id: isValidUuid(item.credit_card_id) ? item.credit_card_id : null,
         third_party_id: isValidUuid(item.third_party_id) ? item.third_party_id : null,
         third_party_name: item.third_party_name || null,
@@ -233,7 +237,7 @@ export const transactionsService = {
                 type: item.type || 'EXPENSE',
                 category_id: isValidUuid(item.category_id) ? item.category_id : null,
                 category_name: item.category_name || null,
-                account_id: isValidUuid(item.account_id) ? item.account_id : null,
+                account_id: normalizeAccountId(item.account_id),
                 credit_card_id: isValidUuid(item.credit_card_id) ? item.credit_card_id : null,
                 third_party_name: item.third_party_name || null,
                 date: item.date || new Date().toISOString().split('T')[0],
@@ -311,7 +315,7 @@ export const transactionsService = {
       type: tx.type || 'EXPENSE',
       category_id: isValidUuid(tx.category_id) ? tx.category_id : null,
       category_name: tx.category_name || null,
-      account_id: isValidUuid(tx.account_id) ? tx.account_id : null,
+      account_id: normalizeAccountId(tx.account_id),
       credit_card_id: isValidUuid(tx.credit_card_id) ? tx.credit_card_id : null,
       third_party_name: tx.third_party_name || null,
       date: tx.date || new Date().toISOString().split('T')[0],
@@ -396,12 +400,20 @@ export const transactionsService = {
     const user = await getAuthenticatedUser();
     if (!user) return null;
 
+    const client = supabaseAdmin || supabase;
+    const { data: previous } = await client
+      .from('transactions')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     const payload = {
       ...(tx.description !== undefined ? { description: tx.description } : {}),
       ...(tx.amount !== undefined ? { amount: Number(tx.amount) } : {}),
       ...(tx.date !== undefined ? { date: tx.date } : {}),
       ...(tx.type !== undefined ? { type: tx.type } : {}),
-      ...(tx.account_id !== undefined ? { account_id: isValidUuid(tx.account_id) ? tx.account_id : null } : {}),
+      ...(tx.account_id !== undefined ? { account_id: normalizeAccountId(tx.account_id) } : {}),
       ...(tx.category_name !== undefined ? { category_name: tx.category_name || null } : {}),
       ...(tx.category_id !== undefined ? { category_id: isValidUuid(tx.category_id) ? tx.category_id : null } : {}),
       ...(tx.third_party_name !== undefined ? { third_party_name: tx.third_party_name || null } : {}),
@@ -409,7 +421,6 @@ export const transactionsService = {
       ...(tx.notes !== undefined ? { notes: tx.notes || null } : {}),
     };
 
-    const client = supabaseAdmin || supabase;
     const { data, error } = await client
       .from('transactions')
       .update(payload)
@@ -420,7 +431,35 @@ export const transactionsService = {
 
     if (error || !data) {
       console.error('Erro ao atualizar transação:', error);
-      return null;
+      if (!previous) return null;
+
+      const pendingUpdate = {
+        ...previous,
+        ...tx,
+        id,
+        user_id: user.id,
+        account_id: tx.account_id !== undefined ? normalizeAccountId(tx.account_id) : previous.account_id,
+        amount: tx.amount !== undefined ? Number(tx.amount) : Number(previous.amount || 0),
+      } as DbTransaction;
+      const currentLocal = getLocalTransactions(user.id);
+      saveLocalTransactions(user.id, currentLocal.map(item => item.id === id ? pendingUpdate : item));
+      savePendingTransactionSyncQueue(user.id, [pendingUpdate, ...getPendingTransactionSyncQueue(user.id).filter(item => item.id !== id)]);
+      if (previous.account_id && previous.is_paid !== false) {
+        await accountsService.updateBalance(previous.account_id, previous.type === 'INCOME' ? -Number(previous.amount || 0) : Number(previous.amount || 0));
+      }
+      if (pendingUpdate.account_id && pendingUpdate.is_paid !== false) {
+        await accountsService.updateBalance(pendingUpdate.account_id, pendingUpdate.type === 'INCOME' ? Number(pendingUpdate.amount || 0) : -Number(pendingUpdate.amount || 0));
+      }
+      return pendingUpdate;
+    }
+
+    if (previous?.account_id && previous.is_paid !== false) {
+      const previousDelta = previous.type === 'INCOME' ? -Number(previous.amount || 0) : Number(previous.amount || 0);
+      await accountsService.updateBalance(previous.account_id, previousDelta);
+    }
+    if (data.account_id && data.is_paid !== false) {
+      const nextDelta = data.type === 'INCOME' ? Number(data.amount || 0) : -Number(data.amount || 0);
+      await accountsService.updateBalance(data.account_id, nextDelta);
     }
 
     const saved = { ...data, amount: Number(data.amount || 0) } as DbTransaction;
