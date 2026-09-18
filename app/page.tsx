@@ -1,622 +1,326 @@
 'use client';
 
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { 
-  ArrowRight, 
-  Sparkles,
-  ShieldCheck, 
-  TrendingUp, 
-  CreditCard, 
-  Users, 
-  EyeOff, 
-  Check, 
-  Zap, 
-  Play, 
-  PieChart, 
-  Layers,
-  Lock,
-  Flame,
+import {
+  ArrowDownRight,
   ArrowUpRight,
-  CheckCircle2,
+  Bell,
   ChevronDown,
-  ChevronUp,
-  Star,
-  HelpCircle,
-  Clock,
-  Wallet
+  CreditCard,
+  Download,
+  Home,
+  Landmark,
+  PiggyBank,
+  Plus,
+  Search,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  Wallet,
+  BriefcaseBusiness,
+  BarChart3,
+  ReceiptText,
+  Building2,
+  UserRound,
+  CircleDollarSign,
+  Check,
+  ArrowRight,
+  MoreHorizontal,
 } from 'lucide-react';
-import { KaxxaLogo } from '@/app/components/KaxxaLogo';
-import { PixIcon } from '@/app/components/PixLogo';
-import { RoiCalculator } from '@/app/components/RoiCalculator';
 
-export default function LandingPage() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
-  const [activeTab, setActiveTab] = useState<'patrimonio' | 'terceiros' | 'dividas' | 'all'>('patrimonio');
-  const [isPaused, setIsPaused] = useState(false);
-  const [heroVisible, setHeroVisible] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+const navItems = [
+  { label: 'Home', icon: Home, active: true },
+  { label: 'Tasks', icon: ReceiptText },
+  { label: 'Transactions', icon: ArrowDownRight },
+  { label: 'Payments', icon: CircleDollarSign },
+  { label: 'Cards', icon: CreditCard },
+  { label: 'Capital', icon: TrendingUp },
+  { label: 'Accounts', icon: Wallet },
+  { label: 'Workflows', icon: BriefcaseBusiness },
+  { label: 'Bill Pay', icon: ReceiptText },
+  { label: 'Invoicing', icon: Download },
+  { label: 'Reimbursements', icon: ArrowUpRight },
+  { label: 'Accounting', icon: Landmark },
+];
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-      setHeroVisible(window.scrollY < 200); // hero visible near top
-    };
+const accountItems = [
+  { name: 'Visa', last4: '9213', balance: '$202,234.00', color: 'from-violet-500 to-purple-600' },
+  { name: 'Citi', last4: '9213', balance: '$54,456.00', color: 'from-sky-500 to-cyan-600' },
+  { name: 'Master', last4: '9213', balance: '$3,765.00', color: 'from-indigo-500 to-blue-700' },
+];
 
-    let animationFrameId: number;
-    const handleMouseMove = (e: MouseEvent) => {
-      cancelAnimationFrame(animationFrameId);
-      animationFrameId = requestAnimationFrame(() => {
-        setMousePos({ x: e.clientX, y: e.clientY });
-      });
-    };
+const invoiceItems = [
+  { date: 'Jun 8', state: 'Paid', name: 'Noah Williams', value: '$160.00', paid: true },
+  { date: 'Jun 10', state: 'Unpaid', name: 'Ava Thompson', value: '$160.00', paid: false },
+  { date: 'Jun 12', state: 'Pending', name: 'Ethan Walker', value: '$150.00', paid: false },
+];
 
-    window.addEventListener('scroll', handleScroll);
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('mousemove', handleMouseMove);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
-
-  // Rotação automática das abas para demonstrar vida ao visitante
-  useEffect(() => {
-    if (isPaused) return;
-
-    const interval = setInterval(() => {
-      setActiveTab((current) => {
-        if (current === 'patrimonio') return 'terceiros';
-        if (current === 'terceiros') return 'dividas';
-        if (current === 'dividas') return 'all';
-        return 'patrimonio';
-      });
-    }, 6500);
-
-    return () => clearInterval(interval);
-  }, [isPaused]);
-
+export default function HomePage() {
   return (
-    <div className="bg-[#F8F9FA] text-[#181B22] font-sans relative selection:bg-[#1A44C8]/20 selection:text-[#1A44C8] min-h-screen overflow-x-hidden">
-      
-      {/* 1. FUNDO DINÂMICO DE LUXO: ONDAS FLUIDAS, ESFERAS DE CRISTAL 3D & SPOTLIGHT INTERATIVO */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden landing-atmosphere">
-        
-        {/* Spotlight Interativo que Segue o Cursor */}
-        <div 
-          className="absolute w-[600px] h-[600px] rounded-full pointer-events-none transition-transform duration-700 ease-out opacity-25"
-          style={{
-            transform: `translate(${mousePos.x - 300}px, ${mousePos.y - 300}px)`,
-            background: 'radial-gradient(circle, rgba(59, 108, 240, 0.28) 0%, rgba(26, 68, 200, 0.06) 45%, transparent 70%)',
-            filter: 'blur(55px)',
-          }}
-        />
-
-        {/* Aura Central Aurora de Fundo */}
-        <div 
-          className="absolute -top-[160px] left-1/2 -translate-x-1/2 w-[1150px] h-[700px] pointer-events-none opacity-85 animate-aurora-glow"
-          style={{
-            background: 'radial-gradient(ellipse 70% 60% at 50% 22%, rgba(26, 68, 200, 0.14) 0%, rgba(59, 108, 240, 0.06) 40%, transparent 75%)',
-            filter: 'blur(65px)',
-          }}
-        />
-
-        {/* Ondas Fluidas em Movimento Contínuo (SVG Liquid Stream) */}
-        <div className="absolute top-[60px] left-1/2 -translate-x-1/2 w-[1400px] sm:w-[1700px] h-[650px] pointer-events-none">
-          <svg viewBox="0 0 1700 650" className="w-full h-full overflow-visible" fill="none">
-            <defs>
-              <linearGradient id="waveGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="rgba(26, 68, 200, 0)" />
-                <stop offset="25%" stopColor="rgba(26, 68, 200, 0.35)" />
-                <stop offset="50%" stopColor="rgba(59, 108, 240, 0.6)" />
-                <stop offset="75%" stopColor="rgba(37, 99, 235, 0.35)" />
-                <stop offset="100%" stopColor="rgba(59, 108, 240, 0)" />
-              </linearGradient>
-              <linearGradient id="waveGrad2" x1="100%" y1="0%" x2="0%" y2="0%">
-                <stop offset="0%" stopColor="rgba(59, 108, 240, 0)" />
-                <stop offset="30%" stopColor="rgba(59, 108, 240, 0.3)" />
-                <stop offset="60%" stopColor="rgba(26, 68, 200, 0.45)" />
-                <stop offset="100%" stopColor="rgba(26, 68, 200, 0)" />
-              </linearGradient>
-              <linearGradient id="goldAccentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="rgba(245, 158, 11, 0)" />
-                <stop offset="50%" stopColor="rgba(245, 158, 11, 0.25)" />
-                <stop offset="100%" stopColor="rgba(245, 158, 11, 0)" />
-              </linearGradient>
-            </defs>
-
-            {/* Onda Principal 1 */}
-            <path 
-              d="M 50 480 C 350 160, 750 620, 1200 220 C 1450 40, 1650 350, 1750 450" 
-              stroke="url(#waveGrad1)" 
-              strokeWidth="2.5" 
-              className="animate-wave-flow-1"
-            />
-
-            {/* Onda Cruzada 2 */}
-            <path 
-              d="M 20 280 C 400 580, 850 80, 1300 480 C 1500 280, 1680 180, 1750 320" 
-              stroke="url(#waveGrad2)" 
-              strokeWidth="2" 
-              className="animate-wave-flow-2"
-            />
-
-            {/* Linha de Destaque Dourado Suave */}
-            <path 
-              d="M 120 400 C 480 200, 920 520, 1380 280 C 1520 180, 1620 220, 1700 300" 
-              stroke="url(#goldAccentGrad)" 
-              strokeWidth="1" 
-              strokeDasharray="8 12"
-              className="animate-wave-flow-3"
-            />
-          </svg>
-        </div>
-
-        {/* Esfera de Cristal 1: Esmeralda 3D Superior Esquerda */}
-        <div 
-          className="absolute top-[8%] left-[7%] w-[240px] h-[240px] rounded-full pointer-events-none animate-crystal-orb-1 border border-white/60 backdrop-blur-sm shadow-[0_20px_50px_rgba(5,150,105,0.16)]"
-          style={{
-            background: 'radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.9) 0%, rgba(59, 108, 240, 0.35) 30%, rgba(26, 68, 200, 0.18) 65%, transparent 95%)',
-          }}
-        />
-
-        {/* Esfera de Cristal 2: Menta Líquida Superior Direita */}
-        <div 
-          className="absolute top-[14%] right-[6%] w-[210px] h-[210px] rounded-full pointer-events-none animate-crystal-orb-2 border border-white/50 backdrop-blur-sm shadow-[0_20px_45px_rgba(52,211,153,0.2)]"
-          style={{
-            background: 'radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.85) 0%, rgba(59, 108, 240, 0.4) 35%, rgba(26, 68, 200, 0.14) 70%, transparent 95%)',
-          }}
-        />
-
-        {/* Esfera 3: Cristal Lateral */}
-        <div 
-          className="absolute top-[48%] left-[16%] w-[150px] h-[150px] rounded-full pointer-events-none animate-crystal-orb-3 border border-white/40 shadow-[0_15px_35px_rgba(5,150,105,0.12)]"
-          style={{
-            background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(59, 108, 240, 0.25) 40%, rgba(26, 68, 200, 0.08) 75%, transparent 100%)',
-          }}
-        />
-
-        {/* Órbitas Radiais e Geometria Suíça de Precisão */}
-        <div className="absolute top-[80px] left-1/2 -translate-x-1/2 w-[760px] h-[760px] pointer-events-none animate-spin-orbit">
-          <svg viewBox="0 0 760 760" className="w-full h-full overflow-visible" fill="none">
-            <circle cx="380" cy="380" r="370" stroke="#1A44C8" strokeWidth="1" strokeDasharray="6 12" strokeOpacity="0.22" />
-            <circle cx="380" cy="380" r="280" stroke="#60A5FA" strokeWidth="1" strokeDasharray="4 8" strokeOpacity="0.25" />
-            <circle cx="380" cy="380" r="180" stroke="#1A44C8" strokeWidth="0.75" strokeOpacity="0.18" />
-            
-            {/* Satélite Brilhante */}
-            <circle cx="380" cy="10" r="4.5" fill="#60A5FA" className="animate-pulse" />
-            <circle cx="380" cy="10" r="10" fill="#60A5FA" fillOpacity="0.15" />
-            <circle cx="100" cy="380" r="3.5" fill="#1A44C8" />
-          </svg>
-        </div>
-
-        {/* Partículas / Sparks Flutuantes */}
-        <div className="absolute top-[25%] left-[22%] w-2 h-2 rounded-full bg-[#1A44C8] shadow-[0_0_10px_#1A44C8] animate-float-spark-1" />
-        <div className="absolute top-[40%] right-[22%] w-2.5 h-2.5 rounded-full bg-[#60A5FA] shadow-[0_0_12px_#60A5FA] animate-float-spark-2" />
-        <div className="absolute top-[18%] right-[35%] w-1.5 h-1.5 rounded-full bg-[#1A44C8] shadow-[0_0_8px_#1A44C8] animate-float-spark-3" />
-        <div className="absolute top-[55%] left-[30%] w-2 h-2 rounded-full bg-[#60A5FA] shadow-[0_0_10px_#60A5FA] animate-float-spark-4" />
-
-        {/* Grid Técnico Fino */}
-        <div 
-          className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.018)_1px,transparent_1px)] bg-[size:52px_52px] opacity-60"
-        ></div>
-      </div>
-
-      {/* 2. HERO CONTÍNUO COM VÍDEO */}
-      {/* 2. HEADER STICKY GLASSMORPHISM */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-[#FFFFFF]/90 backdrop-blur-xl border-b border-[#E5E7EB] shadow-[0_4px_20px_rgba(0,0,0,0.03)] py-3.5' 
-          : 'bg-transparent py-5 border-b border-transparent'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-between">
-          
-          <Link href="/" className="flex items-center group transition-opacity hover:opacity-90">
-            <KaxxaLogo size={26} />
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-7 text-[11px] tracking-[0.14em] uppercase font-semibold text-[#64748B]">
-            <a href="#demonstracao" className="hover:text-[#181B22] transition-colors">Demonstração</a>
-            <a href="#economia" className="hover:text-[#181B22] transition-colors">Economia</a>
-            <a href="#arquitetura" className="hover:text-[#181B22] transition-colors">Diferenciais</a>
-            <a href="#comparativo" className="hover:text-[#181B22] transition-colors">Comparativo</a>
-            <a href="#planos" className="hover:text-[#181B22] transition-colors">Planos</a>
-            <a href="#duvidas" className="hover:text-[#181B22] transition-colors">Dúvidas</a>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <Link 
-              href="/login" 
-              className="relative group overflow-hidden px-5 py-2.5 rounded-full text-xs font-bold text-white bg-[#1A44C8] hover:bg-[#1538A5] transition-all duration-300 shadow-md shadow-[#1A44C8]/20 flex items-center gap-1.5 active:scale-95"
-            >
-              <span>Entrar</span>
-              <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-          </div>
-
-        </div>
-      </header>
-
-      {/* 3. HERO SECTION SAAS */}
-      <div className="hero-wrapper min-h-screen flex items-center">
-        <section className={`relative z-10 w-full max-w-7xl mx-auto px-6 pt-32 pb-16 lg:pt-40 lg:pb-24 ${heroVisible ? 'animate-fade-in-up' : ''}`}>
-          <div className="grid items-center gap-14 lg:grid-cols-[0.88fr_1.12fr] lg:gap-16">
-            <div className="max-w-xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#C8D8FF] bg-[#EEF3FF] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#1A44C8]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#1A44C8] animate-pulse" />
-                Inteligência financeira pessoal
+    <main className="min-h-screen bg-[#05070b] px-4 py-8 sm:px-6 lg:px-10">
+      <div className="mx-auto max-w-[1280px] rounded-[30px] border border-[#dfe7ef] bg-[#edf1f5] p-3 shadow-[0_40px_80px_rgba(0,0,0,0.55)]">
+        <div className="flex min-h-[880px] overflow-hidden rounded-[24px] bg-[#f5f7f9]">
+          <aside className="w-[240px] border-r border-[#e2e8f0] bg-[#f8fafc] p-4">
+            <div className="mb-6 flex items-center gap-3 px-2 pt-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#1f2937] text-[10px] font-bold text-white shadow-sm">
+                K
               </div>
-              <h1 className="mt-6 text-4xl font-black leading-[1.08] tracking-[-0.04em] text-[#181B22] sm:text-5xl lg:text-[60px]">
-                Sua vida financeira, finalmente <span className="text-[#1A44C8]">sob controle.</span>
-              </h1>
-              <p className="mt-6 max-w-lg text-base leading-7 text-[#64748B] sm:text-lg">
-                O Kaxxa reúne patrimônio, cartões, dívidas e gastos de terceiros em uma visão clara para você tomar decisões melhores todos os dias.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/planos" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A44C8] px-6 py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(26,68,200,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#1538A5]">
-                  Começar agora <ArrowRight size={16} />
-                </Link>
-                <a href="#demonstracao" className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DCE2EA] bg-white px-6 py-3.5 text-sm font-bold text-[#181B22] transition-all hover:-translate-y-0.5 hover:border-[#1A44C8]/40 hover:shadow-sm">
-                  <Play size={13} className="fill-[#1A44C8] text-[#1A44C8]" /> Ver como funciona
-                </a>
-              </div>
-              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-[#64748B]">
-                <span className="flex items-center gap-1.5"><ShieldCheck size={15} className="text-[#059669]" /> 7 dias de garantia</span>
-                <span className="flex items-center gap-1.5"><Lock size={14} className="text-[#1A44C8]" /> Seus dados protegidos</span>
+              <div className="flex flex-1 items-center justify-between">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-slate-400">Agency</div>
+                  <div className="text-sm font-semibold text-slate-800">Orbix Studio Team</div>
+                </div>
+                <ChevronDown className="h-4 w-4 text-slate-500" />
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[680px] animate-float-saas">
-              <div className="absolute -right-3 -top-5 z-10 hidden items-center gap-2 rounded-xl border border-[#DCE2EA] bg-white px-3 py-2 shadow-lg sm:flex animate-float">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"><TrendingUp size={15} /></span>
-                <span><strong className="block text-xs text-[#181B22]">Patrimônio em alta</strong><small className="text-[10px] font-semibold text-emerald-600">+18,4% este ano</small></span>
-              </div>
-              <div className="overflow-hidden rounded-2xl border border-[#DCE2EA] bg-white shadow-[0_24px_70px_rgba(26,45,85,0.16)]">
-                <div className="flex items-center justify-between border-b border-[#EDF0F5] bg-[#FBFCFE] px-5 py-3">
-                  <div className="flex items-center gap-2"><KaxxaLogo size={22} /><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Dashboard</span></div>
-                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Sincronizado</span>
+            <nav className="space-y-1.5">
+              {navItems.map(({ label, icon: Icon, active }) => (
+                <button
+                  key={label}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                    active
+                      ? 'bg-[#e9f0ff] text-[#1d4ed8] shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="mt-6 rounded-2xl border border-[#e5e7eb] bg-[#f5f7fb] p-3">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">
+                  <Sparkles className="h-4 w-4" />
                 </div>
-                <div className="grid gap-4 bg-[#F6F8FC] p-5 sm:p-7">
-                  <div className="flex items-end justify-between"><div><p className="text-xs font-semibold text-[#64748B]">Patrimônio líquido</p><p className="mt-1 text-2xl font-black tracking-tight text-[#181B22] sm:text-3xl">R$ 484.300,50</p></div><span className="rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-600">+18,4%</span></div>
-                  <div className="rounded-xl border border-[#E7ECF4] bg-white p-4"><div className="mb-3 flex justify-between text-[10px] font-bold text-[#94A3B8]"><span>EVOLUÇÃO PATRIMONIAL</span><span>2026</span></div><svg viewBox="0 0 600 150" className="h-32 w-full" preserveAspectRatio="none"><defs><linearGradient id="heroChartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#1A44C8" stopOpacity=".2" /><stop offset="1" stopColor="#1A44C8" stopOpacity="0" /></linearGradient></defs><path d="M0 125 C80 118 105 108 170 105 S250 88 310 92 S390 58 455 63 S540 35 600 20 V150 H0Z" fill="url(#heroChartFill)" /><path d="M0 125 C80 118 105 108 170 105 S250 88 310 92 S390 58 455 63 S540 35 600 20" fill="none" stroke="#1A44C8" strokeWidth="3" strokeLinecap="round" /><circle cx="600" cy="20" r="5" fill="#00A3FF" /></svg><div className="mt-2 flex justify-between text-[9px] font-bold text-[#B0BAC9]"><span>JAN</span><span>ABR</span><span>JUL</span><span>OUT</span><span>DEZ</span></div></div>
-                  <div className="grid grid-cols-3 gap-3"><div className="rounded-xl border border-[#E7ECF4] bg-white p-3"><span className="text-[10px] font-semibold text-[#94A3B8]">Investimentos</span><strong className="mt-1 block text-sm text-[#181B22]">R$ 102,8k</strong></div><div className="rounded-xl border border-[#E7ECF4] bg-white p-3"><span className="text-[10px] font-semibold text-[#94A3B8]">Despesas</span><strong className="mt-1 block text-sm text-[#181B22]">R$ 4,4k</strong></div><div className="rounded-xl border border-[#E7ECF4] bg-white p-3"><span className="text-[10px] font-semibold text-[#94A3B8]">Economia</span><strong className="mt-1 block text-sm text-emerald-600">R$ 38,8k</strong></div></div>
+                <div className="text-sm font-semibold text-slate-700">GlobalLink</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm text-slate-600">Accept credit cards and bank payments</div>
+                <button className="w-full rounded-xl bg-[#2b2d31] px-3 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#1f2329]">
+                  Set up now
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          <section className="flex-1 bg-[#edf2f6] p-6">
+            <header className="mb-6 flex items-center justify-between">
+              <div className="text-sm text-slate-500">Monday, Jun 12, 2026</div>
+              <div className="flex items-center gap-4">
+                <div className="flex w-[260px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-400 shadow-sm">
+                  <Search className="h-4 w-4" />
+                  <span>Search...</span>
+                </div>
+                <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm">
+                  <Settings className="h-4 w-4" />
+                </button>
+                <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm">
+                  <Bell className="h-4 w-4" />
+                  <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                </button>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#f0abfc] to-[#3730a3] text-sm font-semibold text-white shadow-sm">
+                  M
                 </div>
               </div>
-              <div className="absolute -bottom-5 -left-4 hidden items-center gap-2 rounded-xl border border-[#DCE2EA] bg-white px-3 py-2 shadow-lg sm:flex animate-float" style={{ animationDelay: '1.5s' }}><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EEF3FF] text-[#1A44C8]"><ShieldCheck size={15} /></span><span><strong className="block text-xs text-[#181B22]">Controle total</strong><small className="text-[10px] font-semibold text-[#64748B]">Tudo em um só lugar</small></span></div>
-            </div>
-          </div>
-        </section>
-      </div>
+            </header>
 
-
-
-      {/* 4. DEMONSTRAÇÃO INTERATIVA DO PRODUTO (#DEMONSTRACAO) */}
-      <section id="demonstracao" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto relative z-10">
-        
-        {/* Título da Seção */}
-        <div className="text-center mb-12">
-          <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#1A44C8] font-bold">
-            [ DEMONSTRAÇÃO AO VIVO ]
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-[#181B22] tracking-tight mt-3">
-            Veja o Kaxxa em ação
-          </h2>
-          <p className="text-sm text-[#64748B] font-medium max-w-md mx-auto mt-3">
-            Explore as funcionalidades em tempo real. Clique nas abas para navegar.
-          </p>
-        </div>
-
-        {/* Moldura Reativa */}
-        <div 
-          className="relative mx-auto rounded-3xl transition-transform duration-300 ease-out group"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          
-          {/* Micro-Card Flutuante 1: Recebimento ao Vivo */}
-          <div className="hidden lg:flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#FFFFFF] border border-[#E5E7EB] backdrop-blur-xl shadow-lg absolute -top-6 -left-6 z-20 animate-float">
-            <div className="w-7 h-7 rounded-xl bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center shrink-0">
-              <ArrowUpRight size={15} />
-            </div>
-            <div className="text-left">
-              <span className="text-[9.5px] uppercase font-bold tracking-wider text-[#1A44C8] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1A44C8] animate-ping"></span> Live Sync
-              </span>
-              <p className="text-xs font-bold text-[#181B22] tracking-tight">
-                + R$ 1.840,50 <span className="text-[#64748B] text-[10px] font-medium">• Rendimentos XP</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Micro-Card Flutuante 2: Blindagem de Terceiros */}
-          <div className="hidden lg:flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#FFFFFF] border border-[#E5E7EB] backdrop-blur-xl shadow-lg absolute -bottom-6 -right-6 z-20 animate-float" style={{ animationDelay: '2.5s' }}>
-            <div className="w-7 h-7 rounded-xl bg-[#00A3FF]/10 text-[#00A3FF] flex items-center justify-center shrink-0">
-              <ShieldCheck size={15} />
-            </div>
-            <div className="text-left">
-              <span className="text-[9.5px] uppercase font-bold tracking-wider text-[#00A3FF] flex items-center gap-1">
-                <CheckCircle2 size={10} /> Blindagem Ativa
-              </span>
-              <p className="text-xs font-bold text-[#181B22] tracking-tight">
-                R$ 4.200,00 <span className="text-[#64748B] text-[10px] font-medium">• 100% Segregado</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Moldura da Interface em Bento White */}
-          <div className="relative rounded-2xl md:rounded-3xl border border-[#E5E7EB] bg-[#FFFFFF] shadow-2xl overflow-hidden text-left transition-all">
-            
-            {/* Barra de Janela Superior */}
-            <div className="px-5 py-3 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-400"></span>
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-400"></span>
-              </div>
-              
-              <div className="hidden sm:flex items-center gap-2 px-4 py-1 rounded-full bg-[#FFFFFF] border border-[#E5E7EB] text-[11px] text-[#64748B] font-mono">
-                <Lock size={10} className="text-[#1A44C8]" />
-                <span>kaxxa.com.br</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-[10px] text-[#1A44C8] bg-[#1A44C8]/10 px-2.5 py-0.5 rounded-full font-bold border border-[#1A44C8]/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1A44C8] animate-pulse"></span>
-                <span className="hidden sm:inline">Ambiente ao Vivo</span>
-                <span className="sm:hidden">Live</span>
+            <div className="mb-5 flex items-center justify-between">
+              <div className="text-3xl font-semibold tracking-[-0.04em] text-slate-900">Welcome Back, Ali!</div>
+              <div className="flex items-center gap-3">
+                <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
+                  <ArrowUpRight className="h-4 w-4" /> Request
+                </button>
+                <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
+                  <ArrowDownRight className="h-4 w-4" /> Transfer
+                </button>
+                <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
+                  <PiggyBank className="h-4 w-4" /> Deposit
+                </button>
+                <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
+                  <ReceiptText className="h-4 w-4" /> Pay Bill
+                </button>
+                <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
+                  <CreditCard className="h-4 w-4" /> Create Invoice
+                </button>
               </div>
             </div>
 
-            {/* Abas de Navegação */}
-            <div className="flex items-center gap-1 px-4 pt-3 border-b border-[#E5E7EB] bg-[#F8FAFC]/50 overflow-x-auto text-[11px] select-none">
-              
-              <button 
-                onClick={() => setActiveTab('patrimonio')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold transition-all ${
-                  activeTab === 'patrimonio'
-                    ? 'bg-[#FFFFFF] text-[#1A44C8] border-t-2 border-[#1A44C8] shadow-sm'
-                    : 'text-[#64748B] hover:text-[#181B22]'
-                }`}
-              >
-                <PieChart size={13} />
-                <span>Visão Geral</span>
-              </button>
-
-              <button 
-                onClick={() => setActiveTab('terceiros')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold transition-all whitespace-nowrap ${
-                  activeTab === 'terceiros'
-                    ? 'bg-[#FFFFFF] text-[#1A44C8] border-t-2 border-[#1A44C8] shadow-sm'
-                    : 'text-[#64748B] hover:text-[#181B22]'
-                }`}
-              >
-                <Users size={13} />
-                <span>Terceiros</span>
-              </button>
-
-              <button 
-                onClick={() => setActiveTab('dividas')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold transition-all ${
-                  activeTab === 'dividas'
-                    ? 'bg-[#FFFFFF] text-[#1A44C8] border-t-2 border-[#1A44C8] shadow-sm'
-                    : 'text-[#64748B] hover:text-[#181B22]'
-                }`}
-              >
-                <Flame size={13} />
-                <span>Dívidas</span>
-              </button>
-
-              <button 
-                onClick={() => setActiveTab('all')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold transition-all ${
-                  activeTab === 'all'
-                    ? 'bg-[#FFFFFF] text-[#1A44C8] border-t-2 border-[#1A44C8] shadow-sm'
-                    : 'text-[#64748B] hover:text-[#181B22]'
-                }`}
-              >
-                <Layers size={13} />
-                <span>Tudo em Um Só Lugar</span>
-              </button>
-
-            </div>
-
-            {/* Conteúdo Dinâmico da Aba Ativa */}
-            <div className="p-4 sm:p-7 bg-[#F5F6F9]">
-
-              {/* ABA 1: VISÃO GERAL & PATRIMÔNIO */}
-              {activeTab === 'patrimonio' && (
-                <div className="space-y-5 animate-fade-in-up">
-                  
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-2 border-b border-[#E5E7EB]">
+            <div className="grid gap-5 xl:grid-cols-[1.8fr_0.9fr]">
+              <div className="space-y-5">
+                <div className="rounded-[22px] border border-[#e5e7eb] bg-white/80 p-4 shadow-sm">
+                  <div className="mb-5 flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-bold text-[#181B22]">Visão Geral • Olá, Miguel</h3>
-                      <p className="text-[10.5px] text-[#64748B] font-medium">Patrimônio consolidado sincronizado em tempo real</p>
+                      <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Overview</div>
+                      <div className="mt-2 text-[13px] text-slate-500">Total Balance</div>
+                      <div className="mt-1 text-4xl font-semibold tracking-[-0.06em] text-slate-900">$32,940.093</div>
                     </div>
-                    <span className="text-[10px] bg-[#1A44C8]/10 text-[#1A44C8] px-2.5 py-0.5 rounded-full border border-[#1A44C8]/20 font-bold">
-                      Última atualização: agora
-                    </span>
-                  </div>
-
-                  {/* 4 Cards de KPI */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    
-                    <div className="p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-1">
-                      <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Patrimônio Total</span>
-                      <p className="text-base sm:text-lg font-extrabold text-[#181B22] tracking-tight">R$ 484.300,50</p>
-                      <span className="text-[9.5px] text-[#1A44C8] font-bold flex items-center gap-0.5">
-                        <TrendingUp size={10} /> +18.4% este ano
-                      </span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-1">
-                      <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Ganho de Capital</span>
-                      <p className="text-base sm:text-lg font-extrabold text-[#1A44C8] tracking-tight">+ R$ 12.800,00</p>
-                      <span className="text-[9.5px] text-[#64748B] font-medium">+14.2% sobre aportes</span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-1">
-                      <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Aportes do Ano</span>
-                      <p className="text-base sm:text-lg font-extrabold text-[#181B22] tracking-tight">R$ 48.200,00</p>
-                      <span className="text-[9.5px] text-[#64748B] font-medium">5 corretoras consolidadas</span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-1">
-                      <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Despesas do Mês</span>
-                      <p className="text-base sm:text-lg font-extrabold text-[#181B22] tracking-tight">R$ 4.428,00</p>
-                      <span className="text-[9.5px] text-[#1A44C8] font-bold">Dentro do teto (70%)</span>
-                    </div>
-
-                  </div>
-
-                  {/* Gráfico Real de Evolução Anual */}
-                  <div className="p-4 sm:p-5 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-[#181B22]">Evolução Patrimonial Anual</span>
-                      <div className="flex items-center gap-2 text-[10px] text-[#64748B] font-medium">
-                        <span className="w-2 h-2 rounded-full bg-[#1A44C8]"></span>
-                        <span>Consolidado</span>
-                      </div>
-                    </div>
-
-                    {/* Curva SVG Vetorial */}
-                    <div className="h-32 w-full pt-2">
-                      <svg viewBox="0 0 600 120" className="w-full h-full overflow-visible">
-                        <defs>
-                          <linearGradient id="dashAreaGrad" x1="0%" y1="0%" x2="0%" y2="1">
-                            <stop offset="0%" stopColor="#1A44C8" stopOpacity="0.2" />
-                            <stop offset="100%" stopColor="#1A44C8" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <path 
-                          d="M 0 100 Q 50 95, 100 85 T 200 70 T 300 55 T 400 35 T 500 20 T 600 10 L 600 120 L 0 120 Z" 
-                          fill="url(#dashAreaGrad)" 
-                        />
-                        <path 
-                          d="M 0 100 Q 50 95, 100 85 T 200 70 T 300 55 T 400 35 T 500 20 T 600 10" 
-                          fill="none" 
-                          stroke="#1A44C8" 
-                          strokeWidth="2.5" 
-                        />
-                        <circle cx="600" cy="10" r="4.5" fill="#00A3FF" className="animate-ping" />
-                        <circle cx="600" cy="10" r="3.5" fill="#1A44C8" />
-                      </svg>
-                    </div>
-
-                    <div className="flex justify-between text-[9px] text-[#94A3B8] font-bold pt-1 border-t border-[#E5E7EB]">
-                      <span>Jan</span>
-                      <span>Mar</span>
-                      <span>Mai</span>
-                      <span>Jul</span>
-                      <span>Set</span>
-                      <span>Nov</span>
-                      <span className="text-[#1A44C8] font-extrabold">Dez (Hoje)</span>
+                    <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-600">
+                      <TrendingUp className="h-4 w-4 text-emerald-600" />
+                      <span className="font-medium">+ $3,546.02</span>
                     </div>
                   </div>
 
-                  {/* Cartões Conectados */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#1A44C8]/10 text-[#1A44C8] flex items-center justify-center font-bold text-xs">
-                          XP
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-[#181B22]">XP Visa Infinite</p>
-                          <p className="text-[10px] text-[#64748B] font-medium">Fatura: R$ 3.820,00 • Fecha dia 28</p>
-                        </div>
-                      </div>
-                      <span className="text-[9.5px] text-[#1A44C8] bg-[#1A44C8]/10 px-2 py-0.5 rounded border border-[#1A44C8]/20 font-bold">
-                        Melhor Cartão Hoje ⭐
-                      </span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs">
-                          NU
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-[#181B22]">Nubank Ultravioleta</p>
-                          <p className="text-[10px] text-[#64748B] font-medium">Fatura: R$ 608,80 • Fecha dia 12</p>
-                        </div>
-                      </div>
-                      <span className="text-[9.5px] text-[#64748B] bg-[#F1F3F7] px-2 py-0.5 rounded font-bold">
-                        1% Cashback
-                      </span>
-                    </div>
+                  <div className="rounded-[18px] border border-[#edf1f5] bg-[#f9fafb] p-3">
+                    <svg viewBox="0 0 700 220" className="h-[180px] w-full">
+                      <g opacity="0.5" stroke="#dfe7ef" strokeWidth="1">
+                        {[0,1,2,3,4,5].map((line) => (
+                          <line key={line} x1="0" y1={20 + line * 35} x2="700" y2={20 + line * 35} />
+                        ))}
+                        {[0,1,2,3,4,5,6,7].map((line) => (
+                          <line key={line} x1={60 + line * 90} y1="0" x2={60 + line * 90} y2="220" />
+                        ))}
+                      </g>
+                      <path d="M 0 150 C 80 140, 120 100, 180 120 S 280 80, 360 95 S 470 105, 520 90 S 600 120, 700 60" fill="none" stroke="#0ea5e9" strokeWidth="3.5" strokeLinecap="round" />
+                      <path d="M 0 165 C 80 150, 120 130, 180 140 S 280 120, 360 128 S 470 140, 520 120 S 600 160, 700 88" fill="none" stroke="#10b981" strokeWidth="3.5" strokeLinecap="round" />
+                      <g>
+                        <circle cx="520" cy="90" r="5" fill="#10b981" />
+                        <circle cx="700" cy="60" r="5" fill="#38bdf8" />
+                      </g>
+                    </svg>
                   </div>
-
                 </div>
-              )}
 
-              {/* ABA 2: GESTÃO DE TERCEIROS */}
-              {activeTab === 'terceiros' && (
-                <div className="space-y-5 animate-fade-in-up">
-                  
-                  <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start gap-2.5 font-medium">
-                    <span className="text-amber-600 font-bold shrink-0 mt-0.5">⚠️</span>
-                    <span>
-                      <strong className="text-amber-900 font-bold">Evite ao máximo emprestar seu cartão ou dinheiro para terceiros.</strong> O cenário ideal é manter esta seção em R$ 0,00 para proteger seu score.
-                    </span>
-                  </div>
-
-                  {/* 4 Cards de Terceiros */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="p-3 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-1">
-                      <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Total Ativo</span>
-                      <p className="text-base sm:text-lg font-extrabold text-amber-600">R$ 5.750,00</p>
-                      <span className="text-[9.5px] text-[#64748B] font-medium">2 pessoas pendentes</span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-1">
-                      <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Em Faturas</span>
-                      <p className="text-base sm:text-lg font-extrabold text-[#1A44C8]">R$ 4.200,00</p>
-                      <span className="text-[9.5px] text-[#1A44C8] font-bold">100% Segregado</span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-1">
-                      <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Em Conta / PIX</span>
-                      <p className="text-base sm:text-lg font-extrabold text-[#181B22]">R$ 1.550,00</p>
-                      <span className="text-[9.5px] text-[#64748B] font-medium">Empréstimo direto</span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-1">
-                      <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Já Devolvido</span>
-                      <p className="text-base sm:text-lg font-extrabold text-blue-600">R$ 4.750,00</p>
-                      <span className="text-[9.5px] text-blue-600 font-bold">45% quitado</span>
-                    </div>
-                  </div>
-
-                  {/* Devedores */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-4 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center font-bold text-xs">
-                            MC
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-[#181B22]">Mariana Costa</p>
-                            <p className="text-[10px] text-[#64748B] font-medium">iPhone 15 Pro • Santander</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-bold">
-                          100% Em Dia
-                        </span>
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[10.5px]">
-                          <span className="text-[#64748B] font-medium">Progresso (6 / 12 parcelas)</span>
-                          <span className="text-[#181B22] font-bold">R$ 2.400 / R$ 4.800</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-[#F1F3F7] overflow-hidden">
-                          <div className="h-full bg-pink-500 rounded-full w-1/2"></div>
-                        </div>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div className="rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-600">Money in</span>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                        <ArrowDownRight className="h-4 w-4" />
                       </div>
                     </div>
+                    <div className="text-[26px] font-semibold tracking-[-0.05em] text-slate-900">$40,829.92</div>
+                    <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-blue-500 to-cyan-400" />
+                    </div>
+                    <div className="mt-3 text-sm text-slate-500">The biggest income this month is from salary</div>
+                  </div>
+
+                  <div className="rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-600">Money out</span>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                        <ArrowUpRight className="h-4 w-4" />
+                      </div>
+                    </div>
+                    <div className="text-[26px] font-semibold tracking-[-0.05em] text-slate-900">$7,802.62</div>
+                    <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full w-[56%] rounded-full bg-gradient-to-r from-red-500 to-orange-400" />
+                    </div>
+                    <div className="mt-3 text-sm text-slate-500">The biggest expense this month is from shopping</div>
+                  </div>
+                </div>
+
+                <div className="rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-sm font-medium text-slate-600">Transactions</div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <button className="rounded-lg bg-slate-100 px-2 py-1">Recent</button>
+                      <button className="rounded-lg px-2 py-1">My transactions</button>
+                      <button className="rounded-lg px-2 py-1">Monthly money in</button>
+                    </div>
+                  </div>
+                  <div className="overflow-hidden rounded-xl border border-slate-200">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="bg-slate-50 text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2.5 font-medium">Due date</th>
+                          <th className="px-3 py-2.5 font-medium">To/Form</th>
+                          <th className="px-3 py-2.5 font-medium">Status</th>
+                          <th className="px-3 py-2.5 font-medium">Amount</th>
+                          <th className="px-3 py-2.5 font-medium">Account</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-t border-slate-200 bg-white">
+                          <td className="px-3 py-3">Oct 12-2026</td>
+                          <td className="px-3 py-3">Google Workspace</td>
+                          <td className="px-3 py-3"><span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">Completed</span></td>
+                          <td className="px-3 py-3">$836.58</td>
+                          <td className="px-3 py-3">Visa</td>
+                        </tr>
+                        <tr className="border-t border-slate-200 bg-white">
+                          <td className="px-3 py-3">Oct 18-2026</td>
+                          <td className="px-3 py-3">Stripe</td>
+                          <td className="px-3 py-3"><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">Pending</span></td>
+                          <td className="px-3 py-3">$1,240.00</td>
+                          <td className="px-3 py-3">Checking</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div className="rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="text-sm font-medium text-slate-600">Accounts</div>
+                    <button className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {accountItems.map(({ name, last4, balance, color }) => (
+                      <div key={name} className="rounded-[18px] border border-slate-200 bg-white p-2.5 shadow-sm">
+                        <div className={`mb-3 flex h-16 items-center justify-between rounded-xl bg-gradient-to-r ${color} p-3 text-white`}>
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-md bg-white/15 backdrop-blur-sm" />
+                            <div>
+                              <div className="text-xs opacity-80">{name}</div>
+                              <div className="text-[11px] tracking-[0.18em] opacity-80">•••• {last4}</div>
+                            </div>
+                          </div>
+                          <div className="text-[10px] uppercase tracking-[0.18em] opacity-80">06/28</div>
+                        </div>
+                        <div className="flex items-center justify-between px-1">
+                          <div className="text-sm font-medium text-slate-500">Balance</div>
+                          <div className="text-lg font-semibold tracking-[-0.04em] text-slate-900">{balance}</div>
+                        </div>
+                      </div>
+                    ))}
+                    <button className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-100 px-4 py-3 text-sm font-medium text-slate-700">
+                      <Plus className="h-4 w-4" /> Create account
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="text-sm font-medium text-slate-600">Invoice</div>
+                    <button className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mb-5 rounded-full bg-slate-100 p-1">
+                    <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-sky-500" style={{ width: '80%' }} />
+                  </div>
+                  <div className="space-y-3">
+                    {invoiceItems.map(({ date, state, name, value, paid }) => (
+                      <div key={`${date}-${name}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-slate-100 pb-2 last:border-none last:pb-0">
+                        <div className="text-xs text-slate-400">{date}</div>
+                        <div className="flex flex-col">
+                          <div className="text-sm font-medium text-slate-700">{state}</div>
+                          <div className="text-xs text-slate-400">{name}</div>
+                        </div>
+                        <div className={`text-right text-sm font-semibold ${paid ? 'text-slate-700' : 'text-slate-400'}`}>
+                          {paid ? 'Paid' : 'Unpaid'}
+                          <div className="text-xs text-slate-400">{value}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
 
                     <div className="p-4 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm space-y-3">
                       <div className="flex justify-between items-start">
