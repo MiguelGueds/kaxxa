@@ -286,6 +286,7 @@ export const accountsService = {
       user_id: user.id,
       name: acc.name,
       type: acc.type,
+      balance: Number(acc.balance || 0),
       initial_balance: acc.balance,
     };
 
